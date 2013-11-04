@@ -234,7 +234,7 @@ int epson_loadEpsonWaveform(char *path, u32 address)
 	FIL File;
 	u32 file_size;
 
-	printk("Load Waveform\n");
+	printk("Load Waveform From SD Card\n");
 
 	if (f_open(&File, path, FA_READ) != FR_OK)
 		return (-ENOENT);
@@ -259,6 +259,53 @@ int epson_loadEpsonWaveform(char *path, u32 address)
 	f_close(&File);
 
 	return 0;
+}
+
+void epson_WaveformStreamInit(u32 address)
+{
+	//u32 addr = 0x00080000L;
+
+	epson_wait_for_idle();
+	epson_cmd_p4(BST_WR_SDR,
+		(address & 0x0ffff), ((address >> 16) & 0x0ffff), 64000, 64000);
+	epson_wait_for_idle();
+	epson_begin_bulk_transfer(HOST_MEM_PORT_REG);
+}
+
+#if MCU_DEBUG
+static int eep_count = 0;
+#endif
+
+void epson_WaveformStreamTransfer(u8 *buffer, size_t len)
+{
+	int i;
+	int swap = 1;
+	short word;
+	u16 *buffer16 = (u16*)buffer;
+
+#if MCU_DEBUG
+	/* debug */
+	printk("data[%04X] = %02X %02X %04X (length: %d + %d)\n",
+			eep_count, buffer[0], buffer[1], buffer16[0], eep_count, (int)len);
+    eep_count += len;
+#endif
+
+	for (i = 0; i < (len/2); i++)
+	{
+		word = buffer16[i];
+		if (swap) {
+			buffer16[i] = swap_bytes(buffer16[i]);
+		}
+		epson_bulk_transfer_word(word);
+	}
+}
+
+void epson_WaveformStreamClose(void)
+{
+	epson_end_bulk_transfer();
+	epson_wait_for_idle();
+	epson_cmd_p0(BST_END_SDR);
+	epson_wait_for_idle();
 }
 
 int epson_loadColorConfig(char *path, u32 address)

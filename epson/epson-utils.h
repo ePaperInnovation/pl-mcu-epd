@@ -20,6 +20,7 @@
  * epson-utils.h -- Epson controller utility functions
  *
  * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ *          Andrew Cox <andrew.cox@plasticlogic.com>
  *
  */
 
@@ -37,6 +38,9 @@ int epson_power_up(void);
 int epson_power_down(void);
 int epson_loadEpsonCode(char *code_path);
 int epson_BulkTransferFile(char *path, u32 address);
+void epson_WaveformStreamInit(u32 address);
+void epson_WaveformStreamTransfer(u8 *buffer, size_t len);
+void epson_WaveformStreamClose(void);
 int epson_loadEpsonWaveform(char *path, u32 address);
 int epson_loadColorConfig(char *path, u32 address);
 int epson_loadImageFile(FIL *image, short mode, int pack);
