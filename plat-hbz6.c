@@ -48,6 +48,7 @@
 #include "slideshow.h"
 #include "i2c-eeprom.h"
 #include "psu-data.h"
+#include "plwf.h"
 
 #define CONFIG_PLAT_RUDDOCK2	1
 #if CONFIG_PLAT_RUDDOCK2
@@ -68,15 +69,17 @@
 /* i2c addresses of TI PMIC and calibration data EEPROM */
 #define I2C_PMIC_ADDR		0x68
 #define	I2C_EEPROM_PSU_DATA	0x50
+#define I2C_EEPROM_PLWF_DATA 0x54
 
 static struct tps65185_info *pmic_info;
 static struct i2c_adapter *i2c;
 static struct s1d135xx *epson;
 static struct vcom_cal *vcom_calibration;
 static struct vcom_info vcom_data;
-static struct i2c_eeprom *eeprom;
+static struct i2c_eeprom *psu_eeprom;
 static struct eeprom_data *psu_data;
-
+static struct i2c_eeprom *plwf_eeprom;
+static struct plwf_data *plwf_data;
 static int show_image(char *image, void *arg);
 
 /* Fallback VCOM calibration data if PSU EEPROM corrupt */
@@ -124,6 +127,7 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	int ret = 0;
 	short previous;
 	int vcom;
+	screen_t prev_screen;
 
 	printk("HB Z6/7 platform initialisation\n");
 
@@ -147,7 +151,13 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 
 #if !CONFIG_PSU_ONLY
 	/* initialise the Epson controller */
-	check(s1d13541_init(EPSON_CS_0, &epson) == 0);
+	check(s1d13541_init_start(EPSON_CS_0, &prev_screen, &epson) == 0);
+	check(s1d13541_init_prodcode(epson) == 0);
+	check(s1d13541_init_clock(epson) == 0);
+	check(s1d13541_init_initcode(epson) == 0);
+	check(s1d13541_init_pwrstate(epson) == 0);
+	check(s1d13541_init_keycode(epson) == 0);
+
 #endif
 
 	/* initialise the i2c interface as required */
@@ -156,12 +166,24 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	else
 		check(msp430_i2c_init(0, &i2c) == 0);
 
+#if !CONFIG_PSU_ONLY
+#if CONFIG_WF_ON_SD_CARD
+	check(s1d13541_init_waveform_sd(epson) == 0);
+#else
+	eeprom_init(i2c, I2C_EEPROM_PLWF_DATA, EEPROM_24AA256, &plwf_eeprom);
+	plwf_data_init(&plwf_data);
+	check(s1d13541_init_waveform_eeprom(epson, plwf_eeprom, plwf_data) == 0);
+	plwf_data_free(&plwf_data);
+#endif /* WAVEFORM_ON_SD_CARD */
+	check(s1d13541_init_gateclr(epson) == 0);
+	check(s1d13541_init_end(epson, prev_screen) == 0);
+#endif
 	/* intialise the psu EEPROM */
-	eeprom_init(i2c, I2C_EEPROM_PSU_DATA, EEPROM_24LC014, &eeprom);
+	eeprom_init(i2c, I2C_EEPROM_PSU_DATA, EEPROM_24LC014, &psu_eeprom);
 
 	/* read the psu calibration data and ready it for use */
 	psu_data_init(&psu_data);
-	psu_data_read(eeprom, psu_data);
+	psu_data_read(psu_eeprom, psu_data);
 	if (psu_data_get_vcom_data(psu_data, &vcom_data) == 0) {
 		vcom_init(&vcom_data, VCOM_VGSWING, &vcom_calibration);
 	}
@@ -223,7 +245,14 @@ static int show_image(char *image, void *arg)
 	s1d13541_measure_temperature(epson, &needs_update);
 	if (needs_update)
 	{
+#if CONFIG_WF_ON_SD_CARD
 		s1d13541_send_waveform();
+#else
+		eeprom_init(i2c, I2C_EEPROM_PLWF_DATA, EEPROM_24AA256, &plwf_eeprom);
+		plwf_data_init(&plwf_data);
+		s1d13541_send_waveform_eeprom(epson, plwf_eeprom, plwf_data);
+		plwf_data_free(&plwf_data);
+#endif /* WAVEFORM_ON_SD_CARD */
 	}
 
 	printk("Load: %s\n", image);

@@ -128,6 +128,7 @@ int plat_hbz13_init(const char *platform_path, int i2c_on_epson)
 	int ret = 0;
 	short previous;
 	int vcom;
+	screen_t prev_screen;
 
 	printk("HB Z1.3 platform initialisation\n");
 
@@ -151,7 +152,15 @@ int plat_hbz13_init(const char *platform_path, int i2c_on_epson)
 
 #if !CONFIG_PSU_ONLY
 	/* initialise the Epson controller */
-	check(s1d13541_init(EPSON_CS_0, &epson) == 0);
+	check(s1d13541_init_start(EPSON_CS_0, &prev_screen, &epson) == 0);
+	check(s1d13541_init_prodcode(epson) == 0);
+	check(s1d13541_init_clock(epson) == 0);
+	check(s1d13541_init_initcode(epson) == 0);
+	check(s1d13541_init_pwrstate(epson) == 0);
+	check(s1d13541_init_keycode(epson) == 0);
+	check(s1d13541_init_waveform_sd(epson) == 0);
+	check(s1d13541_init_gateclr(epson) == 0);
+	check(s1d13541_init_end(epson, prev_screen) == 0);
 #endif
 
 	/* initialise the i2c interface as required */

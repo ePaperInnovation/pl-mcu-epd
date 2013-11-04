@@ -30,6 +30,8 @@
 #include "S1D13541.h"
 #include "epson-cmd.h"
 #include "epson-utils.h"
+#include "i2c-eeprom.h"
+#include "plwf.h"
 
 #define EPSON_CODE_PATH	"bin/Ecode.bin"
 #define WAVEFORM_PATH	"display/waveform.bin"
@@ -120,110 +122,6 @@ end:
 	return retval;
 }
 
-int s1d13541_send_waveform(void)
-{
-	return send_waveform();
-}
-
-static int chip_init(struct s1d135xx *epson)
-{
-	int retval = 0;
-	short product;
-
-	assert(epson);
-
-	epson_softReset();
-
-	retval = wait_for_HRDY_ready(TIMEOUT_MS);
-
-	epson_reg_read(PROD_CODE_REG, &product);
-
-	printk(KERN_INFO "541: product code = 0x%04x\n", product);
-	if (product != PRODUCT_CODE) {
-		printk(KERN_ERR "541: invalid product code\n");
-		retval = -EIO;
-		goto error;
-	}
-
-	epson_reg_write(REG_CLOCK_CONFIGURATION, INTERNAL_CLOCK_ENABLE);
-	msleep(10);
-	retval = wait_for_HRDY_ready(TIMEOUT_MS);
-	if (retval != 0) {
-		printk(KERN_ERR "541: clock enable failed\n");
-		goto error;
-	}
-
-	retval = send_init_code();
-	if (retval != 0)
-		goto error;
-
-	epson_cmd_p0(INIT_SYS_STBY);
-	epson->power_mode = PWR_STATE_STANDBY;
-	msleep(100);
-
-	retval = wait_for_HRDY_ready(TIMEOUT_MS);
-	if (retval != 0) {
-		printk(KERN_ERR "541: init and standby failed\n");
-		goto error;
-	}
-
-	epson_reg_write(REG_PROTECTION_KEY_1, epson->keycode1);
-	epson_reg_write(REG_PROTECTION_KEY_2, epson->keycode2);
-	retval = wait_for_HRDY_ready(TIMEOUT_MS);
-	if (retval != 0) {
-		printk(KERN_ERR "541: write keycode failed\n");
-		goto error;
-	}
-
-	retval = send_waveform();
-	if (retval != 0)
-		goto error;
-
-#if GATE_POWER_BEFORE_INIT
-	epson_mode_run(epson);
-	epson_cmd_p0(UPD_GDRV_CLR);
-	epson_wait_for_idle();
-#else
-	epson_cmd_p0(UPD_GDRV_CLR);
-	epson_wait_for_idle();
-	epson_mode_run(epson);
-#endif
-	epson_cmd_p0(WAIT_DSPE_TRG);
-	retval = wait_for_HRDY_ready(TIMEOUT_MS);
-	if (retval != 0) {
-		printk(KERN_ERR "541: clear gate driver failed\n");
-		goto error;
-	}
-
-	// get x and y definitions.
-	epson_reg_read(REG_LINE_DATA_LENGTH, &epson->xres);
-	epson_reg_read(REG_FRAME_DATA_LENGTH, &epson->yres);
-
-	// init_rot_mode
-	// not required in this case
-#if 0
-	// fill buffer with blank image using H/W fill support
-	epson_reg_read(HOST_MEM_CONF_REG, &readval);
-	epson_reg_write(HOST_MEM_CONF_REG, (readval &= ~1));
-	epson_reg_write(DISPLAY_UPD_BUFF_PXL_VAL_REG, 0x00f0);
-	epson_reg_write(DISPLAY_CTRL_TRIG_REG, 3); // trigger buffer init
-	epson_cmd_p0(WAIT_DSPE_TRG);
-	epson_wait_for_idle(); 		// wait for it to complete
-
-	// update the current pixel data - no display update occurs
-	epson_cmd_p0(UPD_INIT);
-	epson_wait_for_idle();
-	epson_cmd_p0(WAIT_DSPE_TRG);
-	epson_wait_for_idle();
-#endif
-
-	return 0;
-
-error:
-	return retval;
-
-}
-
 /* initialise the pixel buffer but do not drive the display
  *
  */
@@ -259,10 +157,9 @@ int s1d13541_update_display(struct s1d135xx *epson, int waveform)
 
 /* Initialise the 541 controller and leave it in a state ready to do updates
  */
-int s1d13541_init(screen_t screen, struct s1d135xx **controller)
+int s1d13541_init_start(screen_t screen, screen_t *previous, struct s1d135xx **controller)
 {
-	int ret;
-	screen_t previous;
+	int retval = 0;
 	struct s1d135xx *epson;
 
 	*controller = epson = (struct s1d135xx *)malloc(sizeof(struct s1d135xx));
@@ -278,16 +175,198 @@ int s1d13541_init(screen_t screen, struct s1d135xx **controller)
 	epson->temp_mode = TEMP_MODE_UNDEFINED;
 	epson->power_mode = PWR_STATE_UNDEFINED;
 
+	if (epsonif_claim(0, screen, previous) < 0)
+		retval = -EIO;
 
-	if (epsonif_claim(0, screen, &previous) < 0)
-		return -EIO;
+	return retval;
+}
 
-	ret = chip_init(epson);
+int s1d13541_init_prodcode(struct s1d135xx *epson)
+{
+	int retval = 0;
+	short product;
+
+	assert(epson);
+
+	epson_softReset();
+
+	retval = wait_for_HRDY_ready(TIMEOUT_MS);
+
+	epson_reg_read(PROD_CODE_REG, &product);
+
+	printk(KERN_INFO "541: product code = 0x%04x\n", product);
+	if (product != PRODUCT_CODE) {
+		printk(KERN_ERR "541: invalid product code\n");
+		retval = -EIO;
+	}
+
+	return retval;
+}
+
+int s1d13541_init_clock(struct s1d135xx *epson)
+{
+	int retval = 0;
+
+	assert(epson);
+
+	epson_reg_write(REG_CLOCK_CONFIGURATION, INTERNAL_CLOCK_ENABLE);
+	msleep(10);
+	retval = wait_for_HRDY_ready(TIMEOUT_MS);
+	if (retval != 0) {
+		printk(KERN_ERR "541: clock enable failed\n");
+	}
+
+	return retval;
+}
+
+int s1d13541_init_initcode(struct s1d135xx *epson)
+{
+	int retval = 0;
+
+	assert(epson);
+
+	retval = send_init_code();
+	if (retval != 0) {
+		printk(KERN_ERR "541: send_init_code failed\n");
+	}
+
+	return retval;
+}
+
+int s1d13541_init_pwrstate(struct s1d135xx *epson)
+{
+	int retval = 0;
+
+	assert(epson);
+
+	epson_cmd_p0(INIT_SYS_STBY);
+	epson->power_mode = PWR_STATE_STANDBY;
+	msleep(100);
+
+	retval = wait_for_HRDY_ready(TIMEOUT_MS);
+	if (retval != 0) {
+		printk(KERN_ERR "541: init and standby failed\n");
+	}
+
+	return retval;
+}
+
+int s1d13541_init_keycode(struct s1d135xx *epson)
+{
+	int retval = 0;
+
+	assert(epson);
+
+	epson_reg_write(REG_PROTECTION_KEY_1, epson->keycode1);
+	epson_reg_write(REG_PROTECTION_KEY_2, epson->keycode2);
+	retval = wait_for_HRDY_ready(TIMEOUT_MS);
+	if (retval != 0) {
+		printk(KERN_ERR "541: write keycode failed\n");
+	}
+
+	return retval;
+}
+
+int s1d13541_init_waveform_sd(struct s1d135xx *epson)
+{
+	int retval = 0;
+
+	assert(epson);
+
+	retval = send_waveform();
+	if (retval != 0)
+		printk(KERN_ERR "541: Waveform load from filesystem failed\n");
+
+	return retval;
+}
+
+int s1d13541_init_waveform_eeprom(struct s1d135xx *epson, struct i2c_eeprom *plwf_eeprom, struct plwf_data *plwf_data)
+{
+	int retval = 0;
+
+	assert(epson);
+
+	retval = plwf_load_waveform(epson, plwf_eeprom, plwf_data, WAVEFORM_ADDRESS);
+
+	if (retval != 0)
+		printk(KERN_ERR "541: Waveform load from EEPROM failed\n");
+
+	return retval;
+}
+
+int s1d13541_init_gateclr(struct s1d135xx *epson)
+{
+	int retval = 0;
+
+	assert(epson);
+
+#if GATE_POWER_BEFORE_INIT
+	epson_mode_run(epson);
+	epson_cmd_p0(UPD_GDRV_CLR);
+	epson_wait_for_idle();
+#else
+	epson_cmd_p0(UPD_GDRV_CLR);
+	epson_wait_for_idle();
+	epson_mode_run(epson);
+#endif
+	epson_cmd_p0(WAIT_DSPE_TRG);
+	retval = wait_for_HRDY_ready(TIMEOUT_MS);
+	if (retval != 0) {
+		printk(KERN_ERR "541: clear gate driver failed\n");
+	}
+	// init_rot_mode
+	// not required in this case
+
+#if 0
+	// fill buffer with blank image using H/W fill support
+	epson_reg_read(HOST_MEM_CONF_REG, &readval);
+	epson_reg_write(HOST_MEM_CONF_REG, (readval &= ~1));
+	epson_reg_write(DISPLAY_UPD_BUFF_PXL_VAL_REG, 0x00f0);
+	epson_reg_write(DISPLAY_CTRL_TRIG_REG, 3); // trigger buffer init
+	epson_cmd_p0(WAIT_DSPE_TRG);
+	epson_wait_for_idle(); 		// wait for it to complete
+
+	// update the current pixel data - no display update occurs
+	epson_cmd_p0(UPD_INIT);
+	epson_wait_for_idle();
+	epson_cmd_p0(WAIT_DSPE_TRG);
+	epson_wait_for_idle();
+#endif
+
+	return retval;
+}
+
+int s1d13541_init_end(struct s1d135xx *epson, screen_t previous)
+{
+	assert(epson);
+
+	// get x and y definitions.
+	epson_reg_read(REG_LINE_DATA_LENGTH, &epson->xres);
+	epson_reg_read(REG_FRAME_DATA_LENGTH, &epson->yres);
 
 	epsonif_release(0, previous);
-
-	return ret;
+	return 0;
 }
+
+int s1d13541_send_waveform(void)
+{
+	return send_waveform();
+}
+
+int s1d13541_send_waveform_eeprom(struct s1d135xx *epson, struct i2c_eeprom *plwf_eeprom, struct plwf_data *plwf_data)
+{
+	int retval = 0;
+
+	assert(epson);
+
+	retval = plwf_load_waveform(epson, plwf_eeprom, plwf_data, WAVEFORM_ADDRESS);
+
+	if (retval != 0)
+		printk(KERN_ERR "541: Waveform load from EEPROM failed\n");
+
+	return retval;
+}
+
 
 /* Configure controller for specified temperature mode */
 int s1d13541_set_temperature_mode(struct s1d135xx *epson, short temp_mode)
