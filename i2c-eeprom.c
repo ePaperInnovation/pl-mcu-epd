@@ -79,7 +79,9 @@ int eeprom_read(struct i2c_eeprom *eeprom, u16 address, u16 count, void *data)
 	if (address + count >= device->size)
 		return -EINVAL;
 
+#if MCU_DEBUG
 	printk("eeprom_read(0x%02x): addr:0x%04X, Len:0x%04X\n", eeprom->i2c_addr, address, count);
+#endif
 
 	addr[0] = ((address >> 8) & 0x00FF);
 	addr[1] = (address & 0x00FF);
