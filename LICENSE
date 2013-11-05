@@ -1,0 +1,33 @@
+Software Licensing Information
+------------------------------
+
+All the software included in this project is distributed under the terms of the
+GNU General Public License (GPL) v3.  The parts which fall under the copyright
+of Plastic Logic Limited (PL) were directly made available under these terms.
+Other parts of the software provided by Texas Instrument Incorporated (TI) for
+MSP430 hardware support and the FatFs component under the copyright of ChaN
+have licensing terms which are compatible with the terms of GPL v3, so they
+effectively all fall into the same GPL v3 terms.
+
+
+About LGPL v3
+-------------
+
+This project is effectively a monolithic programme and entirely statically
+linked, so the extra clauses of GNU Lesser General Public license v3 do not
+apply to any of this software.
+
+
+IMPORTANT: Derivative works
+---------------------------
+
+Any derivative work based on any file present in this project have to follow
+the terms of the GPL v3 license; in particular they need to remain under the
+GPL v3.
+
+Please note that the licensing terms of the code under TI copyright include an
+extra specific clause which is still compatible with the terms of the GPL v3:
+
+  Neither the name of Texas Instruments Incorporated nor the names of
+  its contributors may be used to endorse or promote products derived
+  from this software without specific prior written permission.
