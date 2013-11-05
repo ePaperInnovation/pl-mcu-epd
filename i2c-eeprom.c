@@ -94,9 +94,20 @@ int eeprom_read(struct i2c_eeprom *eeprom, u16 address, u16 count, void *data)
 	{
 		ret = i2c_write_bytes(eeprom->i2c, eeprom->i2c_addr, &addr[1], 1, I2C_NO_STOP);
 	}
-	if (ret >= 0)
-		ret = i2c_read_bytes(eeprom->i2c, eeprom->i2c_addr, (u8*)data, count, 0);
+	if (ret >= 0) {
+		/* i2c_read_bytes a count of, at most, a u8. Read multiple times with max count if
+		 * a read count greater than 255 is required */
+		int numbytes = count / 255;
+		int remainder = count % 255;
+		u8 offset = 0;
 
+		while (numbytes) {
+			ret = i2c_read_bytes(eeprom->i2c, eeprom->i2c_addr, (u8*)data+offset, 255, 0);
+			numbytes--;
+			offset += 255;
+		}
+		ret = i2c_read_bytes(eeprom->i2c, eeprom->i2c_addr, (u8*)data+offset, remainder, 0);
+	}
 	return ret;
 }
 
