@@ -1,0 +1,51 @@
+Release v001 -> v002 - 2013-11-06
+
+Guillaume Tucker (4):
+      add config.h with build-time PL configuration
+      msp430: do not include main.h
+      move CONFIG_WF_ON_SD_CARD to config.h
+      plat-hbz6.c: include config.h instead of plwf.h
+
+andrew.cox (8):
+      lzss: Add LZSS support
+      crc16: Add CRC16 API
+      epson-utils: Add support for eeprom based waveform selection
+      plwf: Add Plastic Logic waveform support
+      S1D13541: Split Epson initialisation into smaller functions
+      i2c-eeprom: Remove debug message when reading Eeprom
+      plat-hbz6: Modify update-display to not use init waveform for all update
+      i2c-eeprom: Allow reading more than 256 bytes from the eeprom.
+
+Release v001 - 2013-11-05
+
+Guillaume Tucker (29):
+      initial commit: empty project
+      add README.rst with initial set-up instructions
+      import FatFs R0.08a (2010) from ChaN
+      import hal_pmm from TI
+      add i2c abstraction layer
+      add msp430-* hardware interface layers
+      add dac-5820 for Maxim MAX5820 ADC
+      add Maxim MAX17135 HVPMIC support
+      add TI TPS65185 HVPMIC support
+      add pnm-utils for PNM image files
+      add display.h and types.h with PL definitions
+      add epson for all supported Epson EPD controllers
+      add plat-hbz13 for PL Hummingbird Z1.3 support
+      add plat-hbz6 for PL Hummingbird Z6
+      add plat-ruddock2 for PL Ruddock v2 board
+      add plat-raven for PL Raven board
+      add extra utilities (assert, console, utils)
+      add plat-cuckoo for PL Cuckoo board
+      add i2c-eeprom to support I2C EEPROM devices
+      add vcom for PL VCOM hardware support
+      add psu-data for PL PSU calibration data support
+      add temp-lm75 for LM75 temperature sensor support
+      add slideshow to show a series of images in a loop
+      replace main.c with PL basic application code
+      add dot-cproject as initial .cproject file
+      add tools/img_convert.py to produce images in correct format
+      add project description to all PL copyright headers
+      add COPYING with GPL v3 full license text
+      add LICENSE with extra licensing information
+
