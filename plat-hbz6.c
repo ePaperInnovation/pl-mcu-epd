@@ -48,7 +48,7 @@
 #include "slideshow.h"
 #include "i2c-eeprom.h"
 #include "psu-data.h"
-#include "plwf.h"
+#include "config.h"
 
 #define CONFIG_PLAT_RUDDOCK2	1
 #if CONFIG_PLAT_RUDDOCK2
