@@ -26,7 +26,6 @@
 #include <msp430.h>
 #include "types.h"
 #include "msp430-gpio.h"
-#include "main.h"
 
 #define INIT_COUNT_L 0xC3
 #define INIT_COUNT_H 0x50

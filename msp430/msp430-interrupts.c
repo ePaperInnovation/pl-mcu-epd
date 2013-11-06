@@ -25,7 +25,6 @@
 
 #include <msp430.h>
 #include "types.h"
-#include "main.h"
 #include "msp430-gpio.h"
 
 u8 port2_int_summary = 0;
