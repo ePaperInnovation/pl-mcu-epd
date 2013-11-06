@@ -33,34 +33,35 @@
 #include "i2c-eeprom.h"
 #include "plwf.h"
 
+#define LOG(msg, ...) printf("S1D13541: "msg"\n", ##__VA_ARGS__)
+
 #define EPSON_CODE_PATH	"bin/Ecode.bin"
 #define WAVEFORM_PATH	"display/waveform.bin"
 
-#define KEY		0x12345678
-#define KEY_1	0x1234
-#define	KEY_2	0x5678
+#define KEY 0x12345678
+#define KEY_1 0x1234
+#define	KEY_2 0x5678
 
-#define GATE_POWER_BEFORE_INIT	1
+#define GATE_POWER_BEFORE_INIT 1
 
 /* These need changing to use our definitions */
 #define TIMEOUT_MS 5000
 
+#define REG_CLOCK_CONFIGURATION    ((uint16_t)0x0010)
 
-#define REG_CLOCK_CONFIGURATION			0x0010
-
-#define BF_INIT_CODE_CHECKSUM	(1 << 15)
-#define INT_WF_CHECKSUM_ERROR	(1 << 12)
-#define INT_WF_INVALID_FORMAT	(1 << 11)
-#define INT_WF_CHECKSUM_ERROR	(1 << 12)
-#define INT_WF_OVERFLOW			(1 << 13)
+#define BF_INIT_CODE_CHECKSUM	   ((uint16_t)(1 << 15))
+#define INT_WF_CHECKSUM_ERROR	   ((uint16_t)(1 << 12))
+#define INT_WF_INVALID_FORMAT	   ((uint16_t)(1 << 11))
+#define INT_WF_CHECKSUM_ERROR      ((uint16_t)(1 << 12))
+#define INT_WF_OVERFLOW            ((uint16_t)(1 << 13))
 
 /* 541 register bit field value list */
-#define INTERNAL_CLOCK_ENABLE		(1 << 7)
-#define INIT_CODE_CHECKSUM_ERROR	(0 << 15)
+#define INTERNAL_CLOCK_ENABLE      ((uint16_t)(1 << 7))
+#define INIT_CODE_CHECKSUM_ERROR   ((uint16_t)(0 << 15))
 
 /* 541 constant value list */
-#define PRODUCT_CODE			0x0053
-#define	WAVEFORM_ADDRESS	0x00080000L
+#define PRODUCT_CODE 0x0053
+#define	WAVEFORM_ADDRESS 0x00080000L
 
 static int wait_for_HRDY_ready(int timeout)
 {
@@ -76,13 +77,14 @@ static int delay_for_HRDY_ready(int timeout)
 
 static int send_init_code()
 {
-	short readval;
+	uint16_t readval;
+
 	if (epson_loadEpsonCode(EPSON_CODE_PATH) < 0)
 		return -EIO;
 
 	epson_reg_read(CMD_SEQ_AUTOBOOT_CMD_REG, &readval);
 	if ((readval & BF_INIT_CODE_CHECKSUM) == INIT_CODE_CHECKSUM_ERROR) {
-		printk(KERN_ERR "541: init code checksum error\n");
+		LOG("init code checksum error");
 		return -EIO;
 	}
 
@@ -91,40 +93,39 @@ static int send_init_code()
 
 static int send_waveform(void)
 {
-	int retval = 0;
-	short readval = 0;
+	uint16_t readval;
+	int stat;
 
 	if (epson_loadEpsonWaveform(WAVEFORM_PATH, WAVEFORM_ADDRESS) < 0)
 		return -EIO;
 
-	retval = delay_for_HRDY_ready(TIMEOUT_MS);
-	if (retval != 0) {
-		printk(KERN_ERR "541: failed to send waveform\n");
-		goto end;
+	stat = delay_for_HRDY_ready(TIMEOUT_MS);
+
+	if (stat) {
+		LOG("failed to send waveform");
+		return stat;
 	}
 
 	epson_reg_read(DISPLAY_INT_RAW_STAT_REG, &readval);
 
-	if ((readval & INT_WF_INVALID_FORMAT) != 0) {
-		printk(KERN_ERR "541: invalid waveform format\n");
-		retval = -EIO;
-	}
-	if ((readval & INT_WF_CHECKSUM_ERROR) != 0) {
-		printk(KERN_ERR "541: waveform checksum error\n");
-		retval = -EIO;
-	}
-	if ((readval & INT_WF_OVERFLOW) != 0) {
-		printk(KERN_ERR "541: waveform overflow\n");
-		retval = -EIO;
+	if (readval & INT_WF_INVALID_FORMAT) {
+		LOG("invalid waveform format");
+		return -EIO;
 	}
 
-end:
-	return retval;
+	if (readval & INT_WF_CHECKSUM_ERROR) {
+		LOG("waveform checksum error");
+		return -EIO;
+	}
+
+	if (readval & INT_WF_OVERFLOW) {
+		LOG("waveform overflow");
+		return -EIO;
+	}
+
+	return 0;
 }
 
-/* initialise the pixel buffer but do not drive the display
- *
- */
 int s1d13541_init_display(struct s1d135xx *epson)
 {
 	assert(epson);
@@ -137,8 +138,7 @@ int s1d13541_init_display(struct s1d135xx *epson)
 	return 0;
 }
 
-/* Update the display using the specified waveform
- */
+/* Update the full display using the specified waveform */
 int s1d13541_update_display(struct s1d135xx *epson, int waveform)
 {
 	assert(epson);
@@ -155,14 +155,14 @@ int s1d13541_update_display(struct s1d135xx *epson, int waveform)
 	return 0;
 }
 
-/* Initialise the 541 controller and leave it in a state ready to do updates
- */
-int s1d13541_init_start(screen_t screen, screen_t *previous, struct s1d135xx **controller)
+/* Initialise the controller and leave it in a state ready to do updates */
+int s1d13541_init_start(screen_t screen, screen_t *previous,
+			struct s1d135xx **controller)
 {
-	int retval = 0;
 	struct s1d135xx *epson;
 
-	*controller = epson = (struct s1d135xx *)malloc(sizeof(struct s1d135xx));
+	LOG("sizeof(temp_mode): %lu", sizeof(enum s1d135xx_pwr_state));
+	*controller = epson = malloc(sizeof(struct s1d135xx));
 	if (NULL == epson)
 		return -ENOMEM;
 
@@ -176,15 +176,15 @@ int s1d13541_init_start(screen_t screen, screen_t *previous, struct s1d135xx **c
 	epson->power_mode = PWR_STATE_UNDEFINED;
 
 	if (epsonif_claim(0, screen, previous) < 0)
-		retval = -EIO;
+		return -EIO;
 
-	return retval;
+	return 0;
 }
 
 int s1d13541_init_prodcode(struct s1d135xx *epson)
 {
 	int retval = 0;
-	short product;
+	uint16_t product;
 
 	assert(epson);
 
@@ -353,13 +353,16 @@ int s1d13541_send_waveform(void)
 	return send_waveform();
 }
 
-int s1d13541_send_waveform_eeprom(struct s1d135xx *epson, struct i2c_eeprom *plwf_eeprom, struct plwf_data *plwf_data)
+int s1d13541_send_waveform_eeprom(struct s1d135xx *epson,
+				  struct i2c_eeprom *plwf_eeprom,
+				  struct plwf_data *plwf_data)
 {
 	int retval = 0;
 
 	assert(epson);
 
-	retval = plwf_load_waveform(epson, plwf_eeprom, plwf_data, WAVEFORM_ADDRESS);
+	retval = plwf_load_waveform(epson, plwf_eeprom, plwf_data,
+				    WAVEFORM_ADDRESS);
 
 	if (retval != 0)
 		printk(KERN_ERR "541: Waveform load from EEPROM failed\n");
@@ -368,10 +371,10 @@ int s1d13541_send_waveform_eeprom(struct s1d135xx *epson, struct i2c_eeprom *plw
 }
 
 
-/* Configure controller for specified temperature mode */
-int s1d13541_set_temperature_mode(struct s1d135xx *epson, short temp_mode)
+int s1d13541_set_temperature_mode(struct s1d135xx *epson,
+				  enum s1d135xx_temp_mode temp_mode)
 {
-	short reg;
+	uint16_t reg;
 
 	assert(epson);
 
@@ -401,43 +404,48 @@ int s1d13541_set_temperature_mode(struct s1d135xx *epson, short temp_mode)
 	/* Configure the controller to check for waveform update after temperature sense
 	 */
 	epson_reg_read(REG_WAVEFORM_DECODER_BYPASS, &reg);
-	epson_reg_write(REG_WAVEFORM_DECODER_BYPASS, (reg | AUTO_TEMP_JUDGE_ENABLE));
+	epson_reg_write(REG_WAVEFORM_DECODER_BYPASS,
+			(reg | AUTO_TEMP_JUDGE_ENABLE));
 
 	return 0;
 }
 
-int s1d13541_set_temperature(struct s1d135xx *epson, s8 temp)
+int s1d13541_set_temperature(struct s1d135xx *epson, int8_t temp)
 {
 	assert(epson);
 
 	epson->temp_set = temp;
+
 	return 0;
 }
 
-int s1d13541_get_temperature(struct s1d135xx *epson, s8 *temp)
+int s1d13541_get_temperature(struct s1d135xx *epson, int8_t *temp)
 {
 	assert(epson);
 
 	*temp = epson->temp_measured;
+
 	return 0;
 }
 
 #define	GENERIC_TEMP_CONF_REG	0x057E
 #define	DISPLAY_INT_WAVEFORM_UPDATE	0x4000
 
-static void measured_temp(short temp_reg, u8 *needs_update, s8 *measured)
+static void measured_temp(uint16_t temp_reg, uint8_t *needs_update,
+			  int8_t *measured)
 {
-	short reg;
+	uint16_t reg;
 
 	epson_reg_read(DISPLAY_INT_RAW_STAT_REG, &reg);
-	epson_reg_write(DISPLAY_INT_RAW_STAT_REG, DISPLAY_INT_WAVEFORM_UPDATE | DISPLAY_INT_TEMP_OUT_OF_RANGE);
+	epson_reg_write(DISPLAY_INT_RAW_STAT_REG,
+			(DISPLAY_INT_WAVEFORM_UPDATE |
+			 DISPLAY_INT_TEMP_OUT_OF_RANGE));
 	*needs_update = (reg & DISPLAY_INT_WAVEFORM_UPDATE) ? 1 : 0;
 
 	epson_reg_read(temp_reg, &reg);
-	*measured = (s8)(reg & 0x00ff);
+	*measured = (reg & 0x00ff);
 }
 
-/* measure temperature using specified mode */
 int s1d13541_measure_temperature(struct s1d135xx *epson, u8 *needs_update)
 {
 	s8 temp_measured;
@@ -451,21 +459,25 @@ int s1d13541_measure_temperature(struct s1d135xx *epson, u8 *needs_update)
 		return -1;
 
 	case TEMP_MODE_MANUAL:
-		// apply manually specified temperature
-		epson_reg_write(GENERIC_TEMP_CONF_REG, 0xC000 | (epson->temp_set & 0x00ff));
+		/* apply manually specified temperature */
+		epson_reg_write(GENERIC_TEMP_CONF_REG,
+				0xC000 | (epson->temp_set & 0x00ff));
 		epson_wait_for_idle();
-		measured_temp(GENERIC_TEMP_CONF_REG, needs_update, &temp_measured);
+		measured_temp(GENERIC_TEMP_CONF_REG, needs_update,
+			      &temp_measured);
 		break;
+
 	case TEMP_MODE_EXTERNAL:
-		// check temperature sensor is configured
+		/* check temperature sensor is configured */
 		epson_mode_standby(epson);
 		epson_cmd_p0(RD_TEMP);
 		epson_wait_for_idle();
 		epson_mode_run(epson);
 		measured_temp(0x0216, needs_update, &temp_measured);
 		break;
+
 	case TEMP_MODE_INTERNAL:
-		// use the internal temperature sensor
+		/* use the internal temperature sensor */
 		epson_mode_standby(epson);
 		epson_cmd_p0(RD_TEMP);
 		epson_wait_for_idle();

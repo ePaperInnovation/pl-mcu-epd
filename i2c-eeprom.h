@@ -27,11 +27,13 @@
 #define I2C_EEPROM_H_
 
 struct i2c_eeprom;
+struct i2c_adapter;
 
 #define	EEPROM_24LC014	0
 #define	EEPROM_24AA256	1
 
-int eeprom_init(struct i2c_adapter *i2c, u8 i2c_addr, u8 type, struct i2c_eeprom **eeprom);
+int eeprom_init(struct i2c_adapter *i2c, u8 i2c_addr, u8 type,
+		struct i2c_eeprom **eeprom);
 int eeprom_read(struct i2c_eeprom *eeprom, u16 address, u16 count, void *data);
 int eeprom_write(struct i2c_eeprom *eeprom, u16 address, u16 count, void *data);
 

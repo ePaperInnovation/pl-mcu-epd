@@ -24,16 +24,18 @@
  */
 
 #ifndef S1D135XX_H_
-#define S1D135XX_H_
+#define S1D135XX_H_ 1
 
-enum {
+#include <stdint.h>
+
+enum s1d135xx_pwr_state {
 	PWR_STATE_UNDEFINED = 0,
 	PWR_STATE_SLEEP,
 	PWR_STATE_STANDBY,
 	PWR_STATE_RUN
 };
 
-enum {
+enum s1d135xx_temp_mode {
 	TEMP_MODE_UNDEFINED = 0,
 	TEMP_MODE_MANUAL,
 	TEMP_MODE_INTERNAL,
@@ -41,17 +43,17 @@ enum {
 };
 
 struct s1d135xx {
-	short id;
+	uint16_t id;
 	screen_t screen;
-	int power_mode;
-	short xres;
-	short yres;
-	u16 keycode1;
-	u16 keycode2;
+	enum s1d135xx_pwr_state power_mode;
+	uint16_t xres;
+	uint16_t yres;
+	uint16_t keycode1;
+	uint16_t keycode2;
 
-	u8 temp_mode;		/* temperature sensing mode */
-	s8 temp_measured;	/* last temp measured */
-	s8 temp_set;		/* last temp specificed */
+	enum s1d135xx_temp_mode temp_mode; /* temperature sensing mode */
+	int8_t temp_measured;	           /* last temp measured */
+	int8_t temp_set;		   /* last temp specificed */
 
 };
 
@@ -165,7 +167,6 @@ struct s1d135xx {
 #define WAVEFORM_DIRECT_MONO	1
 #define WAVEFORM_HIGH_QUALITY	2
 #define WAVEFORM_HIGH_SPEED		3
-
 
 int s1d135xx_select(struct s1d135xx *epson, screen_t *previous);
 int s1d135xx_deselect(struct s1d135xx *epson, screen_t previous);

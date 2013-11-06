@@ -117,7 +117,7 @@ int epson_i2c_init(struct s1d135xx *epson, struct i2c_adapter **i2c)
 static int epson_i2c_command(int cmd, int flags)
 {
 	int result = 0;
-	short stat;
+	uint16_t stat;
 
 	epson_reg_write(I2C_CMD_REG, (cmd | I2C_CMD_GO));
 
@@ -181,11 +181,12 @@ error:
 /*
  * Read bytes from specified device - optional start and stop
  */
-static int epson_i2c_read_bytes(struct i2c_adapter *i2c, u8 i2c_addr, u8 *data, u8 count, u8 flags)
+static int epson_i2c_read_bytes(struct i2c_adapter *i2c, u8 i2c_addr, u8 *data,
+				u8 count, u8 flags)
 {
 	screen_t previous;
-	short stat;
-	short cmd;
+	uint16_t stat;
+	uint16_t cmd;
 	int result = -EIO;
 	struct epson_i2c *p = (struct epson_i2c*)i2c;
 

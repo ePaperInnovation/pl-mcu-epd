@@ -29,6 +29,7 @@
 // include generic, cross controller definitions
 #include "S1D135xx.h"
 #include "plwf.h"
+#include <stdint.h>
 
 // Display Engine: Control/Trigger register
 #define DISPLAY_UPD_BUFF_CONF_REG			0x0330 // Panel Update Buffer Configuration register
@@ -47,26 +48,52 @@
 
 #define	AUTO_TEMP_JUDGE_ENABLE		0x0004	/* enable automatic temperature/waveform review */
 
-/* S1D13541 initialisation functions */
-int s1d13541_init_start(screen_t screen, screen_t *previous, struct s1d135xx **controller);
-int s1d13541_init_prodcode(struct s1d135xx *epson);
-int s1d13541_init_clock(struct s1d135xx *epson);
-int s1d13541_init_initcode(struct s1d135xx *epson);
-int s1d13541_init_pwrstate(struct s1d135xx *epson);
-int s1d13541_init_keycode(struct s1d135xx *epson);
-int s1d13541_init_waveform_sd(struct s1d135xx *epson);
-int s1d13541_init_waveform_eeprom(struct s1d135xx *epson, struct i2c_eeprom *plwf_eeprom, struct plwf_data *plwf_data);
-int s1d13541_init_gateclr(struct s1d135xx *epson);
-int s1d13541_init_end(struct s1d135xx *epson, screen_t previous);
+/* -- Initialisation -- */
 
-int s1d13541_init_display(struct s1d135xx *epson);
-int s1d13541_update_display(struct s1d135xx *epson, int waveform);
+extern int s1d13541_init_start(screen_t screen, screen_t *previous,
+			       struct s1d135xx **controller);
+extern int s1d13541_init_prodcode(struct s1d135xx *epson);
+extern int s1d13541_init_clock(struct s1d135xx *epson);
+extern int s1d13541_init_initcode(struct s1d135xx *epson);
+extern int s1d13541_init_pwrstate(struct s1d135xx *epson);
+extern int s1d13541_init_keycode(struct s1d135xx *epson);
+extern int s1d13541_init_waveform_sd(struct s1d135xx *epson);
+extern int s1d13541_init_waveform_eeprom(struct s1d135xx *epson,
+					 struct i2c_eeprom *plwf_eeprom,
+					 struct plwf_data *plwf_data);
+extern int s1d13541_init_gateclr(struct s1d135xx *epson);
+extern int s1d13541_init_end(struct s1d135xx *epson, screen_t previous);
 
-int s1d13541_send_waveform(void);
 
-int s1d13541_set_temperature_mode(struct s1d135xx *epson, short temp_mode);
-int s1d13541_set_temperature(struct s1d135xx *epson, s8 temp);
-int s1d13541_get_temperature(struct s1d135xx *epson, s8 *temp);
-int s1d13541_measure_temperature(struct s1d135xx *epson, u8 *needs_update);
+/* -- Display updates -- */
+
+/* Initialise the pixel buffer but do not drive the display */
+extern int s1d13541_init_display(struct s1d135xx *epson);
+extern int s1d13541_update_display(struct s1d135xx *epson, int waveform);
+
+
+/* -- Waveform management -- */
+
+extern int s1d13541_send_waveform(void);
+extern int s1d13541_send_waveform_eeprom(struct s1d135xx *epson,
+					 struct i2c_eeprom *plwf_eeprom,
+					 struct plwf_data *plwf_data);
+
+
+/* -- Temperature management -- */
+
+/* Configure controller for specified temperature mode */
+extern int s1d13541_set_temperature_mode(struct s1d135xx *epson,
+					 enum s1d135xx_temp_mode temp_mode);
+
+/* Set temperature for manual mode */
+extern int s1d13541_set_temperature(struct s1d135xx *epson, int8_t temp);
+
+/* Get last measured temperature */
+extern int s1d13541_get_temperature(struct s1d135xx *epson, int8_t *temp);
+
+/* Measure temperature using specified mode */
+extern int s1d13541_measure_temperature(struct s1d135xx *epson,
+					uint8_t *needs_update);
 
 #endif /* S1D13541_H_ */

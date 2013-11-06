@@ -52,7 +52,8 @@
 int s1d13524_init(screen_t screen, struct s1d135xx **epson);
 int s1d13524_update_display(struct s1d135xx *epson, int waveform);
 
-int s1d13524_set_temperature_mode(struct s1d135xx *epson, short temp_mode);
+int s1d13524_set_temperature_mode(struct s1d135xx *epson,
+				  enum s1d135xx_temp_mode temp_mode);
 int s1d13524_set_temperature(struct s1d135xx *epson, s8 temp);
 int s1d13524_get_temperature(struct s1d135xx *epson, s8 *temp);
 int s1d13524_measure_temperature(struct s1d135xx *epson);

@@ -35,7 +35,7 @@
 
 void dump_reg(short reg)
 {
-	short data;
+	uint16_t data;
 
 	epson_reg_read(reg, &data);
 	printk("524: Reg:0x%04x => 0x%04x\n", reg, data);
@@ -46,10 +46,10 @@ void dump_reg(short reg)
  */
 int s1d13524_init(screen_t screen, struct s1d135xx **controller)
 {
-	short PLLCFG0, PLLCFG1,PLLCFG2, PLLCFG3;
-	short WFadd1,WFadd0;
-	short rev, conf;
-	short readval;
+	uint16_t PLLCFG0, PLLCFG1,PLLCFG2, PLLCFG3;
+	uint16_t WFadd1,WFadd0;
+	uint16_t rev, conf;
+	uint16_t readval;
 	screen_t previous;
 	struct s1d135xx *epson;
 
@@ -100,7 +100,7 @@ int s1d13524_init(screen_t screen, struct s1d135xx **controller)
 
 	// Check that the controller code loaded correctly
 	epson_reg_read(CMD_SEQ_AUTOBOOT_CMD_REG, &readval);
-	if ((readval & (1 << 15)) == 0) {
+	if ((readval & (uint16_t)(1 << 15)) == 0) {
 		printk(KERN_ERR "524: Init code checksum error!\n");
 		return -EIO;
 	}
@@ -165,8 +165,8 @@ int s1d13524_init(screen_t screen, struct s1d135xx **controller)
 
 int s1d13524_update_display(struct s1d135xx *epson, int waveform)
 {
-	short reg0;
-	short reg1;
+	uint16_t reg0;
+	uint16_t reg1;
 
 	assert(epson);
 
@@ -190,7 +190,8 @@ int s1d13524_update_display(struct s1d135xx *epson, int waveform)
 }
 
 /* Configure controller for specified temperature mode */
-int s1d13524_set_temperature_mode(struct s1d135xx *epson, short temp_mode)
+int s1d13524_set_temperature_mode(struct s1d135xx *epson,
+				  enum s1d135xx_temp_mode temp_mode)
 {
 	assert(epson);
 
@@ -235,8 +236,8 @@ int s1d13524_get_temperature(struct s1d135xx *epson, s8 *temp)
 
 int s1d13524_measure_temperature(struct s1d135xx *epson)
 {
-	s8 temp_measured;
-	short reg;
+	int8_t temp_measured;
+	uint16_t reg;
 
 	assert(epson);
 
@@ -249,7 +250,7 @@ int s1d13524_measure_temperature(struct s1d135xx *epson)
 		break;
 	case TEMP_MODE_EXTERNAL:
 		epson_reg_read(0x0216, &reg);
-		temp_measured = (s8)(reg & 0x00ff);
+		temp_measured = (reg & 0x00ff);
 		break;
 	case TEMP_MODE_INTERNAL:
 	case TEMP_MODE_UNDEFINED:

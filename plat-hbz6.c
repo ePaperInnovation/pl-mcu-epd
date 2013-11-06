@@ -249,7 +249,8 @@ static int show_image(char *image, void *arg)
 #if CONFIG_WF_ON_SD_CARD
 		s1d13541_send_waveform();
 #else
-		eeprom_init(i2c, I2C_EEPROM_PLWF_DATA, EEPROM_24AA256, &plwf_eeprom);
+		eeprom_init(i2c, I2C_EEPROM_PLWF_DATA, EEPROM_24AA256,
+			    &plwf_eeprom);
 		plwf_data_init(&plwf_data);
 		s1d13541_send_waveform_eeprom(epson, plwf_eeprom, plwf_data);
 		plwf_data_free(&plwf_data);

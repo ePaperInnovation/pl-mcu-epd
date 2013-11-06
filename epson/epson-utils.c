@@ -93,7 +93,8 @@ int epson_mode_run(struct s1d135xx *epson)
  */
 int epson_power_up()
 {
-	short temp;
+	uint16_t temp;
+
 	epson_wait_for_idle();
 	epson_reg_write(PWR_CTRL_REG, 0x8001);
 
@@ -114,7 +115,8 @@ int epson_power_up()
  */
 int epson_power_down()
 {
-	short temp;
+	uint16_t temp;
+
 	epson_wait_for_idle();
 	epson_reg_write(PWR_CTRL_REG, 0x8002);
 

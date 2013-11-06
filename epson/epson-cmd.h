@@ -29,6 +29,7 @@
 #include <msp430.h>
 #include "epson-if.h"
 #include "msp430-spi.h"
+#include <stdint.h>
 
 /* we could decorate the commands with bits to indicate that a wait should
  * be performed pre/post command issue. Would save a lot of calls to
@@ -43,23 +44,25 @@
 // function prototypes
 void epson_init_comm(void);
 void epson_close_comm(void);
-int epson_cmd_p0(short command);
-int epson_cmd_p1(short command, short p1);
-int epson_cmd_p2(short command, short p1, short p2);
-int epson_cmd_p3(short command, short p1, short p2, short p3);
-int epson_cmd_p4(short command, short p1, short p2, short p3, short p4);
-int epson_cmd_p5(short command, short p1, short p2, short p3, short p4, short p5);
+int epson_cmd_p0(uint16_t command);
+int epson_cmd_p1(uint16_t command, uint16_t p1);
+int epson_cmd_p2(uint16_t command, uint16_t p1, uint16_t p2);
+int epson_cmd_p3(uint16_t command, uint16_t p1, uint16_t p2, uint16_t p3);
+int epson_cmd_p4(uint16_t command, uint16_t p1, uint16_t p2, uint16_t p3,
+		 uint16_t p4);
+int epson_cmd_p5(uint16_t command, uint16_t p1, uint16_t p2, uint16_t p3,
+		 uint16_t p4, uint16_t p5);
 
-int epson_begin_bulk_code_transfer(short command);
-int epson_begin_bulk_transfer(short command);
-int epson_bulk_transfer_word(short data);
+int epson_begin_bulk_code_transfer(uint16_t command);
+int epson_begin_bulk_transfer(uint16_t command);
+int epson_bulk_transfer_word(uint16_t data);
 int epson_bulk_transfer_raw_data(u8 *buffer, size_t length);
 int epson_end_bulk_transfer(void);
 
 int epson_is_busy(void);
 void epson_wait_for_idle(void);
-void epson_wait_for_idle_mask(short mask, short result);
-int epson_reg_read(short reg, short* value);
-int epson_reg_write(short reg, short value);
+void epson_wait_for_idle_mask(uint16_t mask, uint16_t result);
+int epson_reg_read(uint16_t reg, uint16_t* value);
+int epson_reg_write(uint16_t reg, uint16_t value);
 
 #endif /* EPSON_CMD_H_ */

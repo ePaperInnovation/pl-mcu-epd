@@ -58,12 +58,12 @@
 static u32 total;
 static u16 rate_limit;
 static u8  print_first_n;			// false when first N printed
-static short last_n[DEBUG_LAST_N];
+static uint16_t last_n[DEBUG_LAST_N];
 #endif
 
 // idle = ((status & mask) == result)
-static short idle_mask = 0xffff;	// default value will result in busy loop
-static short idle_result = 0x0000;	//
+static uint16_t idle_mask = 0xffff;	// default value will result in busy loop
+static uint16_t idle_result = 0x0000;	//
 
 #if 0
 // later if we add wait decoration to command codes.
@@ -88,7 +88,7 @@ int epson_deselect_screen(int wait)
 }
 #endif
 
-static int sendCmd(short command)
+static int sendCmd(uint16_t command)
 {
 	endianess x;
 
@@ -101,7 +101,7 @@ static int sendCmd(short command)
 	return 0;
 }
 
-static int sendParam(short param)
+static int sendParam(uint16_t param)
 {
 	endianess x;
 
@@ -111,7 +111,7 @@ static int sendParam(short param)
 	return 0;
 }
 
-int epson_cmd_p0(short command)
+int epson_cmd_p0(uint16_t command)
 {
 #if	DEBUG_SPI_CMDS
 	printk("[{0x%04x}]\n", command);
@@ -123,7 +123,7 @@ int epson_cmd_p0(short command)
 	return 0;
 }
 
-int epson_cmd_p1(short command, short p1)
+int epson_cmd_p1(uint16_t command, uint16_t p1)
 {
 #if	DEBUG_SPI_CMDS
 	printk("[{0x%04x}, (0x%04x)]\n", command, p1);
@@ -135,7 +135,7 @@ int epson_cmd_p1(short command, short p1)
 	return 0;
 }
 
-int epson_cmd_p2(short command, short p1, short p2)
+int epson_cmd_p2(uint16_t command, uint16_t p1, uint16_t p2)
 {
 #if	DEBUG_SPI_CMDS
 	printk("[{0x%04x}, (0x%04x), (0x%04x)]\n", command, p1, p2);
@@ -148,10 +148,11 @@ int epson_cmd_p2(short command, short p1, short p2)
 	return 0;
 }
 
-int epson_cmd_p3(short command, short p1, short p2, short p3)
+int epson_cmd_p3(uint16_t command, uint16_t p1, uint16_t p2, uint16_t p3)
 {
 #if	DEBUG_SPI_CMDS
-	printk("[{0x%04x}, (0x%04x), (0x%04x), (0x%04x)]\n", command, p1, p2, p3);
+	printk("[{0x%04x}, (0x%04x), (0x%04x), (0x%04x)]\n",
+	       command, p1, p2, p3);
 #endif
 	epsonif_select_epson();
 	sendCmd(command);
@@ -162,10 +163,12 @@ int epson_cmd_p3(short command, short p1, short p2, short p3)
 	return 0;
 }
 
-int epson_cmd_p4(short command, short p1, short p2, short p3, short p4)
+int epson_cmd_p4(uint16_t command, uint16_t p1, uint16_t p2, uint16_t p3,
+		 uint16_t p4)
 {
 #if	DEBUG_SPI_CMDS
-	printk("[{0x%04x}, (0x%04x), (0x%04x), (0x%04x), (0x%04x)]\n", command, p1, p2, p3, p4);
+	printk("[{0x%04x}, (0x%04x), (0x%04x), (0x%04x), (0x%04x)]\n",
+	       command, p1, p2, p3, p4);
 #endif
 	epsonif_select_epson();
 	sendCmd(command);
@@ -177,10 +180,12 @@ int epson_cmd_p4(short command, short p1, short p2, short p3, short p4)
 	return 0;
 }
 
-int epson_cmd_p5(short command, short p1, short p2, short p3, short p4, short p5)
+int epson_cmd_p5(uint16_t command, uint16_t p1, uint16_t p2, uint16_t p3,
+		 uint16_t p4, uint16_t p5)
 {
 #if	DEBUG_SPI_CMDS
-	printk("[{0x%04x}, (0x%04x), (0x%04x), (0x%04x), (0x%04x), (0x%04x)]\n", command, p1, p2, p3, p4, p5);
+	printk("[{0x%04x}, (0x%04x), (0x%04x), (0x%04x), (0x%04x), (0x%04x)]\n",
+	       command, p1, p2, p3, p4, p5);
 #endif
 	epsonif_select_epson();
 	sendCmd(command);
@@ -193,7 +198,7 @@ int epson_cmd_p5(short command, short p1, short p2, short p3, short p4, short p5
 	return 0;
 }
 
-int epson_begin_bulk_code_transfer(short command)
+int epson_begin_bulk_code_transfer(uint16_t command)
 {
 #if	DEBUG_SPI_CMDS
 	total = 0;
@@ -205,7 +210,7 @@ int epson_begin_bulk_code_transfer(short command)
 	return sendCmd(command);
 }
 
-int epson_begin_bulk_transfer(short reg)
+int epson_begin_bulk_transfer(uint16_t reg)
 {
 #if	DEBUG_SPI_CMDS
 	total = 0;
@@ -222,7 +227,7 @@ int epson_begin_bulk_transfer(short reg)
 /* write word to the SPI interface. Data is assumed to be in cpu endianess
  * format. BeginBulkTransfer() must have been called first
  */
-int epson_bulk_transfer_word(short data)
+int epson_bulk_transfer_word(uint16_t data)
 {
 #if	DEBUG_SPI_CMDS
 	total++;
@@ -262,7 +267,7 @@ int epson_end_bulk_transfer()
 	return 0;
 }
 
-int epson_reg_read(short reg, short* value)
+int epson_reg_read(uint16_t reg, uint16_t* value)
 {
 	int ret;
 	endianess x;
@@ -286,7 +291,7 @@ int epson_reg_read(short reg, short* value)
 	return ret;
 }
 
-int epson_reg_write(short reg, short value)
+int epson_reg_write(uint16_t reg, uint16_t value)
 {
 	return epson_cmd_p2(WR_REG, reg, value);
 }
@@ -294,7 +299,7 @@ int epson_reg_write(short reg, short value)
 int epson_is_busy()
 {
 	int ret = 0;
-	short status = 0;
+	uint16_t status = 0;
 
 #if SPI_HRDY_USED
 	// Check the status of the HRDY pin if we are using it
@@ -320,7 +325,7 @@ int epson_is_busy()
 	return ret;
 }
 
-void epson_wait_for_idle_mask(short mask, short result)
+void epson_wait_for_idle_mask(uint16_t mask, uint16_t result)
 {
 	idle_mask = mask;
 	idle_result = result;
