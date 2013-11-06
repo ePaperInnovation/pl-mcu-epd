@@ -46,4 +46,8 @@
 /** Use the I2C master bus from the Epson controller (either -524 or -541) */
 #define	CONFIG_I2C_ON_EPSON     0
 
+/** Load the waveform data from the SD card when set to 1, or from the display
+ * EEPROM when set to 0 (standard behaviour) */
+#define CONFIG_WF_ON_SD_CARD	0
+
 #endif /* INCLUDE_CONFIG_H */

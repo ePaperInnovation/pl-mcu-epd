@@ -48,8 +48,6 @@
 #define PLWF_INFO_CRC_OFFS 0x122
 #define PLWF_WF_OFFS 0x124
 
-#define CONFIG_WF_ON_SD_CARD	0
-
 struct __attribute__((__packed__)) plwf_vermagic {
 	uint32_t magic;
 	uint16_t version;
