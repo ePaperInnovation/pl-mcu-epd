@@ -25,29 +25,13 @@
 
 #include "assert.h"
 #include "types.h"
-#include "main.h"
+#include "config.h"
 #include "FatFs/ff.h"
 #include "plat-hbz13.h"
 #include "plat-cuckoo.h"
 #include "plat-hbz6.h"
 #include "plat-raven.h"
 #include "plat-ruddock2.h"
-
-/* Select one of the platforms below, and if necessary a display type
- */
-#define PLAT_CUCKOO				0	// 524 controller, 10.7" Type-4
-#define PLAT_RAVEN				0	// 524 controller, 10.7" Type-11
-
-/* These platforms can drive a range of small displays as defined below */
-#define	PLAT_Z13				0	// 541 controller, small display
-#define PLAT_Z6					0 	// 541 controller, small display
-//#define	CONFIG_DISPLAY_TYPE		"0:/Type-16"
-//#define	CONFIG_DISPLAY_TYPE		"0:/Type-18"
-
-#define PLAT_Z7					0 	// 541 controller, small display
-//#define	CONFIG_DISPLAY_TYPE		"0:/Type-19"
-
-#define	CONFIG_I2C_ON_EPSON		0
 
 // global file system information used by FatFs
 static FATFS Sd_Card;
