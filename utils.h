@@ -24,6 +24,13 @@
 #include "FatFs/ff.h"
 #include <stdint.h>
 
+#ifdef LOG_TAG
+#define LOG(msg, ...) \
+	do { printf("%-8s: "msg"\n", LOG_TAG, ##__VA_ARGS__); } while (0)
+#else
+#define LOG(msg, ...)
+#endif
+
 /* -- Lightweight string parser -- */
 
 /** Return the offset of the first occurence of any sep characters in str if
