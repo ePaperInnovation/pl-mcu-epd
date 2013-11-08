@@ -29,7 +29,7 @@
 // include generic, cross controller definitions
 #include "S1D135xx.h"
 #include "plwf.h"
-#include <stdint.h>
+#include "types.h"
 
 // Display Engine: Control/Trigger register
 #define DISPLAY_UPD_BUFF_CONF_REG			0x0330 // Panel Update Buffer Configuration register
@@ -50,6 +50,7 @@
 
 /* -- Initialisation -- */
 
+/* Initialise the controller and leave it in a state ready to do updates */
 extern int s1d13541_init_start(screen_t screen, screen_t *previous,
 			       struct s1d135xx **controller);
 extern int s1d13541_init_prodcode(struct s1d135xx *epson);
@@ -69,8 +70,16 @@ extern int s1d13541_init_end(struct s1d135xx *epson, screen_t previous);
 
 /* Initialise the pixel buffer but do not drive the display */
 extern int s1d13541_init_display(struct s1d135xx *epson);
+
+/* Start to update the full display with a given waveform */
 extern int s1d13541_update_display(struct s1d135xx *epson, int waveform);
 
+/* Start to update an area of the display with a given waveform */
+extern int s1d13541_update_display_area(struct s1d135xx *epson, int waveform,
+					const struct area *area);
+
+/* Wait for the current display update (full or area) to end */
+extern int s1d13541_wait_update_end(struct s1d135xx *epson);
 
 /* -- Waveform management -- */
 

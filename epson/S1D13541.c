@@ -138,7 +138,6 @@ int s1d13541_init_display(struct s1d135xx *epson)
 	return 0;
 }
 
-/* Update the full display using the specified waveform */
 int s1d13541_update_display(struct s1d135xx *epson, int waveform)
 {
 	assert(epson);
@@ -149,13 +148,35 @@ int s1d13541_update_display(struct s1d135xx *epson, int waveform)
 	epson_cmd_p0(WAIT_DSPE_TRG);
 	epson_wait_for_idle();
 
+	return 0;
+}
+
+int s1d13541_update_display_area(struct s1d135xx *epson, int waveform,
+				 const struct area *area)
+{
+	assert(epson != NULL);
+
+	epson_cmd_p5(UPD_FULL_AREA, WAVEFORM_MODE(waveform),
+		     (area->left & S1D135XX_XMASK),
+		     (area->top & S1D135XX_YMASK),
+		     (area->width & S1D135XX_XMASK),
+		     (area->height & S1D135XX_YMASK));
+	epson_wait_for_idle();
+
+	epson_cmd_p0(WAIT_DSPE_TRG);
+	epson_wait_for_idle();
+
+	return 0;
+}
+
+int s1d13541_wait_update_end(struct s1d135xx *epson)
+{
 	epson_cmd_p0(WAIT_DSPE_FREND);
 	epson_wait_for_idle();
 
 	return 0;
 }
 
-/* Initialise the controller and leave it in a state ready to do updates */
 int s1d13541_init_start(screen_t screen, screen_t *previous,
 			struct s1d135xx **controller)
 {
