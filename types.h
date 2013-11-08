@@ -75,7 +75,7 @@ typedef union {
 	short command;
 	short data;
 	u8 bytes[2];
-} endianess;
+} endianess; /* Typo: endianness */
 
 typedef union {
 	u32 data32;
@@ -88,6 +88,12 @@ typedef union {
 extern u16 __bswap_16(u16 x);
 extern u32 __bswap_32(u32 x);
 
+struct area {
+	int left;
+	int top;
+	int width;
+	int height;
+};
 
 #if CPU_LITTLE_ENDIAN
 #define swap_bytes(_x_)	_swap_bytes((_x_))
@@ -167,9 +173,14 @@ int printf(const char *_format, ...);
 #error CPU_CLOCK_SPEED_IN_HZ assumed to be more than 1MHz in delay timer calculations
 #endif
 
+/* -- Sleep & delay -- */
+
 extern void udelay(u16 us);
 extern void mdelay(u16 ms);
 extern void msleep(u16 ms);
+
+
+/* -- Other display related utilities -- */
 
 extern int util_read_vcom(void);
 
