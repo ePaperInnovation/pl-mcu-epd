@@ -32,95 +32,47 @@
 #include "epson-cmd.h"
 #include "FatFs/ff.h"
 #include "S1D135xx.h"
+#include "utils.h"
 
-/* Reset the Epson controller over SPI
- */
-void epson_softReset()
-{
-	epson_reg_write(SOFT_RST_REG, 0xff);
-}
+#define LOG_TAG "epson"
 
-/* Place controller in Standby mode
- * Can still access registers and RAM
- */
-int epson_mode_standby(struct s1d135xx *epson)
-{
-	int ret = 0;
+/* Size of the buffer used for plain file transfers */
+#define FILE_BUFFER_SIZE 256
 
-	if (epson->power_mode != PWR_STATE_STANDBY) {
-		epson_wait_for_idle();
-		ret = epson_cmd_p0(STBY);
-		epson_wait_for_idle();
-		epson->power_mode = PWR_STATE_STANDBY;
-	}
-	return ret;
-}
+/* Size of the buffer used for image file transfers, must be able to hold a
+ * line worth of pixels */
+#define IMAGE_BUFFER_LENGTH 720
 
-/*
- * Place controller in Sleep mode.
- * Can only access few registers and bring out of sleep
- */
-int epson_mode_sleep(struct s1d135xx *epson)
-{
-	int ret = 0;
-
-	if (epson->power_mode != PWR_STATE_SLEEP) {
-		epson_wait_for_idle();
-		ret = epson_cmd_p0(SLP);
-		epson_wait_for_idle();
-		epson->power_mode = PWR_STATE_SLEEP;
-	}
-	return ret;
-}
-
-/* Place controller in Run state. Display updates possible.
- */
-int epson_mode_run(struct s1d135xx *epson)
-{
-	int ret = 0;
-
-	if (epson->power_mode != PWR_STATE_RUN) {
-		epson_wait_for_idle();
-		ret = epson_cmd_p0(RUN_SYS);
-		epson_wait_for_idle();
-		epson->power_mode = PWR_STATE_RUN;
-	}
-	return ret;
-}
-
-/***********************************************************************
- * Powerup the display power supplies using Epson power control pins
- */
-int epson_power_up()
+int epson_power_up(void)
 {
 	uint16_t temp;
 
 	epson_wait_for_idle();
 	epson_reg_write(PWR_CTRL_REG, 0x8001);
 
-	// wait for powerup sequence to complete
+	/* wait for powerup sequence to complete */
 	do {
 		epson_reg_read(PWR_CTRL_REG, &temp);
 	} while (temp & 0x0080);
-	// check PWRSTAT is good, PWR0 asserted
+
+	/* check PWRSTAT is good, PWR0 asserted */
 	if ((temp & 0x2200) != 0x2200) {
-		printk("e_p_o: 0x%04x\n", temp);
+		LOG("e_p_o: 0x%04x", temp);
 	}
+
 	assert((temp & 0x2200) == 0x2200);
+
 	return 0;
 }
 
-/***********************************************************************
- * Powerdown the display power supplies using Epson power control pins
- */
-int epson_power_down()
+int epson_power_down(void)
 {
 	uint16_t temp;
 
 	epson_wait_for_idle();
 	epson_reg_write(PWR_CTRL_REG, 0x8002);
 
-	// wait for power down sequence to complete
+	/* wait for power down sequence to complete */
 	do {
 		epson_reg_read(PWR_CTRL_REG, &temp);
 	} while (temp & 0x0080);
@@ -128,10 +80,48 @@ int epson_power_down()
 	return 0;
 }
 
+void epson_softReset(void)
+{
+	epson_reg_write(SOFT_RST_REG, 0xff);
+}
+
+static int set_power_mode(struct s1d135xx *e, enum s1d135xx_pwr_state mode)
+{
+	static const u8 pwr_cmds[3] = { SLP, STBY, RUN_SYS };
+	int ret;
+
+	if (e->power_mode == mode)
+		return 0;
+
+	assert(mode < ARRAY_SIZE(pwr_cmds));
+
+	epson_wait_for_idle();
+	ret = epson_cmd_p0(pwr_cmds[mode]);
+	epson_wait_for_idle();
+	e->power_mode = mode;
+
+	return ret;
+}
+
+int epson_mode_standby(struct s1d135xx *epson)
+{
+	return set_power_mode(epson, PWR_STATE_STANDBY);
+}
+
+int epson_mode_sleep(struct s1d135xx *epson)
+{
+	return set_power_mode(epson, PWR_STATE_SLEEP);
+}
+
+int epson_mode_run(struct s1d135xx *epson)
+{
+	return set_power_mode(epson, PWR_STATE_RUN);
+}
+
 /* Copy a byte stream to the controller as words.
  * Need to sort out swap requirements.
  */
-int pack_4bpp(endianess *in, endianess *out, int in_count)
+static int pack_4bpp(endianess *in, endianess *out, int in_count)
 {
 	while (in_count > 0) {
 		out->bytes[0] = (in[0].bytes[1] & 0xf0) | (in[0].bytes[0] >> 4);
@@ -143,60 +133,93 @@ int pack_4bpp(endianess *in, endianess *out, int in_count)
 	return 0;
 }
 
-#define BUFF_SIZE		(256 & ~3)
-static endianess data[BUFF_SIZE];
-static int transfer_file(FIL *file, int swap, int pack)
+static int read_file_data(FIL *file, endianess *data, size_t length,
+			  size_t *count, int swap, int pack)
 {
-	int result;
-	UINT count;
-	UINT i;
+	if (f_read(file, data, length, count) != FR_OK)
+		return -1;
 
-	result = -EIO;
-	while (1) {
-		if (f_read(file,data[0].bytes,sizeof(data),&count) != FR_OK)
-			goto read_error;
+	/* read count of 0 with no error is end of file */
+	if (!(*count))
+		return 0;
 
-		// read count of 0 with no error is end of file.
-		if (count == 0)
-			break;
+	/* if we read an odd number of bytes make it even to flush it out */
+	if ((*count) & 1)
+		*count++;
 
-		// if we read an odd number of bytes make it even to flush it out.
-		if (count & 1)
-			count++;
-
-		if (pack) {
-			pack_4bpp(data, data, (count / 2));
-			// amount of data to be output has halved
-			count /= 2;
-		}
-
-		for (i = 0; i < (count/2); i++)
-		{
-			if (swap) {
-				data[i].data = swap_bytes(data[i].data);
-			}
-			epson_bulk_transfer_word(data[i].data);
-		}
+	if (pack) {
+		*count /= 2;
+		pack_4bpp(data, data, *count);
 	}
 
-	result = 0;
+	if (swap) {
+		const size_t n = *count / 2;
+		size_t i;
 
-read_error:
+		for (i = 0; i < n; ++i)
+			data[i].data = swap_bytes(data[i].data);
+	}
 
-	return result;
+	return 0;
 }
 
+static int transfer_data(const endianess *data, size_t n)
+{
+	size_t i;
 
-/***************************************************************************************
- * Load the Epson configuration data. The file supplied by Epson is in the correct
- * format to be loaded directly so we do not need to worry about cpu endianess.
- ***************************************************************************************/
+	for (i = 0; i < n; ++i)
+		epson_bulk_transfer_word(data[i].data);
+
+	return 0;
+}
+
+static int transfer_file(FIL *f, int swap, int pack)
+{
+	endianess data[FILE_BUFFER_SIZE];
+	size_t count;
+
+	do {
+		if (read_file_data(f, data, sizeof(data), &count, swap, pack))
+			return -1;
+
+		transfer_data(data, count / 2);
+	} while (count);
+
+	return 0;
+}
+
+static int transfer_image(FIL *f, int swap, int pack,
+			  const struct area *area, int left, int top,
+			  int img_width)
+{
+	const size_t offset = left / 2;
+	const size_t length = area->width / 2;
+	endianess data[IMAGE_BUFFER_LENGTH / 2]; /* ToDo: make it dynamic */
+	size_t count;
+	int line;
+
+	if (img_width > IMAGE_BUFFER_LENGTH) {
+		LOG("Image width is bigger than buffer size: %d, max=%d",
+		    img_width, IMAGE_BUFFER_LENGTH);
+		return -1;
+	}
+
+	f_lseek(f, f->fptr + (top * img_width));
+
+	for (line = area->height; line; --line) {
+		if (read_file_data(f, data, img_width, &count, swap, pack))
+			return -1;
+
+		transfer_data(&data[offset], length);
+	}
+
+	return 0;
+}
+
 int epson_loadEpsonCode(char *code_path)
 {
 	FIL ControllerCode;
 	int result;
-
-	printk("Load controller code\n");
 
 	if (f_open(&ControllerCode, code_path, FA_READ) != FR_OK)
 		return (-ENOENT);
@@ -214,13 +237,9 @@ int epson_loadEpsonCode(char *code_path)
 	return result;
 }
 
-/* Bulk transfer a file to the epson. The data is asssumed to be in cpu
- * endianess and may need swapping.
- */
 int epson_BulkTransferFile(FIL *file, int pack)
 {
 	int result;
-	result = -ENOENT;
 
 	epson_wait_for_idle();
 	epson_begin_bulk_transfer(HOST_MEM_PORT_REG);
@@ -231,12 +250,26 @@ int epson_BulkTransferFile(FIL *file, int pack)
 	return result;
 }
 
-int epson_loadEpsonWaveform(char *path, u32 address)
+int epson_BulkTransferImage(FIL *file, int pack, const struct area *area,
+			    int left, int top, int width)
+{
+	int result;
+
+	epson_wait_for_idle();
+	epson_begin_bulk_transfer(HOST_MEM_PORT_REG);
+	result = transfer_image(file, false, pack, area, left, top, width);
+	epson_end_bulk_transfer();
+	epson_wait_for_idle();
+
+	return result;
+}
+
+int epson_loadEpsonWaveform(char *path, uint32_t address)
 {
 	FIL File;
-	u32 file_size;
+	uint32_t file_size;
 
-	printk("Load Waveform From SD Card\n");
+	LOG("Load Waveform From SD Card\n");
 
 	if (f_open(&File, path, FA_READ) != FR_OK)
 		return (-ENOENT);
@@ -263,10 +296,8 @@ int epson_loadEpsonWaveform(char *path, u32 address)
 	return 0;
 }
 
-void epson_WaveformStreamInit(u32 address)
+void epson_WaveformStreamInit(uint32_t address)
 {
-	//u32 addr = 0x00080000L;
-
 	epson_wait_for_idle();
 	epson_cmd_p4(BST_WR_SDR,
 		(address & 0x0ffff), ((address >> 16) & 0x0ffff), 64000, 64000);
@@ -278,17 +309,17 @@ void epson_WaveformStreamInit(u32 address)
 static int eep_count = 0;
 #endif
 
-void epson_WaveformStreamTransfer(u8 *buffer, size_t len)
+void epson_WaveformStreamTransfer(uint8_t *buffer, size_t len)
 {
 	int i;
 	int swap = 1;
-	short word;
-	u16 *buffer16 = (u16*)buffer;
+	uint16_t word;
+	uint16_t *buffer16 = (uint16_t*)buffer;
 
 #if MCU_DEBUG
 	/* debug */
-	printk("data[%04X] = %02X %02X %04X (length: %d + %d)\n",
-			eep_count, buffer[0], buffer[1], buffer16[0], eep_count, (int)len);
+	LOG("data[%04X] = %02X %02X %04X (length: %d + %d)\n",
+	    eep_count, buffer[0], buffer[1], buffer16[0], eep_count, (int)len);
     eep_count += len;
 #endif
 
@@ -310,7 +341,7 @@ void epson_WaveformStreamClose(void)
 	epson_wait_for_idle();
 }
 
-int epson_loadColorConfig(char *path, u32 address)
+int epson_loadColorConfig(char *path, uint32_t address)
 {
 	FIL File;
 	if (f_open(&File, path, FA_READ) != FR_OK)
@@ -322,7 +353,7 @@ int epson_loadColorConfig(char *path, u32 address)
 	return 0;
 }
 
-int epson_loadImageFile(FIL *image, short mode, int pack)
+int epson_loadImageFile(FIL *image, uint16_t mode, int pack)
 {
 	// load complete image, typically (1Bpp, no transparency)
 	epson_cmd_p1(LD_IMG_HOST, mode);
@@ -333,14 +364,32 @@ int epson_loadImageFile(FIL *image, short mode, int pack)
 	return 0;
 }
 
-int epson_fill_buffer(short mode, u8 pack, u16 height, u16 width, u8 fill)
+int epson_loadImageFileArea(FIL *image, uint16_t mode, int pack,
+			    const struct area *area, int x, int y, int width)
 {
-	u16 x,y;
-	short wfill = (fill << 8) | fill;
+	epson_cmd_p5(LD_IMG_HOST_AREA, mode,
+		     (area->left & S1D135XX_XMASK),
+		     (area->top & S1D135XX_YMASK),
+		     (area->width & S1D135XX_XMASK),
+		     (area->height & S1D135XX_YMASK));
+	epson_BulkTransferImage(image, pack, area, x, y, width);
+	epson_cmd_p0(LD_IMG_HOST_END);
+	epson_wait_for_idle();
+
+	return 0;
+}
+
+int epson_fill_buffer(uint16_t mode, uint8_t pack, uint16_t height,
+		      uint16_t width, uint8_t fill)
+{
+	uint16_t x, y;
+	uint16_t wfill;
 
 	if (pack) {
 		wfill = (fill << 12) | (fill << 8) | (fill << 4) | fill;
 		width /= 2;
+	} else {
+		wfill = (fill << 8) | fill;
 	}
 
 	epson_cmd_p1(LD_IMG_HOST, mode);
@@ -348,10 +397,9 @@ int epson_fill_buffer(short mode, u8 pack, u16 height, u16 width, u8 fill)
 
 	epson_begin_bulk_transfer(HOST_MEM_PORT_REG);
 
-	for (y = 0;  y < height; y++) {
-		for (x = 0; x < width/2; x++)
+	for (y = 0;  y < height; y++)
+		for (x = 0; x < (width / 2); x++)
 			epson_bulk_transfer_word(wfill);
-	}
 
 	epson_end_bulk_transfer();
 	epson_wait_for_idle();

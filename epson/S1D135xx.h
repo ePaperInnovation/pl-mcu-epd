@@ -29,17 +29,17 @@
 #include <stdint.h>
 
 enum s1d135xx_pwr_state {
-	PWR_STATE_UNDEFINED = 0,
-	PWR_STATE_SLEEP,
+	PWR_STATE_SLEEP = 0,
 	PWR_STATE_STANDBY,
-	PWR_STATE_RUN
+	PWR_STATE_RUN,
+	PWR_STATE_UNDEFINED
 };
 
 enum s1d135xx_temp_mode {
-	TEMP_MODE_UNDEFINED = 0,
-	TEMP_MODE_MANUAL,
+	TEMP_MODE_MANUAL = 0,
 	TEMP_MODE_INTERNAL,
-	TEMP_MODE_EXTERNAL
+	TEMP_MODE_EXTERNAL,
+	TEMP_MODE_UNDEFINED
 };
 
 struct s1d135xx {
@@ -54,8 +54,11 @@ struct s1d135xx {
 	enum s1d135xx_temp_mode temp_mode; /* temperature sensing mode */
 	int8_t temp_measured;	           /* last temp measured */
 	int8_t temp_set;		   /* last temp specificed */
-
 };
+
+/** Mask to safely handle region coordinates */
+#define S1D135XX_XMASK 0x01FF
+#define S1D135XX_YMASK 0x03FF
 
 /*
  * All known commands. Not all controllers support all commands
@@ -168,7 +171,7 @@ struct s1d135xx {
 #define WAVEFORM_HIGH_QUALITY	2
 #define WAVEFORM_HIGH_SPEED		3
 
-int s1d135xx_select(struct s1d135xx *epson, screen_t *previous);
-int s1d135xx_deselect(struct s1d135xx *epson, screen_t previous);
+extern int s1d135xx_select(struct s1d135xx *epson, screen_t *previous);
+extern int s1d135xx_deselect(struct s1d135xx *epson, screen_t previous);
 
 #endif /* S1D135XX_H_ */

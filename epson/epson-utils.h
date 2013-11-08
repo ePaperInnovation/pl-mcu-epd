@@ -28,22 +28,53 @@
 #define EPSON_UTILS_H_
 
 #include "FatFs/ff.h"
+#include "types.h"
+#include "S1D135xx.h"
+#include <stdint.h>
 
-void epson_softReset(void);
-int epson_mode_standby(struct s1d135xx *epson);
-int epson_mode_sleep(struct s1d135xx *epson);
-int epson_mode_run(struct s1d135xx *epson);
+/* Powerup the display power supplies using Epson power control pins. */
+extern int epson_power_up(void);
 
-int epson_power_up(void);
-int epson_power_down(void);
-int epson_loadEpsonCode(char *code_path);
-int epson_BulkTransferFile(char *path, u32 address);
-void epson_WaveformStreamInit(u32 address);
-void epson_WaveformStreamTransfer(u8 *buffer, size_t len);
-void epson_WaveformStreamClose(void);
-int epson_loadEpsonWaveform(char *path, u32 address);
-int epson_loadColorConfig(char *path, u32 address);
-int epson_loadImageFile(FIL *image, short mode, int pack);
-int epson_fill_buffer(short mode, u8 pack, u16 height, u16 width, u8 fill);
+/* Powerdown the display power supplies using Epson power control pins. */
+extern int epson_power_down(void);
+
+/* Reset the Epson controller over SPI.  */
+extern void epson_softReset(void);
+
+/* Place controller in Standby mode. Can still access registers and RAM.  */
+extern int epson_mode_standby(struct s1d135xx *epson);
+
+/* Place controller in Sleep mode. Can only access few registers and bring out
+ * of sleep.  */
+extern int epson_mode_sleep(struct s1d135xx *epson);
+
+/* Place controller in Run state. Display updates possible.  */
+extern int epson_mode_run(struct s1d135xx *epson);
+
+/* Load the Epson configuration data. The file supplied by Epson is in the
+ * correct format to be loaded directly so we do not need to worry about cpu
+ * endianess.  */
+extern int epson_loadEpsonCode(char *code_path);
+
+/* Bulk transfer a file to the epson. The data is asssumed to be in cpu
+ * endianess and may need swapping.  */
+extern int epson_BulkTransferFile(char *path, uint32_t address);
+
+/* Similar to epson_BulkTransferFile but deals with image data and area.  */
+extern int epson_BulkTransferImage(FIL *file, int pack,
+				   const struct area *area, int left, int top,
+				   int img_width);
+
+extern void epson_WaveformStreamInit(uint32_t address);
+extern void epson_WaveformStreamTransfer(uint8_t *buffer, size_t len);
+extern void epson_WaveformStreamClose(void);
+extern int epson_loadEpsonWaveform(char *path, uint32_t address);
+extern int epson_loadColorConfig(char *path, uint32_t address);
+extern int epson_loadImageFile(FIL *image, uint16_t mode, int pack);
+extern int epson_loadImageFileArea(FIL *image, uint16_t mode, int pack,
+				   const struct area *area, int left, int top,
+				   int img_width);
+extern int epson_fill_buffer(uint16_t mode, uint8_t pack, uint16_t height,
+			     uint16_t width, uint8_t fill);
 
 #endif /* EPSON_UTILS_H_ */
