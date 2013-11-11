@@ -26,7 +26,32 @@
 #ifndef SLIDESHOW_H_
 #define SLIDESHOW_H_
 
-int slideshow_run(char *path, int (*callback)(char *path, void *arg), void *arg);
-int slideshow_load_image(const char *image, short flags, int pack);
+#include "types.h"
+#include <stdint.h>
+
+/** Slideshow item with regions, waveform and timing information */
+struct slideshow_item {
+	char file[32];          /**< path to the image file to open */
+	struct area area;       /**< area coordinates on the display */
+	int left_in;            /**< left coordinate to start reading from */
+	int top_in;             /**< top coordinate to start reading from */
+};
+
+/** Slideshow callback function, called on each file found in a directory */
+typedef int (*slideshow_cb_t)(const char *path, void *arg);
+
+/** Iterate over a directory invoking the callback to display each image */
+extern int slideshow_run(const char *path, slideshow_cb_t cb, void *arg);
+
+/** Load the contents of an image file into the Epson controller */
+extern int slideshow_load_image(const char *image, uint16_t mode, int pack);
+
+/** Load an area of the contents of an image file into the Epson controller
+    ToDo: deprecate slideshow_load_image */
+extern int slideshow_load_image_area(const struct slideshow_item *item,
+				     const char *dir, uint16_t mode, int pack);
+
+/** Parse a CSV line of text into a slideshow item structure */
+extern int slideshow_parse_item(const char *line, struct slideshow_item *item);
 
 #endif /* SLIDESHOW_H_ */
