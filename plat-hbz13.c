@@ -73,7 +73,7 @@ static struct i2c_adapter *i2c;
 static struct s1d135xx *epson;
 static struct vcom_cal *vcom_calibration;
 
-static int show_image(char *image, void *arg);
+static int show_image(const char *image, void *arg);
 
 /* No PSU calibration data so always use defaults */
 static struct vcom_info psu_calibration = {
@@ -201,7 +201,8 @@ int plat_hbz13_init(const char *platform_path, int i2c_on_epson)
 	epson_fill_buffer(0x0030, false, epson->yres, epson->xres, 0xff);
 	s1d13541_init_display(epson);
 	power_up();
-	s1d13541_update_display(epson, 0);
+	s1d13541_update_display(epson, WVF_INIT);
+	s1d13541_wait_update_end(epson);
 	power_down();
 
 	/* run the slideshow */
@@ -214,7 +215,7 @@ int plat_hbz13_init(const char *platform_path, int i2c_on_epson)
 	return 0;
 }
 
-static int show_image(char *image, void *arg)
+static int show_image(const char *image, void *arg)
 {
 	/* measure the temperature and pass it to the Epson */
 	max17135_temperature_measure(pmic_info, &measured);
@@ -231,7 +232,8 @@ static int show_image(char *image, void *arg)
 	slideshow_load_image(image, 0x0030, false);
 
 	power_up();
-	s1d13541_update_display(epson, 0 /*1*/);
+	s1d13541_update_display(epson, WVF_REFRESH);
+	s1d13541_wait_update_end(epson);
 	power_down();
 
 	return 0;

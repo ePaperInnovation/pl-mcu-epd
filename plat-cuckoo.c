@@ -54,7 +54,7 @@
 
 #define CONFIG_TEMP_SENSE_MODE	1
 
-static int show_image(char *image, void *arg);
+static int show_image(const char *image, void *arg);
 
 static struct i2c_adapter *i2c;
 static struct dac5820_info *dac_info;
@@ -148,7 +148,7 @@ int plat_cuckoo_init(void)
 
 	/* clear the display */
 	power_up();
-	s1d13524_update_display(epson, 0);
+	s1d13524_update_display(epson, WVF_INIT);
 	power_down();
 
 	/* run the slideshow */
@@ -161,7 +161,7 @@ int plat_cuckoo_init(void)
 	return 0;
 }
 
-static int show_image(char *image, void *arg)
+static int show_image(const char *image, void *arg)
 {
 #if CONFIG_TEMP_SENSE_MODE == 1
 	short measured;
@@ -175,7 +175,7 @@ static int show_image(char *image, void *arg)
 	slideshow_load_image(image, 0x0000, true);
 
 	power_up();
-	s1d13524_update_display(epson, 2);
+	s1d13524_update_display(epson, WVF_REFRESH);
 	power_down();
 
 	return 0;

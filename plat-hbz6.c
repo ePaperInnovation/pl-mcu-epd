@@ -80,7 +80,7 @@ static struct i2c_eeprom *psu_eeprom;
 static struct eeprom_data *psu_data;
 static struct i2c_eeprom *plwf_eeprom;
 static struct plwf_data *plwf_data;
-static int show_image(char *image, void *arg);
+static int show_image(const char *image, void *arg);
 
 /* Fallback VCOM calibration data if PSU EEPROM corrupt */
 static struct vcom_info psu_calibration = {
@@ -225,7 +225,8 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	s1d13541_init_display(epson);
 	power_up();
 	/* TODO: The waveform number here should not be hardcoded... */
-	s1d13541_update_display(epson, 1);
+	s1d13541_update_display(epson, WVF_INIT);
+	s1d13541_wait_update_end(epson);
 	power_down();
 
 	/* run the slideshow */
@@ -238,7 +239,7 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	return 0;
 }
 
-static int show_image(char *image, void *arg)
+static int show_image(const char *image, void *arg)
 {
 	u8 needs_update;
 
@@ -261,7 +262,8 @@ static int show_image(char *image, void *arg)
 	slideshow_load_image(image, 0x0030, false);
 
 	power_up();
-	s1d13541_update_display(epson, 1);
+	s1d13541_update_display(epson, WVF_REFRESH);
+	s1d13541_wait_update_end(epson);
 	power_down();
 
 	return 0;
