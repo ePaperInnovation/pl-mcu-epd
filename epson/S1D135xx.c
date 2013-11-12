@@ -28,11 +28,31 @@
 #include "assert.h"
 #include "S1D135xx.h"
 #include "epson-if.h"
+#include <string.h>
+
+int s1d135xx_get_wfid(const char *wf_name)
+{
+	static const char *wfid_table[_WVF_N_] = {
+		"init", "refresh", "delta", "delta/mono"
+	};
+	int wfid;
+
+	assert(wf_name != NULL);
+
+	for (wfid = 0; wfid < _WVF_N_; ++wfid)
+		if (!strcmp(wfid_table[wfid], wf_name))
+			break;
+
+	if (wfid == _WVF_N_)
+		return -1;
+
+	return wfid;
+}
 
 int s1d135xx_select(struct s1d135xx *epson, screen_t *previous)
 {
-	assert(epson);
-	assert(previous);
+	assert(epson != NULL);
+	assert(previous != NULL);
 
 	return epsonif_claim(0, epson->screen, previous);
 }

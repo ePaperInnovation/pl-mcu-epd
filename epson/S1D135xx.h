@@ -184,6 +184,7 @@ enum waveform_mode {
 };
 #endif
 
+extern int s1d135xx_get_wfid(const char *wf_name);
 extern int s1d135xx_select(struct s1d135xx *epson, screen_t *previous);
 extern int s1d135xx_deselect(struct s1d135xx *epson, screen_t previous);
 
