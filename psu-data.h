@@ -20,29 +20,26 @@
  * psu-data.h -- Read/Write to the PSU configuration eeprom
  *
  * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ *          Guillaume Tucker <guillaume.tucker@plasticlogic.com>
  *
  */
 
 #ifndef PSU_DATA_H_
 #define PSU_DATA_H_
 
-enum PSU_BOARD_ID {
-		PSU_HB_Z6 = 0x01,
-		PSU_HB_Z7 = 0x02,
-		PSU_RAVEN = 0x03
+#include "vcom.h"
+#include <stdint.h>
+
+/** Version of the VCOM PSU EEPROM format */
+#define PSU_DATA_VERSION 0
+
+/** Data used in VCOM PSU EEPROM format v0 */
+struct __attribute__((__packed__)) psu_data {
+	uint8_t version;
+	struct vcom_info info;
+	uint16_t crc;
 };
 
-struct eeprom_data;
-
-int psu_data_init(struct eeprom_data **data);
-void psu_data_free(struct eeprom_data **data);
-int psu_data_get_vcom_data(struct eeprom_data *data, struct vcom_info *vcom);
-int psu_data_get_board_info(struct eeprom_data *data, u8 *board);
-int psu_data_read(struct i2c_eeprom *eeprom, struct eeprom_data *data);
-
-void psu_data_set_header_version(struct eeprom_data *data, u8 version);
-int psu_data_set_vcom_data(struct eeprom_data *data, struct vcom_info *vcom);
-int psu_data_set_board_info(struct eeprom_data *data, u8 board);
-int psu_data_write(struct i2c_eeprom *eeprom, struct eeprom_data *data);
+extern int psu_data_init(struct psu_data *data, struct i2c_eeprom *eeprom);
 
 #endif /* PSU_DATA_H_ */
