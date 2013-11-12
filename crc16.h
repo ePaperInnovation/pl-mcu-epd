@@ -24,7 +24,7 @@
 #include <stdlib.h>
 
 extern const uint16_t crc16_init;
-extern const uint16_t crc16_wf;
+
 extern uint16_t crc16_run(uint16_t crc, const uint8_t *data, size_t size);
 
 #endif /* INCLUDE_CRC16_H_ */

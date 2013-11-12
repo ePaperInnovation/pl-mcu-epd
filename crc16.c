@@ -24,7 +24,6 @@
 #define POLYNOMIAL 0x1021
 
 const uint16_t crc16_init = 0xFFFF;
-const uint16_t crc16_wf = 0xFFFF;
 
 uint16_t crc16_run(uint16_t crc, const uint8_t *data, size_t length)
 {
