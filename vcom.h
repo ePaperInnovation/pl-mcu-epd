@@ -26,27 +26,19 @@
 #ifndef VCOM_H_
 #define VCOM_H_
 
+#include <stdint.h>
+
 /* structure defining the minimum information we need to have to calculate vcom
  * This is likely to be stored in the EEPROM on the power board
  */
-struct  vcom_info {
-	s16 dac_x1; 		/* first DAC register value (25% of full scale) */
-	s16 dac_y1; 		/* corresponding first voltage in mV */
-	s16 dac_x2; 		/* second DAC register value (75% of full scale) */
-	s16 dac_y2; 		/* corresponding second voltage in mV */
-	s32 vgpos_mv; 		/* VGPOS in mV */
-	s32 vgneg_mv; 		/* VGNEG in mV */
+struct  __attribute__((__packed__)) vcom_info {
+	int16_t dac_x1;     /* first DAC register value (25% of full scale) */
+	int16_t dac_y1;     /* corresponding first voltage in mV */
+	int16_t dac_x2;     /* second DAC register value (75% of full scale) */
+	int16_t dac_y2;     /* corresponding second voltage in mV */
+	int32_t vgpos_mv;   /* VGPOS in mV */
+	int32_t vgneg_mv;   /* VGNEG in mV */
 };
-#if 0
-struct vcom_info {
-	int16_t dac_x1;
-	int16_t dac_y1;
-	int16_t dac_x2;
-	int16_t dac_y2;
-	int32_t vgpos_mv;
-	int32_t vgneg_mv;
-};
-#endif
 
 struct vcom_cal;
 
