@@ -87,9 +87,7 @@ static struct tps65185_info *pmic_info;
 static struct i2c_adapter *i2c;
 static struct s1d135xx *epson;
 static struct vcom_cal *vcom_calibration;
-static struct vcom_info vcom_data;
 static struct i2c_eeprom *psu_eeprom;
-static struct eeprom_data *psu_data;
 static struct i2c_eeprom *plwf_eeprom;
 static struct plwf_data *plwf_data;
 
@@ -140,6 +138,7 @@ static int power_down(void)
 /* Initialise the Hummingbird Z[6|7].x platform */
 int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 {
+	struct psu_data psu_data;
 	int ret = 0;
 	short previous;
 	int vcom;
@@ -198,22 +197,22 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	eeprom_init(i2c, I2C_EEPROM_PSU_DATA, EEPROM_24LC014, &psu_eeprom);
 
 	/* read the psu calibration data and ready it for use */
-	psu_data_init(&psu_data);
-	psu_data_read(psu_eeprom, psu_data);
-	if (psu_data_get_vcom_data(psu_data, &vcom_data) == 0) {
-		vcom_init(&vcom_data, VCOM_VGSWING, &vcom_calibration);
-	} else {
-		LOG("Using power supply defaults");
-#if CONFIG_PSU_WRITE_DEFAULTS
-		LOG("Writing default psu data");
-		psu_data_set_header_version(psu_data, 0);
-		psu_data_set_board_info(psu_data, PSU_HB_Z6);
-		psu_data_set_vcom_data(psu_data, &psu_calibration);
-		psu_data_write(eeprom, psu_data);
+	if (psu_data_init(&psu_data, psu_eeprom)) {
+		LOG("Failed to initialise VCOM PSU data from EEPROM");
+#if 1
+		LOG("Using hard-coded default values instead");
+		psu_data.version = PSU_DATA_VERSION;
+		memcpy(&psu_data.info, &psu_calibration, sizeof psu_data.info);
+#else
+		return -1;
 #endif
-		vcom_init(&psu_calibration, VCOM_VGSWING, &vcom_calibration);
 	}
-	psu_data_free(&psu_data);
+
+	/* Initialise the VCOM */
+	if (vcom_init(&psu_data.info, VCOM_VGSWING, &vcom_calibration) < 0) {
+		LOG("Failed to initialise VCOM");
+		return -1;
+	}
 
 	/* select the controller for future operations */
 	s1d135xx_select(epson, &previous);
