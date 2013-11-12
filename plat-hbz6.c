@@ -33,6 +33,7 @@
 
 #include "platform.h"
 #include <stdio.h>
+#include <string.h>
 #include "types.h"
 #include "assert.h"
 #include "msp430-gpio.h"
@@ -49,6 +50,7 @@
 #include "i2c-eeprom.h"
 #include "psu-data.h"
 #include "config.h"
+#include "utils.h"
 
 #define CONFIG_PLAT_RUDDOCK2	1
 #if CONFIG_PLAT_RUDDOCK2
@@ -71,6 +73,16 @@
 #define	I2C_EEPROM_PSU_DATA	0x50
 #define I2C_EEPROM_PLWF_DATA 0x54
 
+#define LOG_TAG "hbz6"
+
+/* Run regional update sequence of standard full-screen slideshow */
+#define USE_REGION_SLIDESHOW 1
+
+#if USE_REGION_SLIDESHOW
+static const char SLIDES_PATH[] = "img/slides.txt";
+static const char SEP[] = ", ";
+#endif
+
 static struct tps65185_info *pmic_info;
 static struct i2c_adapter *i2c;
 static struct s1d135xx *epson;
@@ -80,7 +92,13 @@ static struct i2c_eeprom *psu_eeprom;
 static struct eeprom_data *psu_data;
 static struct i2c_eeprom *plwf_eeprom;
 static struct plwf_data *plwf_data;
-static int show_image(const char *image, void *arg);
+
+static void check_temperature(struct s1d135xx *epson);
+#if USE_REGION_SLIDESHOW
+static int run_region_slideshow(struct s1d135xx *epson);
+#else
+static int run_std_slideshow(struct s1d135xx *epson);
+#endif
 
 /* Fallback VCOM calibration data if PSU EEPROM corrupt */
 static struct vcom_info psu_calibration = {
@@ -96,13 +114,13 @@ static struct vcom_info psu_calibration = {
 /* Board specific power up control */
 static int power_up(void)
 {
-	printk("Powering up\n");
+	LOG("Powering up");
 	gpio_set_value(B_HWSW_CTRL, false);
 	gpio_set_value(B_PMIC_EN, true);
 
 	do {
 		mdelay(1);
-	} while (gpio_get_value(B_POK) == 0);
+	} while (!gpio_get_value(B_POK));
 
 	gpio_set_value(B_HWSW_CTRL, true);
 
@@ -114,8 +132,7 @@ static int power_down(void)
 {
 	gpio_set_value(B_HWSW_CTRL, false);
 	gpio_set_value(B_PMIC_EN, false);
-
-	printk("Powered down\n");
+	LOG("Powered down");
 
 	return 0;
 }
@@ -123,13 +140,12 @@ static int power_down(void)
 /* Initialise the Hummingbird Z[6|7].x platform */
 int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 {
-	int done = 0;
 	int ret = 0;
 	short previous;
 	int vcom;
 	screen_t prev_screen;
 
-	printk("HB Z6/7 platform initialisation\n");
+	LOG("HB Z6/7 platform initialisation");
 
 	check(f_chdir(platform_path) == FR_OK);
 
@@ -147,7 +163,7 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	ret |= gpio_request(EPSON_CS_0,	PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH);
 
 	if (ret)
-		return -EBUSY;
+		return -1;
 
 #if !CONFIG_PSU_ONLY
 	/* initialise the Epson controller */
@@ -172,7 +188,7 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 #else
 	eeprom_init(i2c, I2C_EEPROM_PLWF_DATA, EEPROM_24AA256, &plwf_eeprom);
 	plwf_data_init(&plwf_data);
-	check(s1d13541_init_waveform_eeprom(epson, plwf_eeprom, plwf_data) == 0);
+	check(!s1d13541_init_waveform_eeprom(epson, plwf_eeprom, plwf_data));
 	plwf_data_free(&plwf_data);
 #endif /* WAVEFORM_ON_SD_CARD */
 	check(s1d13541_init_gateclr(epson) == 0);
@@ -186,11 +202,10 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	psu_data_read(psu_eeprom, psu_data);
 	if (psu_data_get_vcom_data(psu_data, &vcom_data) == 0) {
 		vcom_init(&vcom_data, VCOM_VGSWING, &vcom_calibration);
-	}
-	else {
-		printk("Using power supply defaults\n");
+	} else {
+		LOG("Using power supply defaults");
 #if CONFIG_PSU_WRITE_DEFAULTS
-		printk("Writing default psu data\n");
+		LOG("Writing default psu data");
 		psu_data_set_header_version(psu_data, 0);
 		psu_data_set_board_info(psu_data, PSU_HB_Z6);
 		psu_data_set_vcom_data(psu_data, &psu_calibration);
@@ -214,7 +229,7 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 
 #if CONFIG_PSU_ONLY
 	while (1) {
-		/* always power down first incase we leave HV on */
+		/* always power down first in case we last left HV on */
 		power_down();
 		power_up();
 	}
@@ -224,29 +239,205 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	epson_fill_buffer(0x0030, false, epson->yres, epson->xres, 0xff);
 	s1d13541_init_display(epson);
 	power_up();
-	/* TODO: The waveform number here should not be hardcoded... */
 	s1d13541_update_display(epson, WVF_INIT);
 	s1d13541_wait_update_end(epson);
 	power_down();
 
 	/* run the slideshow */
-	while(!done) {
-		slideshow_run("img", show_image, NULL);
-	}
+
+#if USE_REGION_SLIDESHOW
+	ret = run_region_slideshow(epson);
+#else
+	ret = run_std_slideshow(epson);
+#endif
 
 	s1d135xx_deselect(epson, previous);
+
+	return ret;
+}
+
+#if USE_REGION_SLIDESHOW
+
+static int cmd_image(struct s1d135xx *epson, const char *line)
+{
+	struct slideshow_item item;
+
+	if (slideshow_parse_item(line, &item))
+		return -1;
+
+	if (slideshow_load_image_area(&item, "img", 0x0030, false))
+		return -1;
 
 	return 0;
 }
 
+static int cmd_update(struct s1d135xx *epson, const char *line)
+{
+	char waveform[16];
+	struct area a;
+	int delay_ms;
+	const char *opt;
+	int len;
+	int stat = 0;
+	int wfid;
+
+	opt = line;
+	len = parser_read_str(opt, SEP, waveform, sizeof(waveform));
+
+	if (len <= 0)
+		return -1;
+
+	opt += len;
+	len = parser_read_area(opt, SEP, &a);
+
+	if (len <= 0)
+		return -1;
+
+	opt += len;
+	len = parser_read_int(opt, SEP, &delay_ms);
+
+	if (len < 0)
+		return -1;
+
+	wfid = s1d135xx_get_wfid(waveform);
+
+	if (wfid < 0) {
+		LOG("Invalid waveform name: %s", waveform);
+		return -1;
+	}
+
+	s1d13541_update_display_area(epson, wfid, &a);
+	mdelay(delay_ms);
+
+	return stat;
+}
+
+static int cmd_power(struct s1d135xx *epson, const char *line)
+{
+	char on_off[4];
+
+	if (parser_read_str(line, SEP, on_off, sizeof(on_off)) < 0)
+		return -1;
+
+	if (!strcmp(on_off, "on")) {
+		check_temperature(epson);
+		power_up();
+	} else if (!strcmp(on_off, "off")) {
+		s1d13541_wait_update_end(epson);
+		power_down();
+	} else {
+		LOG("Invalid on/off value: %s", on_off);
+		return -1;
+	}
+
+	return 0;
+}
+
+static int run_region_slideshow(struct s1d135xx *epson)
+{
+	FIL slides;
+	int stat;
+
+	if (f_open(&slides, SLIDES_PATH, FA_READ) != FR_OK) {
+		LOG("Failed to open slideshow text file [%s]", SLIDES_PATH);
+		return -1;
+	}
+
+	stat = 0;
+
+	while (!stat) {
+		struct cmd {
+			const char *name;
+			int (*func)(struct s1d135xx *epson, const char *str);
+		};
+		static const struct cmd cmd_table[] = {
+			{ "update", cmd_update },
+			{ "power", cmd_power },
+			{ "image", cmd_image },
+			{ NULL, NULL }
+		};
+		const struct cmd *cmd;
+		char line[81];
+		char cmd_name[16];
+		int len;
+
+		stat = parser_read_file_line(&slides, line, sizeof(line));
+
+		if (stat < 0) {
+			LOG("Failed to read line from %s", SLIDES_PATH);
+			break;
+		}
+
+		if (!stat) {
+			f_lseek(&slides, 0);
+			continue;
+		}
+
+		stat = 0;
+
+		if (line[0] == '#')
+			continue;
+
+		len = parser_read_str(line, SEP, cmd_name, sizeof(cmd_name));
+
+		if (len < 0) {
+			LOG("Failed to read command");
+			stat = -1;
+			break;
+		}
+
+		for (cmd = cmd_table; cmd->name != NULL; ++cmd) {
+			if (!strcmp(cmd->name, cmd_name)) {
+				stat = cmd->func(epson, (line + len));
+				break;
+			}
+		}
+
+		if (cmd->name == NULL) {
+			LOG("Invalid command: %s", cmd_name);
+			stat = -1;
+			break;
+		}
+	}
+
+	f_close(&slides);
+
+	return stat;
+}
+#else
 static int show_image(const char *image, void *arg)
+{
+	struct s1d135xx *epson = arg;
+
+	slideshow_load_image(image, 0x0030, false);
+	check_temperature(epson);
+	power_up();
+	s1d13541_update_display(epson, WVF_REFRESH);
+	s1d13541_wait_update_end(epson);
+	power_down();
+
+	return 0;
+}
+
+static int run_std_slideshow(struct s1d135xx *epson)
+{
+	int run = 1;
+
+	while (run)
+		slideshow_run("img", show_image, epson);
+
+	return 0;
+}
+#endif
+
+static void check_temperature(struct s1d135xx *epson)
 {
 	u8 needs_update;
 
 	/* Ask Epson to determine if waveform needs reloading */
 	s1d13541_measure_temperature(epson, &needs_update);
-	if (needs_update)
-	{
+
+	if (needs_update) {
 #if CONFIG_WF_ON_SD_CARD
 		s1d13541_send_waveform();
 #else
@@ -257,14 +448,4 @@ static int show_image(const char *image, void *arg)
 		plwf_data_free(&plwf_data);
 #endif /* WAVEFORM_ON_SD_CARD */
 	}
-
-	printk("Load: %s\n", image);
-	slideshow_load_image(image, 0x0030, false);
-
-	power_up();
-	s1d13541_update_display(epson, WVF_REFRESH);
-	s1d13541_wait_update_end(epson);
-	power_down();
-
-	return 0;
 }
