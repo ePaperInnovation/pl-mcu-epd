@@ -50,6 +50,9 @@
 #include "temp-lm75.h"
 #include "epson/epson-utils.h"
 #include "slideshow.h"
+#include "utils.h"
+
+#define LOG_TAG "raven"
 
 #define	EPSON_CS_0		GPIO(3,6)
 
@@ -73,8 +76,7 @@ static struct s1d135xx *epson;
 static struct lm75_info *lm75_info;
 static struct vcom_cal *vcom_calibration;
 static struct i2c_eeprom *eeprom;
-static struct eeprom_data *psu_data;
-static struct vcom_info vcom_data;
+static struct psu_data psu_data;
 
 /* Fallback VCOM calibration data if PSU EEPROM corrupt */
 static struct vcom_info psu_calibration = {
@@ -139,23 +141,16 @@ int plat_raven_init(void)
 	eeprom_init(i2c, I2C_EEPROM_PSU_DATA, EEPROM_24LC014, &eeprom);
 
 	/* read the calibration data and ready it for use */
-	psu_data_init(&psu_data);
-	psu_data_read(eeprom, psu_data);
-	if (psu_data_get_vcom_data(psu_data, &vcom_data) == 0) {
-		vcom_init(&vcom_data, VCOM_VGSWING, &vcom_calibration);
-	}
-	else {
-		printk("Using power supply defaults\n");
-#if CONFIG_PSU_WRITE_DEFAULTS
-		printk("Writing default psu data\n");
-		psu_data_set_header_version(psu_data, 0);
-		psu_data_set_board_info(psu_data, PSU_HB_Z6);
-		psu_data_set_vcom_data(psu_data, &psu_calibration);
-		psu_data_write(eeprom, psu_data);
+	if (psu_data_init(&psu_data, eeprom)) {
+		LOG("Failed to initialise VCOM PSU data from EEPROM");
+#if 1
+		LOG("Using hard-coded default values instead");
+		psu_data.version = PSU_DATA_VERSION;
+		memcpy(&psu_data.info, &psu_calibration, sizeof psu_data.info);
+#else
+		return -1;
 #endif
-		vcom_init(&psu_calibration, VCOM_VGSWING, &vcom_calibration);
 	}
-	psu_data_free(&psu_data);
 
 	/* select the controller for future operations */
 	s1d135xx_select(epson, &previous);
