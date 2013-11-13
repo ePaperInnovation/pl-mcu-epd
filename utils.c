@@ -25,6 +25,7 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include "platform.h"
 #include "types.h"
 #include "FatFs/ff.h"
@@ -174,6 +175,59 @@ int parser_read_file_line(FIL *f, char *buffer, int max_length)
 		return -1;
 
 	return i;
+}
+
+/* ----------------------------------------------------------------------------
+ * Debug utilies
+ */
+
+void dump_hex(const void *data, uint16_t len)
+{
+	static const char hex[16] = {
+		'0', '1', '2', '3', '4', '5', '6', '7',
+		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
+	};
+	char s[] = "[XXXX] XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX";
+	char *cur;
+	uint16_t i;
+
+	if (!len)
+		return;
+
+	for (i = 0, cur = s; i < len; ++i) {
+		const uint8_t byte = ((const uint8_t *)data)[i];
+
+		if (!(i & 0xF)) {
+			uint16_t addr = i;
+			uint16_t j;
+
+			if (i)
+				puts(s);
+
+			cur = s + 4;
+
+			for (j = 4; j; --j) {
+				*cur-- = hex[addr & 0xF];
+				addr >>= 4;
+			}
+
+			cur = s + 7;
+		}
+
+		*cur++ = hex[byte >> 4];
+		*cur++ = hex[byte & 0xF];
+		++cur;
+	}
+
+	i %= 16;
+
+	if (i) {
+		cur = s + 6 + (i * 3);
+		*cur++ = '\n';
+		*cur++ = '\0';
+	}
+
+	puts(s);
 }
 
 /* ----------------------------------------------------------------------------

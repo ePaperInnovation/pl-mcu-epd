@@ -54,4 +54,9 @@ extern int parser_read_area(const char *str, const char *sep, struct area *a);
 /** Read one line worth of data from a text file */
 extern int parser_read_file_line(FIL *f, char *buffer, int max_length);
 
+/* -- Debug utilities */
+
+/** Print the contents of a buffer with offsets on stdout */
+extern void dump_hex(const void *data, uint16_t len);
+
 #endif /* INCLUDE_UTIL_H */
