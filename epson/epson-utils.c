@@ -222,16 +222,13 @@ int epson_loadEpsonCode(char *code_path)
 	int result;
 
 	if (f_open(&ControllerCode, code_path, FA_READ) != FR_OK)
-		return (-ENOENT);
+		return -1;
 
 	epson_wait_for_idle();
-
 	epson_begin_bulk_code_transfer(INIT_CMD_SET);
 	result = transfer_file(&ControllerCode, false, false);
 	epson_end_bulk_transfer();
-
 	f_close(&ControllerCode);
-
 	epson_wait_for_idle();
 
 	return result;
@@ -272,7 +269,7 @@ int epson_loadEpsonWaveform(char *path, uint32_t address)
 	LOG("Load Waveform From SD Card\n");
 
 	if (f_open(&File, path, FA_READ) != FR_OK)
-		return (-ENOENT);
+		return -1;
 
 	// Accomodate waveforms that had odd byte counts.
 	file_size = f_size(&File);
@@ -299,36 +296,26 @@ int epson_loadEpsonWaveform(char *path, uint32_t address)
 void epson_WaveformStreamInit(uint32_t address)
 {
 	epson_wait_for_idle();
-	epson_cmd_p4(BST_WR_SDR,
-		(address & 0x0ffff), ((address >> 16) & 0x0ffff), 64000, 64000);
+	epson_cmd_p4(BST_WR_SDR, (address & 0x0ffff),
+		     ((address >> 16) & 0x0ffff), 64000, 64000);
 	epson_wait_for_idle();
 	epson_begin_bulk_transfer(HOST_MEM_PORT_REG);
 }
 
-#if MCU_DEBUG
-static int eep_count = 0;
-#endif
-
 void epson_WaveformStreamTransfer(uint8_t *buffer, size_t len)
 {
-	int i;
+	const size_t n = len / 2;
+	size_t i;
 	int swap = 1;
 	uint16_t word;
 	uint16_t *buffer16 = (uint16_t*)buffer;
 
-#if MCU_DEBUG
-	/* debug */
-	LOG("data[%04X] = %02X %02X %04X (length: %d + %d)\n",
-	    eep_count, buffer[0], buffer[1], buffer16[0], eep_count, (int)len);
-    eep_count += len;
-#endif
-
-	for (i = 0; i < (len/2); i++)
-	{
+	for (i = 0; i < n; i++) {
 		word = buffer16[i];
-		if (swap) {
+
+		if (swap)
 			buffer16[i] = swap_bytes(buffer16[i]);
-		}
+
 		epson_bulk_transfer_word(word);
 	}
 }
@@ -344,18 +331,20 @@ void epson_WaveformStreamClose(void)
 int epson_loadColorConfig(char *path, uint32_t address)
 {
 	FIL File;
+
 	if (f_open(&File, path, FA_READ) != FR_OK)
-		return (-ENOENT);
+		return -1;
 
 	epson_BulkTransferFile(&File, false);
 
 	f_close(&File);
+
 	return 0;
 }
 
 int epson_loadImageFile(FIL *image, uint16_t mode, int pack)
 {
-	// load complete image, typically (1Bpp, no transparency)
+	/* load complete image, typically 8bpp and no transparency */
 	epson_cmd_p1(LD_IMG_HOST, mode);
 	epson_BulkTransferFile(image, pack);
 	epson_cmd_p0(LD_IMG_HOST_END);
@@ -379,27 +368,32 @@ int epson_loadImageFileArea(FIL *image, uint16_t mode, int pack,
 	return 0;
 }
 
-int epson_fill_buffer(uint16_t mode, uint8_t pack, uint16_t height,
-		      uint16_t width, uint8_t fill)
+static int do_fill(const struct area *area, uint8_t fill, int pack)
 {
-	uint16_t x, y;
 	uint16_t wfill;
+	int width;
+	int n_x;
+	int y;
 
 	if (pack) {
 		wfill = (fill << 12) | (fill << 8) | (fill << 4) | fill;
-		width /= 2;
+		width = area->width / 2;
 	} else {
 		wfill = (fill << 8) | fill;
+		width = area->width;
 	}
 
-	epson_cmd_p1(LD_IMG_HOST, mode);
-	epson_wait_for_idle();
+	n_x = width / 2;
 
+	epson_wait_for_idle();
 	epson_begin_bulk_transfer(HOST_MEM_PORT_REG);
 
-	for (y = 0;  y < height; y++)
-		for (x = 0; x < (width / 2); x++)
+	for (y = area->height; y; --y) {
+		int x;
+
+		for (x = n_x; x; --x)
 			epson_bulk_transfer_word(wfill);
+	}
 
 	epson_end_bulk_transfer();
 	epson_wait_for_idle();
@@ -408,4 +402,26 @@ int epson_fill_buffer(uint16_t mode, uint8_t pack, uint16_t height,
 	epson_wait_for_idle();
 
 	return 0;
+}
+
+int epson_fill_area(uint16_t mode, uint8_t pack,
+		    const struct area *area, uint8_t fill)
+{
+	epson_cmd_p5(LD_IMG_HOST_AREA, mode,
+		     (area->left & S1D135XX_XMASK),
+		     (area->top & S1D135XX_YMASK),
+		     (area->width & S1D135XX_XMASK),
+		     (area->height & S1D135XX_YMASK));
+
+	return do_fill(area, fill, pack);
+}
+
+int epson_fill_buffer(uint16_t mode, uint8_t pack, uint16_t height,
+		      uint16_t width, uint8_t fill)
+{
+	const struct area area = { 0, 0, width, height };
+
+	epson_cmd_p1(LD_IMG_HOST, mode);
+
+	return do_fill(&area, fill, pack);
 }

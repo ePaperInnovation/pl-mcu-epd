@@ -76,5 +76,7 @@ extern int epson_loadImageFileArea(FIL *image, uint16_t mode, int pack,
 				   int img_width);
 extern int epson_fill_buffer(uint16_t mode, uint8_t pack, uint16_t height,
 			     uint16_t width, uint8_t fill);
+extern int epson_fill_area(uint16_t mode, uint8_t pack,
+			   const struct area *area, uint8_t fill);
 
 #endif /* EPSON_UTILS_H_ */
