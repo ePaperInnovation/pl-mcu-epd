@@ -61,7 +61,6 @@
 
 /* 541 constant value list */
 #define PRODUCT_CODE 0x0053
-#define	WAVEFORM_ADDRESS 0x00080000L
 
 static int wait_for_HRDY_ready(int timeout)
 {
@@ -96,7 +95,7 @@ static int send_waveform(void)
 	uint16_t readval;
 	int stat;
 
-	if (epson_loadEpsonWaveform(WAVEFORM_PATH, WAVEFORM_ADDRESS) < 0)
+	if (epson_loadEpsonWaveform(WAVEFORM_PATH, S1D13541_WF_ADDR) < 0)
 		return -EIO;
 
 	stat = delay_for_HRDY_ready(TIMEOUT_MS);
@@ -301,20 +300,6 @@ int s1d13541_init_waveform_sd(struct s1d135xx *epson)
 	return retval;
 }
 
-int s1d13541_init_waveform_eeprom(struct s1d135xx *epson, struct i2c_eeprom *plwf_eeprom, struct plwf_data *plwf_data)
-{
-	int retval = 0;
-
-	assert(epson);
-
-	retval = plwf_load_waveform(epson, plwf_eeprom, plwf_data, WAVEFORM_ADDRESS);
-
-	if (retval != 0)
-		printk(KERN_ERR "541: Waveform load from EEPROM failed\n");
-
-	return retval;
-}
-
 int s1d13541_init_gateclr(struct s1d135xx *epson)
 {
 	int retval = 0;
@@ -373,24 +358,6 @@ int s1d13541_send_waveform(void)
 {
 	return send_waveform();
 }
-
-int s1d13541_send_waveform_eeprom(struct s1d135xx *epson,
-				  struct i2c_eeprom *plwf_eeprom,
-				  struct plwf_data *plwf_data)
-{
-	int retval = 0;
-
-	assert(epson);
-
-	retval = plwf_load_waveform(epson, plwf_eeprom, plwf_data,
-				    WAVEFORM_ADDRESS);
-
-	if (retval != 0)
-		printk(KERN_ERR "541: Waveform load from EEPROM failed\n");
-
-	return retval;
-}
-
 
 int s1d13541_set_temperature_mode(struct s1d135xx *epson,
 				  enum s1d135xx_temp_mode temp_mode)

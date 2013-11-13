@@ -31,6 +31,8 @@
 #include "plwf.h"
 #include "types.h"
 
+#define	S1D13541_WF_ADDR 0x00080000L
+
 // Display Engine: Control/Trigger register
 #define DISPLAY_UPD_BUFF_CONF_REG			0x0330 // Panel Update Buffer Configuration register
 #define DISPLAY_UPD_BUFF_PXL_VAL_REG		0x0332 // Panel Update Buffer Pixel set value register
@@ -59,9 +61,6 @@ extern int s1d13541_init_initcode(struct s1d135xx *epson);
 extern int s1d13541_init_pwrstate(struct s1d135xx *epson);
 extern int s1d13541_init_keycode(struct s1d135xx *epson);
 extern int s1d13541_init_waveform_sd(struct s1d135xx *epson);
-extern int s1d13541_init_waveform_eeprom(struct s1d135xx *epson,
-					 struct i2c_eeprom *plwf_eeprom,
-					 struct plwf_data *plwf_data);
 extern int s1d13541_init_gateclr(struct s1d135xx *epson);
 extern int s1d13541_init_end(struct s1d135xx *epson, screen_t previous);
 
@@ -84,10 +83,6 @@ extern int s1d13541_wait_update_end(struct s1d135xx *epson);
 /* -- Waveform management -- */
 
 extern int s1d13541_send_waveform(void);
-extern int s1d13541_send_waveform_eeprom(struct s1d135xx *epson,
-					 struct i2c_eeprom *plwf_eeprom,
-					 struct plwf_data *plwf_data);
-
 
 /* -- Temperature management -- */
 
