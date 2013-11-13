@@ -17,11 +17,10 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <crc16.h>
+#include "crc16.h"
 #include "types.h"
 #include "assert.h"
 #include "i2c.h"
@@ -30,6 +29,33 @@
 #include "plwf.h"
 #include "lzss.h"
 #include "epson/epson-utils.h"
+
+#define LOG_TAG "plwf"
+#include "utils.h"
+
+/* Set to 1 to enable verbose debug log messages */
+#define PLWF_VERBOSE_LOG 0
+
+/* LZSS parameters */
+#define PLWF_LZSS_EI 7
+#define PLWF_LZSS_EJ 4
+
+/* Ensure the last byte from an EEPROM string is a null character */
+#define PLWF_STR_TERM(_str) do { _str[PLWF_STR_LEN] = '\0'; } while(0)
+
+/* Offset where to start reading the waveform data from */
+#define PLWF_WF_OFFS (sizeof(struct plwf_data))
+
+struct buffer_context {
+	uint8_t buffer[64];
+	size_t buflen;
+	size_t wvf_length;
+	size_t offset;
+	int index;
+	struct i2c_eeprom *eeprom;
+	struct s1d135xx *controller;
+	uint16_t crc;
+};
 
 /* Static functions */
 
@@ -64,23 +90,106 @@ static int plwf_wf_wr(int c, struct buffer_context *ctx)
 	return c;
 }
 
-static int get_waveform (uint32_t wf_length, struct i2c_eeprom *eeprom,
-		struct s1d135xx *epson, uint32_t address, uint16_t *crc)
+int plwf_data_init(struct plwf_data *data, struct i2c_eeprom *eeprom)
 {
-	static const unsigned int ei = 7, ej = 4;
+	uint16_t crc;
+
+	assert(data != NULL);
+	assert(eeprom != NULL);
+
+	if (eeprom_read(eeprom, 0, sizeof *data, data)) {
+		LOG("Failed to read EEPROM");
+		return -1;
+	}
+
+	crc = crc16_run(crc16_init, (const uint8_t *)&data->info,
+					sizeof data->info);
+	data->vermagic.version = be16toh(data->vermagic.version);
+	PLWF_STR_TERM(data->info.panel_id);
+	PLWF_STR_TERM(data->info.panel_type);
+	data->info.vcom = be32toh(data->info.vcom);
+	data->info.waveform_full_length =
+		be32toh(data->info.waveform_full_length);
+	data->info.waveform_lzss_length =
+		be32toh(data->info.waveform_lzss_length);
+	PLWF_STR_TERM(data->info.waveform_id);
+	PLWF_STR_TERM(data->info.waveform_target);
+	data->info_crc = be16toh(data->info_crc);
+
+#if PLWF_VERBOSE_LOG
+	LOG("Vermagic: %lx", data->vermagic.magic);
+#endif
+
+	if (data->vermagic.magic != PLWF_MAGIC) {
+		LOG("Invalid magic number: %lX instead of %lX",
+		    data->vermagic.magic, PLWF_MAGIC);
+		return -1;
+	}
+
+	LOG("Version: %x", data->vermagic.version);
+
+	if (data->vermagic.version != PLWF_VERSION) {
+		LOG("Unsupported format version: %d, requires %d",
+		    data->vermagic.version, PLWF_VERSION);
+		return -1;
+	}
+
+#if PLWF_VERBOSE_LOG
+	LOG("Info CRC: %04X", crc);
+#endif
+
+	if (data->info_crc != crc) {
+		LOG("Info CRC mismatch: %04X instead of %04X",
+		    data->info_crc, crc);
+		return -1;
+	}
+
+	LOG("Panel ID: %s", data->info.panel_id);
+	LOG("Panel Type: %s", data->info.panel_type);
+	LOG("VCOM: %li", data->info.vcom);
+#if PLWF_VERBOSE_LOG
+	LOG("Waveform Length: %lu", data->info.waveform_full_length);
+	LOG("Waveform Compressed Length: %lu",data->info.waveform_lzss_length);
+#endif
+	LOG("Waveform ID: %s", data->info.waveform_id);
+	LOG("Waveform Target: %s", data->info.waveform_target);
+#if PLWF_VERBOSE_LOG
+	printf("Waveform MD5:");
+	{
+		int i;
+
+		for (i = 0; i < sizeof(data->info.waveform_md5); i++)
+			printf("%02x", data->info.waveform_md5[i]);
+	}
+	printf("\n");
+#endif
+
+	return  0;
+}
+
+int plwf_load_wf(struct plwf_data *data, struct i2c_eeprom *eeprom,
+		 struct s1d135xx *epson, uint32_t addr)
+{
 	struct lzss lzss;
 	struct lzss_io io;
 	struct buffer_context wr_ctx;
 	struct buffer_context rd_ctx;
-	int stat = 0;
+	char lzss_buffer[LZSS_BUFFER_SIZE(PLWF_LZSS_EI)];
+	uint16_t crc;
 
-	printk("Load Waveform From Eeprom\n");
+#if PLWF_VERBOSE_LOG
+	LOG("LZSS buffer size: %d", sizeof(lzss_buffer));
+#endif
 
-	lzss_init(&lzss, ei, ej);
-	lzss_alloc_buffer(&lzss);
+	if (lzss_init(&lzss, PLWF_LZSS_EI, PLWF_LZSS_EJ)) {
+		LOG("Failed to initialise LZSS");
+		return -1;
+	}
+
+	lzss.buffer = lzss_buffer;
 
 	memset(rd_ctx.buffer, 0, sizeof(rd_ctx.buffer));
-	rd_ctx.wvf_length = wf_length;
+	rd_ctx.wvf_length = data->info.waveform_lzss_length;
 	rd_ctx.offset = PLWF_WF_OFFS;
 	rd_ctx.eeprom = eeprom;
 	rd_ctx.controller = NULL;
@@ -89,7 +198,7 @@ static int get_waveform (uint32_t wf_length, struct i2c_eeprom *eeprom,
 	rd_ctx.crc = crc16_init;
 
 	memset(wr_ctx.buffer, 0, sizeof(wr_ctx.buffer));
-#if 1
+#if 1 /* ToDo: use separate buffer types for reading and writing */
 	wr_ctx.wvf_length = 0;
 #endif
 	wr_ctx.buflen = sizeof(wr_ctx.buffer);
@@ -103,137 +212,31 @@ static int get_waveform (uint32_t wf_length, struct i2c_eeprom *eeprom,
 	io.wr = (lzss_wr_t)plwf_wf_wr;
 	io.o = &wr_ctx;
 
-	epson_WaveformStreamInit(address);
-	stat = lzss_decode(&lzss, &io);
+	epson_WaveformStreamInit(addr);
 
-#if MCU_DEBUG
-	{
-		int i;
-		printf("last buffer:");
-		for (i = 0; i < wr_ctx.index; ++i)
-			printf(" %02X", wr_ctx.buffer[i]);
-		printf("\n");
+	if (lzss_decode(&lzss, &io)) {
+		LOG("Failed to decode LZSS-encoded waveform data");
+		return -1;
 	}
-#endif
 
 	epson_WaveformStreamTransfer(wr_ctx.buffer, wr_ctx.index);
 	epson_WaveformStreamClose();
-	*crc = be16toh(rd_ctx.crc);
 
-	if (stat) {
-		printk("Failed to decode waveform data\n");
-	}
-
-	*crc = rd_ctx.crc;
-	lzss_free_buffer(&lzss);
-	return stat;
-}
-
-int plwf_data_init(struct plwf_data **data)
-{
-	struct plwf_data *p;
-
-	assert(data);
-
-	p = (struct plwf_data*)malloc(sizeof(struct plwf_data));
-	if (NULL == p)
-		return -ENOMEM;
-
-	*data = p;
-
-	return 0;
-}
-
-void plwf_data_free(struct plwf_data **data)
-{
-	assert(*data);
-	free(*data);
-	*data = NULL;
-}
-
-int plwf_load_waveform(struct s1d135xx *epson, struct i2c_eeprom *eeprom, struct plwf_data *data, uint32_t address)
-{
-	int ret = 0;
-	int i;
-	uint16_t crc;
-	uint16_t crc_wf;
-	uint16_t crc_wf_eeprom;
-
-	assert(epson);
-	assert(eeprom);
-	assert(data);
-
-	if (eeprom_read(eeprom, 0, sizeof *data, data) != 0) {
-		printk("Failed to read EEPROM!\n");
-		return -1;
-	}
-	crc = crc16_run(crc16_init, (const uint8_t *)&data->info,
-					sizeof data->info);
-	data->vermagic.version = be16toh(data->vermagic.version);
-	data->info.vcom = be32toh(data->info.vcom);
-	data->info.waveform_full_length =
-		be32toh(data->info.waveform_full_length);
-	data->info.waveform_lzss_length =
-		be32toh(data->info.waveform_lzss_length);
-	data->info_crc = be16toh(data->info_crc);
-
-	printk("PLWF: Vermagic: %lx\n", data->vermagic.magic);
-
-	if (data->vermagic.magic != PLWF_MAGIC) {
-		printk("Invalid magic number: %lX instead of %lX\n",
-				data->vermagic.magic, PLWF_MAGIC);
-		return -1;
-	}
-
-	printk("PLWF: Version: %x\n", data->vermagic.version);
-
-	if (data->vermagic.version != PLWF_VERSION) {
-		printk("Unsupported format version: %d, requires %d\n",
-				data->vermagic.version, PLWF_VERSION);
-		return -1;
-	}
-
-	printk("Info CRC: %04X\n", crc);
-
-	if (data->info_crc != crc) {
-		printk("Info CRC mismatch: %04X instead of %04X\n",
-				data->info_crc, crc);
-		return -1;
-	}
-
-	printk("PLWF: Panel ID: %s\n", data->info.panel_id);
-	printk("PLWF: Panel Type: %s\n", data->info.panel_type);
-	printk("PLWF: Vcom: %li\n", data->info.vcom);
-	printk("PLWF: Waveform Length = %lu\n",
-	       data->info.waveform_full_length);
-	printk("PLWF: Waveform Compressed Length = %lu\n",
-	       data->info.waveform_lzss_length);
-	printk("PLWF: Waveform ID = %s\n", data->info.waveform_id);
-	printk("PLWF: Waveform Target = %s\n", data->info.waveform_target);
-	printk("PLWF: Waveform MD5 = ");
-	for (i=0; i<16; i++)
-	{
-		printk("%x", data->info.waveform_md5[i]);
-	}
-	printk("\n");
-
-	ret = get_waveform(data->info.waveform_lzss_length, eeprom, epson,
-			   address, &crc_wf);
-
-	if (ret != 0) {
-		printk("Error getting waveform from EEPROM\n");
-	}
+#if PLWF_VERBOSE_LOG
+	LOG("Waveform CRC: %04X", rd_ctx.crc);
+#endif
 
 	eeprom_read(eeprom, PLWF_WF_OFFS + data->info.waveform_lzss_length,
-		    sizeof crc_wf_eeprom, &crc_wf_eeprom);
-	crc_wf_eeprom = be16toh(crc_wf_eeprom);
+		    sizeof crc, &crc);
+	crc = be16toh(crc);
 
-	printf("PLWF: Waveform CRC: %04X\n", crc_wf);
-
-	if (crc_wf_eeprom != crc_wf) {
-		printk("Waveform CRC mismatch: %04X instead of %04X\n",
-				crc_wf, crc_wf_eeprom);
+	if (crc != rd_ctx.crc) {
+		LOG("Waveform CRC mismatch: %04X instead of %04X",
+		    rd_ctx.crc, crc);
+		return -1;
 	}
 
-	return  ret;
+	LOG("Waveform loaded OK");
+
+	return 0;
 }
