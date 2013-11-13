@@ -30,10 +30,10 @@
 #include "i2c-eeprom.h"
 #include "crc16.h"
 #include "vcom.h"
-#include "utils.h"
 #include "psu-data.h"
 
 #define LOG_TAG "psu-data"
+#include "utils.h"
 
 int psu_data_init(struct psu_data *data, struct i2c_eeprom *eeprom)
 {
@@ -69,9 +69,9 @@ int psu_data_init(struct psu_data *data, struct i2c_eeprom *eeprom)
 	info->vgpos_mv = be32toh(info->vgpos_mv);
 	info->vgneg_mv = be32toh(info->vgneg_mv);
 
-	LOG("dac[0x%x]=%d, dac[0x%x]=%d, vgpos=%d, vgneg=%d, crc=0x%04X",
+	LOG("dac[0x%x]=%d, dac[0x%x]=%d, vgpos=%ld, vgneg=%ld",
 	    info->dac_x1, info->dac_y1, info->dac_x2, info->dac_y2,
-	    info->vgpos_mv, info->vgneg_mv, data->crc);
+	    info->vgpos_mv, info->vgneg_mv);
 
 	return 0;
 }
