@@ -20,6 +20,7 @@
  * plat-hbz6.c -- Plastic Logic Hummingbird Z6 adapter
  *
  * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ *          Guillaume Tucker <guillaume.tucker@plasticlogic.com>
  *
  * Hummingbird HB Z6 platform intialisation. Can drive either:
  * Need to define
@@ -50,6 +51,8 @@
 #include "i2c-eeprom.h"
 #include "psu-data.h"
 #include "config.h"
+
+#define LOG_TAG "hbz6"
 #include "utils.h"
 
 #define CONFIG_PLAT_RUDDOCK2	1
@@ -62,18 +65,13 @@
 #else
 #endif
 
-
-/* 1 to write default value to eeprom on read failure (testing only) */
-#define	CONFIG_PSU_WRITE_DEFAULTS	0
 /* 1 to cycle power supplies only, no display update (testing only) */
-#define	CONFIG_PSU_ONLY				0
+#define	CONFIG_PSU_ONLY 0
 
-/* i2c addresses of TI PMIC and calibration data EEPROM */
-#define I2C_PMIC_ADDR		0x68
-#define	I2C_EEPROM_PSU_DATA	0x50
-#define I2C_EEPROM_PLWF_DATA 0x54
-
-#define LOG_TAG "hbz6"
+/* I2C addresses */
+#define I2C_PMIC_ADDR        0x68
+#define I2C_PSU_EEPROM_ADDR  0x50
+#define I2C_PLWF_EEPROM_ADDR 0x54
 
 /* Run regional update sequence of standard full-screen slideshow */
 #define USE_REGION_SLIDESHOW 1
@@ -88,10 +86,12 @@ static struct i2c_adapter *i2c;
 static struct s1d135xx *epson;
 static struct vcom_cal *vcom_calibration;
 static struct i2c_eeprom *psu_eeprom;
+#if !CONFIG_WF_ON_SD_CARD
 static struct i2c_eeprom *plwf_eeprom;
-static struct plwf_data *plwf_data;
+static struct plwf_data plwf_data;
+#endif
 
-static void check_temperature(struct s1d135xx *epson);
+static int check_temperature(struct s1d135xx *epson);
 #if USE_REGION_SLIDESHOW
 static int run_region_slideshow(struct s1d135xx *epson);
 #else
@@ -148,9 +148,11 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 
 	check(f_chdir(platform_path) == FR_OK);
 
+#if CONFIG_WF_ON_SD_CARD
 	/* read the display vcom */
 	vcom = util_read_vcom();
 	assert(vcom > 0);
+#endif
 
 	/* initialise the Epson interface */
 	epsonif_init(0, 1);
@@ -172,7 +174,6 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	check(s1d13541_init_initcode(epson) == 0);
 	check(s1d13541_init_pwrstate(epson) == 0);
 	check(s1d13541_init_keycode(epson) == 0);
-
 #endif
 
 	/* initialise the i2c interface as required */
@@ -183,18 +184,28 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 
 #if !CONFIG_PSU_ONLY
 #if CONFIG_WF_ON_SD_CARD
+	LOG("Loading display data from SD card");
 	check(s1d13541_init_waveform_sd(epson) == 0);
-#else
-	eeprom_init(i2c, I2C_EEPROM_PLWF_DATA, EEPROM_24AA256, &plwf_eeprom);
-	plwf_data_init(&plwf_data);
-	check(!s1d13541_init_waveform_eeprom(epson, plwf_eeprom, plwf_data));
-	plwf_data_free(&plwf_data);
-#endif /* WAVEFORM_ON_SD_CARD */
+#else /* !WAVEFORM_ON_SD_CARD */
+	LOG("Loading display data from EEPROM");
+	eeprom_init(i2c, I2C_PLWF_EEPROM_ADDR, EEPROM_24AA256, &plwf_eeprom);
+
+	if (plwf_data_init(&plwf_data, plwf_eeprom)) {
+		LOG("Failed to initialise display data");
+		return -1;
+	}
+
+	if (plwf_load_wf(&plwf_data, plwf_eeprom, epson, S1D13541_WF_ADDR))
+		return -1;
+
+	vcom = plwf_data.info.vcom;
+#endif /* !WAVEFORM_ON_SD_CARD */
 	check(s1d13541_init_gateclr(epson) == 0);
 	check(s1d13541_init_end(epson, prev_screen) == 0);
 #endif
+
 	/* intialise the psu EEPROM */
-	eeprom_init(i2c, I2C_EEPROM_PSU_DATA, EEPROM_24LC014, &psu_eeprom);
+	eeprom_init(i2c, I2C_PSU_EEPROM_ADDR, EEPROM_24LC014, &psu_eeprom);
 
 	/* read the psu calibration data and ready it for use */
 	if (psu_data_init(&psu_data, psu_eeprom)) {
@@ -208,7 +219,7 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 #endif
 	}
 
-	/* Initialise the VCOM */
+	/* initialise the VCOM */
 	if (vcom_init(&psu_data.info, VCOM_VGSWING, &vcom_calibration) < 0) {
 		LOG("Failed to initialise VCOM");
 		return -1;
@@ -223,7 +234,6 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	/* initialise the PMIC and pass it the vcom calibration data */
 	tps65185_init(i2c, I2C_PMIC_ADDR, &pmic_info);
 	tps65185_configure(pmic_info, vcom_calibration);
-
 	tps65185_set_vcom_voltage(pmic_info, vcom);
 
 #if CONFIG_PSU_ONLY
@@ -243,7 +253,6 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	power_down();
 
 	/* run the slideshow */
-
 #if USE_REGION_SLIDESHOW
 	ret = run_region_slideshow(epson);
 #else
@@ -319,7 +328,9 @@ static int cmd_power(struct s1d135xx *epson, const char *line)
 		return -1;
 
 	if (!strcmp(on_off, "on")) {
-		check_temperature(epson);
+		if (check_temperature(epson))
+			return -1;
+
 		power_up();
 	} else if (!strcmp(on_off, "off")) {
 		s1d13541_wait_update_end(epson);
@@ -403,13 +414,18 @@ static int run_region_slideshow(struct s1d135xx *epson)
 
 	return stat;
 }
-#else
+
+#else /* !USE_REGION_SLIDESHOW */
+
 static int show_image(const char *image, void *arg)
 {
 	struct s1d135xx *epson = arg;
 
 	slideshow_load_image(image, 0x0030, false);
-	check_temperature(epson);
+
+	if (check_temperature(epson))
+		return -1;
+
 	power_up();
 	s1d13541_update_display(epson, WVF_REFRESH);
 	s1d13541_wait_update_end(epson);
@@ -427,9 +443,10 @@ static int run_std_slideshow(struct s1d135xx *epson)
 
 	return 0;
 }
-#endif
 
-static void check_temperature(struct s1d135xx *epson)
+#endif /* !USE_REGION_SLIDESHOW */
+
+static int check_temperature(struct s1d135xx *epson)
 {
 	u8 needs_update;
 
@@ -438,13 +455,18 @@ static void check_temperature(struct s1d135xx *epson)
 
 	if (needs_update) {
 #if CONFIG_WF_ON_SD_CARD
-		s1d13541_send_waveform();
+		if (s1d13541_send_waveform()) {
+			LOG("Failed to reload waveform from SD card");
+			return -1;
+		}
 #else
-		eeprom_init(i2c, I2C_EEPROM_PLWF_DATA, EEPROM_24AA256,
-			    &plwf_eeprom);
-		plwf_data_init(&plwf_data);
-		s1d13541_send_waveform_eeprom(epson, plwf_eeprom, plwf_data);
-		plwf_data_free(&plwf_data);
+		if (plwf_load_wf(&plwf_data, plwf_eeprom, epson,
+				 S1D13541_WF_ADDR)) {
+			LOG("Failed to reload waveform from EEPROM");
+			return -1;
+		}
 #endif /* WAVEFORM_ON_SD_CARD */
 	}
+
+	return 0;
 }
