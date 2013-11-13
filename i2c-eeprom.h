@@ -26,6 +26,8 @@
 #ifndef I2C_EEPROM_H_
 #define I2C_EEPROM_H_
 
+#include "types.h"
+
 struct i2c_eeprom;
 struct i2c_adapter;
 
