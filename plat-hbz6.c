@@ -266,23 +266,10 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 
 #if USE_REGION_SLIDESHOW
 
-static int cmd_image(struct s1d135xx *epson, const char *line)
-{
-	struct slideshow_item item;
-
-	if (slideshow_parse_item(line, &item))
-		return -1;
-
-	if (slideshow_load_image_area(&item, "img", 0x0030, false))
-		return -1;
-
-	return 0;
-}
-
 static int cmd_update(struct s1d135xx *epson, const char *line)
 {
 	char waveform[16];
-	struct area a;
+	struct area area;
 	int delay_ms;
 	const char *opt;
 	int len;
@@ -296,7 +283,7 @@ static int cmd_update(struct s1d135xx *epson, const char *line)
 		return -1;
 
 	opt += len;
-	len = parser_read_area(opt, SEP, &a);
+	len = parser_read_area(opt, SEP, &area);
 
 	if (len <= 0)
 		return -1;
@@ -314,7 +301,7 @@ static int cmd_update(struct s1d135xx *epson, const char *line)
 		return -1;
 	}
 
-	s1d13541_update_display_area(epson, wfid, &a);
+	s1d13541_update_display_area(epson, wfid, &area);
 	mdelay(delay_ms);
 
 	return stat;
@@ -343,6 +330,68 @@ static int cmd_power(struct s1d135xx *epson, const char *line)
 	return 0;
 }
 
+static int cmd_fill(struct s1d135xx *epson, const char *line)
+{
+	struct area area;
+	const char *opt;
+	int len;
+	int gl;
+
+	opt = line;
+	len = parser_read_area(opt, SEP, &area);
+
+	if (len <= 0)
+		return -1;
+
+	opt += len;
+	len = parser_read_int(opt, SEP, &gl);
+
+	if (len < 0)
+		return -1;
+
+	if ((gl > 15) || (gl < 0)) {
+		LOG("Invalid grey level value: %d", gl);
+		return -1;
+	}
+
+	gl |= (gl << 4);
+
+	return epson_fill_area(0x0030, false, &area, gl);
+}
+
+static int cmd_image(struct s1d135xx *epson, const char *line)
+{
+	struct slideshow_item item;
+
+	if (slideshow_parse_item(line, &item))
+		return -1;
+
+	if (slideshow_load_image_area(&item, "img", 0x0030, false))
+		return -1;
+
+	return 0;
+}
+
+static int cmd_sleep(struct s1d135xx *epson, const char *line)
+{
+	int sleep_ms;
+	int len;
+
+	len = parser_read_int(line, SEP, &sleep_ms);
+
+	if (len < 0)
+		return -1;
+
+	if (sleep_ms < 0) {
+		LOG("Invalid sleep duration: %d", sleep_ms);
+		return -1;
+	}
+
+	msleep(sleep_ms);
+
+	return 0;
+}
+
 static int run_region_slideshow(struct s1d135xx *epson)
 {
 	FIL slides;
@@ -363,7 +412,9 @@ static int run_region_slideshow(struct s1d135xx *epson)
 		static const struct cmd cmd_table[] = {
 			{ "update", cmd_update },
 			{ "power", cmd_power },
+			{ "fill", cmd_fill },
 			{ "image", cmd_image },
+			{ "sleep", cmd_sleep },
 			{ NULL, NULL }
 		};
 		const struct cmd *cmd;
