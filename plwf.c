@@ -46,39 +46,44 @@
 /* Offset where to start reading the waveform data from */
 #define PLWF_WF_OFFS (sizeof(struct plwf_data))
 
-struct buffer_context {
-	uint8_t buffer[64];
-	size_t buflen;
-	size_t wvf_length;
-	size_t offset;
-	int index;
-	struct i2c_eeprom *eeprom;
-	struct s1d135xx *controller;
-	uint16_t crc;
+/* Context to read from the EEPROM */
+struct rd_ctx {
+	uint8_t buffer[64];        /* buffer to read a block of data */
+	size_t buflen;             /* length of payload in buffer */
+	size_t datalen;            /* length of the data left to read */
+	size_t index;              /* index of current byte in buffer */
+	size_t offset;             /* offset where to read next in EEPROM */
+	uint16_t crc;              /* accumulated CRC for all data read */
+	struct i2c_eeprom *eeprom; /* EEPROM instance */
+};
+
+/* Context to write to the Epson controller */
+struct wr_ctx {
+	uint8_t buffer[128];       /* buffer to read a block of data */
+	size_t buflen;             /* length of payload in buffer */
+	size_t index;              /* index of current byte in buffer */
 };
 
 /* Static functions */
 
-static int plwf_wf_rd(struct buffer_context *ctx)
+static int plwf_wf_rd(struct rd_ctx *ctx)
 {
 	if (ctx->index == ctx->buflen) {
-		const size_t wvf_read = ctx->offset - PLWF_WF_OFFS;
-
-		if (wvf_read == ctx->wvf_length)
+		if (!ctx->datalen)
 			return EOF;
 
 		ctx->index = 0;
-		ctx->buflen = min(sizeof(ctx->buffer),
-				  ctx->wvf_length - wvf_read);
-		eeprom_read(ctx->eeprom, ctx->offset, ctx->buflen, ctx->buffer);
+		ctx->buflen = min(sizeof(ctx->buffer), ctx->datalen);
+		eeprom_read(ctx->eeprom, ctx->offset, ctx->buflen,ctx->buffer);
 		ctx->crc = crc16_run(ctx->crc, ctx->buffer, ctx->buflen);
 		ctx->offset += ctx->buflen;
+		ctx->datalen -= ctx->buflen;
 	}
 
 	return ctx->buffer[ctx->index++];
 }
 
-static int plwf_wf_wr(int c, struct buffer_context *ctx)
+static int plwf_wf_wr(int c, struct wr_ctx *ctx)
 {
 	ctx->buffer[ctx->index++] = c;
 
@@ -172,8 +177,8 @@ int plwf_load_wf(struct plwf_data *data, struct i2c_eeprom *eeprom,
 {
 	struct lzss lzss;
 	struct lzss_io io;
-	struct buffer_context wr_ctx;
-	struct buffer_context rd_ctx;
+	struct rd_ctx rd_ctx;
+	struct wr_ctx wr_ctx;
 	char lzss_buffer[LZSS_BUFFER_SIZE(PLWF_LZSS_EI)];
 	uint16_t crc;
 
@@ -188,27 +193,19 @@ int plwf_load_wf(struct plwf_data *data, struct i2c_eeprom *eeprom,
 
 	lzss.buffer = lzss_buffer;
 
-	memset(rd_ctx.buffer, 0, sizeof(rd_ctx.buffer));
-	rd_ctx.wvf_length = data->info.waveform_lzss_length;
-	rd_ctx.offset = PLWF_WF_OFFS;
-	rd_ctx.eeprom = eeprom;
-	rd_ctx.controller = NULL;
 	rd_ctx.buflen = 0;
-	rd_ctx.index = rd_ctx.buflen;
+	rd_ctx.datalen = data->info.waveform_lzss_length;
+	rd_ctx.index = 0;
+	rd_ctx.offset = PLWF_WF_OFFS;
 	rd_ctx.crc = crc16_init;
-
-	memset(wr_ctx.buffer, 0, sizeof(wr_ctx.buffer));
-#if 1 /* ToDo: use separate buffer types for reading and writing */
-	wr_ctx.wvf_length = 0;
-#endif
-	wr_ctx.buflen = sizeof(wr_ctx.buffer);
-	wr_ctx.offset = 0;
-	wr_ctx.eeprom = NULL;
-	wr_ctx.controller = epson;
-	wr_ctx.index = 0;
+	rd_ctx.eeprom = eeprom;
 
 	io.rd = (lzss_rd_t)plwf_wf_rd;
 	io.i = &rd_ctx;
+
+	wr_ctx.buflen = sizeof(wr_ctx.buffer);
+	wr_ctx.index = 0;
+
 	io.wr = (lzss_wr_t)plwf_wf_wr;
 	io.o = &wr_ctx;
 
