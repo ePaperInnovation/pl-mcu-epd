@@ -33,7 +33,8 @@
 #include "i2c-eeprom.h"
 #include "plwf.h"
 
-#define LOG(msg, ...) printf("S1D13541: "msg"\n", ##__VA_ARGS__)
+#define LOG_TAG "S1D13541"
+#include "utils.h"
 
 #define EPSON_CODE_PATH	"bin/Ecode.bin"
 #define WAVEFORM_PATH	"display/waveform.bin"
@@ -62,29 +63,20 @@
 /* 541 constant value list */
 #define PRODUCT_CODE 0x0053
 
-static int wait_for_HRDY_ready(int timeout)
-{
-	epson_wait_for_idle();
-	return 0;
-}
-
-static int delay_for_HRDY_ready(int timeout)
-{
-	epson_wait_for_idle();
-	return 0;
-}
-
-static int send_init_code()
+static int send_init_code(void)
 {
 	uint16_t readval;
 
-	if (epson_loadEpsonCode(EPSON_CODE_PATH) < 0)
-		return -EIO;
+	if (epson_loadEpsonCode(EPSON_CODE_PATH)) {
+		LOG("Failed to load instruction code from file");
+		return -1;
+	}
 
 	epson_reg_read(CMD_SEQ_AUTOBOOT_CMD_REG, &readval);
+
 	if ((readval & BF_INIT_CODE_CHECKSUM) == INIT_CODE_CHECKSUM_ERROR) {
-		LOG("init code checksum error");
-		return -EIO;
+		LOG("Init code checksum error");
+		return -1;
 	}
 
 	return 0;
@@ -93,67 +85,53 @@ static int send_init_code()
 static int send_waveform(void)
 {
 	uint16_t readval;
-	int stat;
 
 	if (epson_loadEpsonWaveform(WAVEFORM_PATH, S1D13541_WF_ADDR) < 0)
-		return -EIO;
+		return -1;
 
-	stat = delay_for_HRDY_ready(TIMEOUT_MS);
-
-	if (stat) {
-		LOG("failed to send waveform");
-		return stat;
-	}
-
+	epson_wait_for_idle();
 	epson_reg_read(DISPLAY_INT_RAW_STAT_REG, &readval);
 
-	if (readval & INT_WF_INVALID_FORMAT) {
-		LOG("invalid waveform format");
-		return -EIO;
-	}
+	if (readval & INT_WF_INVALID_FORMAT)
+		abort_msg("Invalid waveform format");
 
-	if (readval & INT_WF_CHECKSUM_ERROR) {
-		LOG("waveform checksum error");
-		return -EIO;
-	}
+	if (readval & INT_WF_CHECKSUM_ERROR)
+		abort_msg("Waveform checksum error");
 
-	if (readval & INT_WF_OVERFLOW) {
-		LOG("waveform overflow");
-		return -EIO;
-	}
+	if (readval & INT_WF_OVERFLOW)
+		abort_msg("Waveform overflow");
 
 	return 0;
 }
 
-int s1d13541_init_display(struct s1d135xx *epson)
+void s1d13541_init_display(struct s1d135xx *epson)
 {
-	assert(epson);
+	assert(epson != NULL);
 
 	epson_cmd_p0(UPD_INIT);
 	epson_wait_for_idle();
 	epson_cmd_p0(WAIT_DSPE_TRG);
 	epson_wait_for_idle();
-
-	return 0;
 }
 
-int s1d13541_update_display(struct s1d135xx *epson, int waveform)
+void s1d13541_update_display(struct s1d135xx *epson, int waveform)
 {
-	assert(epson);
+	assert(epson != NULL);
+	assert(waveform < _WVF_N_);
 
 	epson_cmd_p1(UPD_FULL, WAVEFORM_MODE(waveform) | UPDATE_LUT(0));
 	epson_wait_for_idle();
 
 	epson_cmd_p0(WAIT_DSPE_TRG);
 	epson_wait_for_idle();
-
-	return 0;
 }
 
-int s1d13541_update_display_area(struct s1d135xx *epson, int waveform,
-				 const struct area *area)
+void s1d13541_update_display_area(struct s1d135xx *epson, int waveform,
+				  const struct area *area)
 {
 	assert(epson != NULL);
+	assert(area != NULL);
+	assert(waveform < _WVF_N_);
 
 	epson_cmd_p5(UPD_FULL_AREA, WAVEFORM_MODE(waveform),
 		     (area->left & S1D135XX_XMASK),
@@ -164,16 +142,12 @@ int s1d13541_update_display_area(struct s1d135xx *epson, int waveform,
 
 	epson_cmd_p0(WAIT_DSPE_TRG);
 	epson_wait_for_idle();
-
-	return 0;
 }
 
-int s1d13541_wait_update_end(struct s1d135xx *epson)
+void s1d13541_wait_update_end(struct s1d135xx *epson)
 {
 	epson_cmd_p0(WAIT_DSPE_FREND);
 	epson_wait_for_idle();
-
-	return 0;
 }
 
 int s1d13541_init_start(screen_t screen, screen_t *previous,
@@ -181,10 +155,9 @@ int s1d13541_init_start(screen_t screen, screen_t *previous,
 {
 	struct s1d135xx *epson;
 
-	LOG("sizeof(temp_mode): %lu", sizeof(enum s1d135xx_pwr_state));
 	*controller = epson = malloc(sizeof(struct s1d135xx));
 	if (NULL == epson)
-		return -ENOMEM;
+		return -1;
 
 	epson_wait_for_idle_mask(0x2000, 0x2000);
 
@@ -196,58 +169,52 @@ int s1d13541_init_start(screen_t screen, screen_t *previous,
 	epson->power_mode = PWR_STATE_UNDEFINED;
 
 	if (epsonif_claim(0, screen, previous) < 0)
-		return -EIO;
+		return -1;
 
 	return 0;
 }
 
 int s1d13541_init_prodcode(struct s1d135xx *epson)
 {
-	int retval = 0;
-	uint16_t product;
+	uint16_t product_code;
 
-	assert(epson);
+	assert(epson != NULL);
 
 	epson_softReset();
+	epson_wait_for_idle();
+	epson_reg_read(PROD_CODE_REG, &product_code);
 
-	retval = wait_for_HRDY_ready(TIMEOUT_MS);
+	LOG("Product code: 0x%04x", product_code);
 
-	epson_reg_read(PROD_CODE_REG, &product);
-
-	printk(KERN_INFO "541: product code = 0x%04x\n", product);
-	if (product != PRODUCT_CODE) {
-		printk(KERN_ERR "541: invalid product code\n");
-		retval = -EIO;
+	if (product_code != PRODUCT_CODE) {
+		LOG("invalid product code, %04X instead of %04X",
+		    product_code, PRODUCT_CODE);
+		return -1;
 	}
 
-	return retval;
+	return 0;
 }
 
 int s1d13541_init_clock(struct s1d135xx *epson)
 {
-	int retval = 0;
-
-	assert(epson);
+	assert(epson != NULL);
 
 	epson_reg_write(REG_CLOCK_CONFIGURATION, INTERNAL_CLOCK_ENABLE);
 	msleep(10);
-	retval = wait_for_HRDY_ready(TIMEOUT_MS);
-	if (retval != 0) {
-		printk(KERN_ERR "541: clock enable failed\n");
-	}
+	epson_wait_for_idle();
 
-	return retval;
+	return 0;
 }
 
 int s1d13541_init_initcode(struct s1d135xx *epson)
 {
 	int retval = 0;
 
-	assert(epson);
+	assert(epson != NULL);
 
 	retval = send_init_code();
 	if (retval != 0) {
-		printk(KERN_ERR "541: send_init_code failed\n");
+		LOG("send_init_code failed");
 	}
 
 	return retval;
@@ -255,56 +222,43 @@ int s1d13541_init_initcode(struct s1d135xx *epson)
 
 int s1d13541_init_pwrstate(struct s1d135xx *epson)
 {
-	int retval = 0;
-
-	assert(epson);
+	assert(epson != NULL);
 
 	epson_cmd_p0(INIT_SYS_STBY);
 	epson->power_mode = PWR_STATE_STANDBY;
 	msleep(100);
+	epson_wait_for_idle();
 
-	retval = wait_for_HRDY_ready(TIMEOUT_MS);
-	if (retval != 0) {
-		printk(KERN_ERR "541: init and standby failed\n");
-	}
-
-	return retval;
+	return 0;
 }
 
 int s1d13541_init_keycode(struct s1d135xx *epson)
 {
-	int retval = 0;
-
-	assert(epson);
+	assert(epson != NULL);
 
 	epson_reg_write(REG_PROTECTION_KEY_1, epson->keycode1);
 	epson_reg_write(REG_PROTECTION_KEY_2, epson->keycode2);
-	retval = wait_for_HRDY_ready(TIMEOUT_MS);
-	if (retval != 0) {
-		printk(KERN_ERR "541: write keycode failed\n");
-	}
+	epson_wait_for_idle();
 
-	return retval;
+	return 0;
 }
 
 int s1d13541_init_waveform_sd(struct s1d135xx *epson)
 {
 	int retval = 0;
 
-	assert(epson);
+	assert(epson != NULL);
 
 	retval = send_waveform();
 	if (retval != 0)
-		printk(KERN_ERR "541: Waveform load from filesystem failed\n");
+		LOG("Waveform load from filesystem failed");
 
 	return retval;
 }
 
 int s1d13541_init_gateclr(struct s1d135xx *epson)
 {
-	int retval = 0;
-
-	assert(epson);
+	assert(epson != NULL);
 
 #if GATE_POWER_BEFORE_INIT
 	epson_mode_run(epson);
@@ -316,10 +270,8 @@ int s1d13541_init_gateclr(struct s1d135xx *epson)
 	epson_mode_run(epson);
 #endif
 	epson_cmd_p0(WAIT_DSPE_TRG);
-	retval = wait_for_HRDY_ready(TIMEOUT_MS);
-	if (retval != 0) {
-		printk(KERN_ERR "541: clear gate driver failed\n");
-	}
+	epson_wait_for_idle();
+
 	// init_rot_mode
 	// not required in this case
 
@@ -339,12 +291,12 @@ int s1d13541_init_gateclr(struct s1d135xx *epson)
 	epson_wait_for_idle();
 #endif
 
-	return retval;
+	return 0;
 }
 
 int s1d13541_init_end(struct s1d135xx *epson, screen_t previous)
 {
-	assert(epson);
+	assert(epson != NULL);
 
 	// get x and y definitions.
 	epson_reg_read(REG_LINE_DATA_LENGTH, &epson->xres);
@@ -359,15 +311,14 @@ int s1d13541_send_waveform(void)
 	return send_waveform();
 }
 
-int s1d13541_set_temperature_mode(struct s1d135xx *epson,
-				  enum s1d135xx_temp_mode temp_mode)
+void s1d13541_set_temperature_mode(struct s1d135xx *epson,
+				   enum s1d135xx_temp_mode temp_mode)
 {
 	uint16_t reg;
 
-	assert(epson);
+	assert(epson != NULL);
 
 	epson_reg_read(PERIPHERAL_CONFIG_REG, &reg);
-
 	reg &= ~TEMP_SENSOR_CONTROL;
 
 	switch(temp_mode)
@@ -382,38 +333,31 @@ int s1d13541_set_temperature_mode(struct s1d135xx *epson,
 		break;
 	case TEMP_MODE_UNDEFINED:
 	default:
-		return -EPARAM;
+		abort_msg("Invalid temperature mode");
 	}
 
 	epson_reg_write(PERIPHERAL_CONFIG_REG, reg );
-
 	epson->temp_mode = temp_mode;
 
-	/* Configure the controller to check for waveform update after temperature sense
-	 */
+	/* Configure the controller to check for waveform update after
+	 * temperature sense.  */
 	epson_reg_read(REG_WAVEFORM_DECODER_BYPASS, &reg);
 	epson_reg_write(REG_WAVEFORM_DECODER_BYPASS,
 			(reg | AUTO_TEMP_JUDGE_ENABLE));
-
-	return 0;
 }
 
-int s1d13541_set_temperature(struct s1d135xx *epson, int8_t temp)
+void s1d13541_set_temperature(struct s1d135xx *epson, int8_t temp)
 {
-	assert(epson);
+	assert(epson != NULL);
 
 	epson->temp_set = temp;
-
-	return 0;
 }
 
-int s1d13541_get_temperature(struct s1d135xx *epson, int8_t *temp)
+int8_t s1d13541_get_temperature(struct s1d135xx *epson)
 {
-	assert(epson);
+	assert(epson != NULL);
 
-	*temp = epson->temp_measured;
-
-	return 0;
+	return epson->temp_measured;
 }
 
 #define	GENERIC_TEMP_CONF_REG	0x057E
@@ -434,18 +378,16 @@ static void measured_temp(uint16_t temp_reg, uint8_t *needs_update,
 	*measured = (reg & 0x00ff);
 }
 
-int s1d13541_measure_temperature(struct s1d135xx *epson, u8 *needs_update)
+void s1d13541_measure_temperature(struct s1d135xx *epson, u8 *needs_update)
 {
 	s8 temp_measured;
 
-	assert(epson);
+	assert(epson != NULL);
+	assert(needs_update != NULL);
+	assert(epson->temp_mode != TEMP_MODE_UNDEFINED);
 
 	switch(epson->temp_mode)
 	{
-	case TEMP_MODE_UNDEFINED:
-	default:
-		return -1;
-
 	case TEMP_MODE_MANUAL:
 		/* apply manually specified temperature */
 		epson_reg_write(GENERIC_TEMP_CONF_REG,
@@ -476,7 +418,5 @@ int s1d13541_measure_temperature(struct s1d135xx *epson, u8 *needs_update)
 
 	epson->temp_measured = temp_measured;
 
-	printk("541: Temperature: %d\n", temp_measured);
-
-	return 0;
+	LOG("Temperature: %d", temp_measured);
 }
