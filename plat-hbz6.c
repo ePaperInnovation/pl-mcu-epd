@@ -355,8 +355,9 @@ static int cmd_fill(struct s1d135xx *epson, const char *line)
 	}
 
 	gl |= (gl << 4);
+	epson_fill_area(0x0030, false, &area, gl);
 
-	return epson_fill_area(0x0030, false, &area, gl);
+	return 0;
 }
 
 static int cmd_image(struct s1d135xx *epson, const char *line)
