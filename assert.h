@@ -20,27 +20,30 @@
 #ifndef ASSERT_H_
 #define ASSERT_H_
 
-void assert_test(int expr, const char *abort_msg);
-
 #define _STR(x)  __STR(x)
 #define __STR(x) #x
 
+enum abort_error {
+	ABORT_ERROR = 0,
+	ABORT_ASSERT,
+	ABORT_CHECK,
+};
 
-#if defined(NDEBUG)
+extern void do_abort_msg(const char *file, unsigned line,
+			 enum abort_error error, const char *message);
 
-#define assert(_ignore) ((void)0)
-#define	check(_expr)	assert_test((_expr) != 0, NULL)
-
+#define abort_msg(_msg) do { \
+	do_abort_msg(__FILE__, __LINE__, ABORT_ERROR, _msg); \
+} while (0)
+#define check(_e) do { \
+	if (!(_e)) do_abort_msg(__FILE__, __LINE__, ABORT_CHECK, _STR(_e)); \
+} while (0)
+#ifdef NDEBUG
+#define assert(_e)
 #else
-#define assert(_expr)   assert_test((_expr) != 0, \
-						"Assert, (" _STR(_expr) "), " _STR(__FILE__) \
-						":" _STR(__LINE__) "\n")
-
-#define check(_expr)    assert_test((_expr) != 0, \
-						"Check, (" _STR(_expr) "), " _STR(__FILE__) \
-						":" _STR(__LINE__) "\n")
-
-#endif /* NDEBUG */
-
+#define assert(_e) do { \
+	if (!(_e)) do_abort_msg(__FILE__, __LINE__, ABORT_ASSERT, _STR(_e)); \
+} while (0)
+#endif
 
 #endif /* ASSERT_H_ */
