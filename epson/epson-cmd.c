@@ -32,9 +32,6 @@
 /* Enable prototype parallel interface support */
 #define CONFIG_IF_PARALLEL		0
 
-/* How long to wait for chip to become ready */
-#define	CONFIG_WAIT_TIMEOUT_MS	5000
-
 /* Enable Epson command tracing */
 #define CONFIG_TRACE_COMMANDS	0
 
@@ -296,33 +293,26 @@ int epson_reg_write(uint16_t reg, uint16_t value)
 	return epson_cmd_p2(WR_REG, reg, value);
 }
 
-int epson_is_busy()
+int epson_is_busy(void)
 {
-	int ret = 0;
 	uint16_t status = 0;
 
 #if SPI_HRDY_USED
 	// Check the status of the HRDY pin if we are using it
-#if	SPI_HRDY_SELECT
+#if SPI_HRDY_SELECT
 	epsonif_select_epson();
 #endif
 	if (spi_read_hrdy())
-	{
 		status |= idle_mask;
-	}
-#if	SPI_HRDY_SELECT
+#if SPI_HRDY_SELECT
 	epsonif_deselect_epson();
 #endif
 #else
 	// Read the system status register to determine if busy
 	(void)epson_reg_read(SYS_STAT_REG, &status);
 #endif
-	if ((status & idle_mask) != idle_result)
-	{
-		ret = -EBUSY;
-	}
 
-	return ret;
+	return ((status & idle_mask) != idle_result);
 }
 
 void epson_wait_for_idle_mask(uint16_t mask, uint16_t result)
@@ -331,15 +321,12 @@ void epson_wait_for_idle_mask(uint16_t mask, uint16_t result)
 	idle_result = result;
 }
 
-void epson_wait_for_idle()
+void epson_wait_for_idle_timeout(unsigned timeout_ms)
 {
-	int timeout = CONFIG_WAIT_TIMEOUT_MS;
+	while (epson_is_busy()) {
+		if (!timeout_ms--)
+			abort_msg("S1D13541 HRDY timeout");
 
-	while (epson_is_busy() == -EBUSY)
-	{
-		timeout--;
-		assert(timeout);
 		mdelay(1);
 	}
 }
-

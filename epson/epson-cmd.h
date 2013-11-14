@@ -38,31 +38,37 @@
 #define	PRE_WAIT_READY	0x8000
 #define	POST_WAIT_READY	0x4000
 
+/** Standard maximum amount of time to wait for the HRDY signal */
+#define EPSON_HRDY_TIMEOUT 5000
+
+#define epson_wait_for_idle()						\
+	do { epson_wait_for_idle_timeout(EPSON_HRDY_TIMEOUT); } while (0)
+
 #define PRE_WAIT(_x_)	((_x_) | PRE_WAIT_READY)
 #define POST_WAIT(_x_)	((_x_) | POST_WAIT_READY)
 
-// function prototypes
-void epson_init_comm(void);
-void epson_close_comm(void);
-int epson_cmd_p0(uint16_t command);
-int epson_cmd_p1(uint16_t command, uint16_t p1);
-int epson_cmd_p2(uint16_t command, uint16_t p1, uint16_t p2);
-int epson_cmd_p3(uint16_t command, uint16_t p1, uint16_t p2, uint16_t p3);
-int epson_cmd_p4(uint16_t command, uint16_t p1, uint16_t p2, uint16_t p3,
-		 uint16_t p4);
-int epson_cmd_p5(uint16_t command, uint16_t p1, uint16_t p2, uint16_t p3,
-		 uint16_t p4, uint16_t p5);
+extern void epson_init_comm(void);
+extern void epson_close_comm(void);
+extern int epson_cmd_p0(uint16_t command);
+extern int epson_cmd_p1(uint16_t command, uint16_t p1);
+extern int epson_cmd_p2(uint16_t command, uint16_t p1, uint16_t p2);
+extern int epson_cmd_p3(uint16_t command, uint16_t p1, uint16_t p2,
+			uint16_t p3);
+extern int epson_cmd_p4(uint16_t command, uint16_t p1, uint16_t p2,
+			uint16_t p3, uint16_t p4);
+extern int epson_cmd_p5(uint16_t command, uint16_t p1, uint16_t p2,
+			uint16_t p3, uint16_t p4, uint16_t p5);
 
-int epson_begin_bulk_code_transfer(uint16_t command);
-int epson_begin_bulk_transfer(uint16_t command);
-int epson_bulk_transfer_word(uint16_t data);
-int epson_bulk_transfer_raw_data(u8 *buffer, size_t length);
-int epson_end_bulk_transfer(void);
+extern int epson_begin_bulk_code_transfer(uint16_t command);
+extern int epson_begin_bulk_transfer(uint16_t command);
+extern int epson_bulk_transfer_word(uint16_t data);
+extern int epson_bulk_transfer_raw_data(u8 *buffer, size_t length);
+extern int epson_end_bulk_transfer(void);
 
-int epson_is_busy(void);
-void epson_wait_for_idle(void);
-void epson_wait_for_idle_mask(uint16_t mask, uint16_t result);
-int epson_reg_read(uint16_t reg, uint16_t* value);
-int epson_reg_write(uint16_t reg, uint16_t value);
+extern int epson_is_busy(void);
+extern void epson_wait_for_idle_timeout(unsigned timeout_ms);
+extern void epson_wait_for_idle_mask(uint16_t mask, uint16_t result);
+extern int epson_reg_read(uint16_t reg, uint16_t* value);
+extern int epson_reg_write(uint16_t reg, uint16_t value);
 
 #endif /* EPSON_CMD_H_ */
