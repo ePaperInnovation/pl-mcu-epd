@@ -156,10 +156,12 @@ static int gpio_check(u16 port, u16 pinmask)
 	return 0;
 }
 
+#ifndef NDEBUG
 static int gpio_is_allocated(u16 port, u16 pinmask)
 {
 	return (alloc_map[port] & pinmask);
 }
+#endif
 
 #if GPIO_DEBUG
 static int gpio_pin_number(u16 pinmask)
