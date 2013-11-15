@@ -243,19 +243,6 @@ int s1d13541_init_keycode(struct s1d135xx *epson)
 	return 0;
 }
 
-int s1d13541_init_waveform_sd(struct s1d135xx *epson)
-{
-	int retval = 0;
-
-	assert(epson != NULL);
-
-	retval = send_waveform();
-	if (retval != 0)
-		LOG("Waveform load from filesystem failed");
-
-	return retval;
-}
-
 int s1d13541_init_gateclr(struct s1d135xx *epson)
 {
 	assert(epson != NULL);

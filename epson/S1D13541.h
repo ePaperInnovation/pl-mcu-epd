@@ -60,7 +60,6 @@ extern int s1d13541_init_clock(struct s1d135xx *epson);
 extern int s1d13541_init_initcode(struct s1d135xx *epson);
 extern int s1d13541_init_pwrstate(struct s1d135xx *epson);
 extern int s1d13541_init_keycode(struct s1d135xx *epson);
-extern int s1d13541_init_waveform_sd(struct s1d135xx *epson);
 extern int s1d13541_init_gateclr(struct s1d135xx *epson);
 extern int s1d13541_init_end(struct s1d135xx *epson, screen_t previous);
 
