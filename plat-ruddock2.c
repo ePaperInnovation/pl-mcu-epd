@@ -79,10 +79,6 @@
 #define	RESET		GPIO(5,0)
 #define	SHUTDOWN 	GPIO(5,1)
 
-/* HBZ7 uses RESERVE1 to control 3V3 on the board */
-#define	RESERVE1	GPIO(1,6)
-#define	RESERVE2	GPIO(1,7)
-
 #define	PMIC_FLT	GPIO(2,5)
 #define	HIRQ		GPIO(2,6)
 
@@ -130,10 +126,6 @@ int ruddock2_init(void)
 	gpio_request(HIRQ,     PIN_GPIO | PIN_INPUT | PIN_PULL_UP);
 
 	gpio_request(SHUTDOWN, 	PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH);
-
-	/* Reserve is more specific */
-	gpio_request(RESERVE1, 	PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH);
-	gpio_request(RESERVE2, 	PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH);
 
 	/* parallel interface signals, define as low outputs for now */
 	for (gpio = 0; gpio < ARRAY_SIZE(parallel_interface); gpio++)

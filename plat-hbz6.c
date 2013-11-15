@@ -60,7 +60,9 @@
 #define B_HWSW_CTRL	GPIO(1,2)
 #define B_POK		GPIO(1,0)
 #define B_PMIC_EN	GPIO(1,1)
-#define	EPSON_CS_0	GPIO(3,6)
+#define EPSON_CS_0	GPIO(3,6)
+#define EPSON_CLK_EN 	GPIO(1,6)
+#define EPSON_3V3_EN 	GPIO(1,7)
 #endif
 
 /* 1 to cycle power supplies only, no display update (testing only) */
@@ -126,6 +128,76 @@ static int power_down(void)
 	return 0;
 }
 
+/* Board specific power state calls*/
+/* Sleep */
+static int sleep_mode(void)
+{
+	s1d13541_pwrstate_sleep(epson);
+	/* Turn off epson clock and 3v3 */
+	gpio_set_value(EPSON_CLK_EN, false);
+	gpio_set_value(EPSON_3V3_EN, false);
+	gpio_set_value(EPSON_CS_0, false);
+
+	return 0;
+}
+
+/* Standby */
+static int standby_mode(void)
+{
+	/* Enable epson 3v3 and clock */
+	gpio_set_value(EPSON_CS_0, true);
+	gpio_set_value(EPSON_3V3_EN, true);
+	gpio_set_value(EPSON_CLK_EN, true);
+	s1d13541_pwrstate_standby(epson);
+
+	return 0;
+}
+
+/* Run */
+static int run_mode(void)
+{
+	/* Enable epson 3v3 and clock */
+	gpio_set_value(EPSON_CS_0, true);
+	gpio_set_value(EPSON_3V3_EN, true);
+	gpio_set_value(EPSON_CLK_EN, true);
+	s1d13541_pwrstate_run(epson);
+
+	return 0;
+}
+
+/* Cycle through available power modes */
+static int powerdemo_run(void)
+{
+	/* Set RUN mode and update display */
+	run_mode();
+
+	slideshow_load_image("img/01_n.pgm", 0x0030, false);
+	power_up();
+	s1d13541_update_display(epson, WVF_REFRESH);
+	s1d13541_wait_update_end(epson);
+	power_down();
+	msleep(2000);
+
+	/* Set SLEEP mode */
+	printk("Setting SLEEP mode\n");
+	sleep_mode();
+	msleep(2000);
+
+	/* Set STANDBY mode */
+	printk("Setting STANDBY mode\n");
+	standby_mode();
+	msleep(2000);
+
+	/* Set back to RUN mode, update display with previous image */
+	run_mode();
+	power_up();
+	s1d13541_update_display(epson, WVF_REFRESH);
+	s1d13541_wait_update_end(epson);
+	power_down();
+
+	return 0;
+}
+
 /* Initialise the Hummingbird Z[6|7].x platform */
 int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 {
@@ -153,6 +225,8 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	ret |= gpio_request(B_PMIC_EN,	PIN_GPIO | PIN_OUTPUT | PIN_INIT_LOW);
 	ret |= gpio_request(B_POK, 	  	PIN_GPIO | PIN_INPUT);
 	ret |= gpio_request(EPSON_CS_0,	PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH);
+	ret |= gpio_request(EPSON_3V3_EN, PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH);
+	ret |= gpio_request(EPSON_CLK_EN, PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH);
 
 	if (ret)
 		return -1;
@@ -240,11 +314,18 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	s1d13541_wait_update_end(epson);
 	power_down();
 
+
+#if CONFIG_DEMO_POWERMODES
+	/* run the power states demo */
+	while (1)
+		powerdemo_run();
+#else
 	/* run the slideshow */
 	if (is_file_present(SLIDES_PATH))
 		ret = run_region_slideshow(epson);
 	else
 		ret = run_std_slideshow(epson);
+#endif
 
 	s1d135xx_deselect(epson, previous);
 
