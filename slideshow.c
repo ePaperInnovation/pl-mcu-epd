@@ -32,9 +32,9 @@
 #include "FatFs/ff.h"
 #include "pnm-utils.h"
 #include "slideshow.h"
-#include "utils.h"
 
-#define LOG_TAG "slides"
+#define LOG_TAG "slides.h"
+#include "utils.h"
 
 /* FatFS only supports 8.3 filenames, and we work from the current directory so
    paths should be short... */
@@ -95,8 +95,9 @@ static int load_image_area(const char *image, uint16_t mode, int pack,
 
 #if 0
 	if (area != NULL)
-		LOG("area: %p (%d, %d) %dx%d",
-		    area, area->left, area->top, area->width, area->height);
+		LOG("area: (%d, %d) ->  (%d, %d) %dx%d",
+		    left, top, area->left, area->top,
+		    area->width, area->height);
 #endif
 
 	if (area == NULL)
@@ -131,12 +132,6 @@ int slideshow_load_image_area(const struct slideshow_item *item,
 		LOG("File path is too long, max=%d", MAX_PATH_LEN);
 		return -1;
 	}
-
-#if 0
-	LOG("slideshow_load_image_area [%s] (%d, %d) %dx%d",
-	    path, item->area.left,
-	    item->area.top, item->area.width, item->area.height);
-#endif
 
 	return load_image_area(path, mode, pack, &item->area,
 			       item->left_in, item->top_in);
