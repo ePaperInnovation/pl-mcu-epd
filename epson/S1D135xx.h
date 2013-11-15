@@ -132,14 +132,14 @@ struct s1d135xx {
 // ======================= Registers
 //
 //system configuration registers
-#define REV_CODE_REG 						0x0000 // revision code register
-#define PROD_CODE_REG 						0x0002 // product code register
-#define CONF_PIN_RD_VAL_REG					0x0004 // config pin read value register
-#define PWR_SAVE_MODE_REG 					0x0006 // power save mode register
-#define SOFT_RST_REG 						0x0008 // Software reset register
-#define SYS_STAT_REG 						0x000A // system status register
+#define REV_CODE_REG 						((uint16_t)0x0000) // revision code register
+#define PROD_CODE_REG 						((uint16_t)0x0002) // product code register
+#define CONF_PIN_RD_VAL_REG					((uint16_t)0x0004) // config pin read value register
+#define PWR_SAVE_MODE_REG 					((uint16_t)0x0006) // power save mode register
+#define SOFT_RST_REG 						((uint16_t)0x0008) // Software reset register
+#define SYS_STAT_REG 						((uint16_t)0x000A) // system status register
 
-#define	PERIPHERAL_CONFIG_REG				0x0020	// Peripheral device configuration
+#define	PERIPHERAL_CONFIG_REG				((uint16_t)(0x0020))	// Peripheral device configuration
 
 // Host interface memory Access Configuration
 #define HOST_MEM_CONF_REG 					0x0140 // host memory access configuration and status register

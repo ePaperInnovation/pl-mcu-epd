@@ -36,7 +36,7 @@
 #define SPI_HRDY_USED		0	// HRDY pin is used
 #define SPI_HRDY_SELECT		1	// HRDY pin only driven when selected
 // HDC required by the 524 controller, optional on others
-#define SPI_HDC_USED		1	// HDC pin is used
+#define SPI_HDC_USED		0	// HDC pin is used
 #define SPI_RESET_USED		1	// Reset Pin on Epson used
 
 #if CONFIG_PLAT_RUDDOCK2
@@ -50,7 +50,6 @@
 
 static screen_t screen;
 static int busy;
-
 
 void epsonif_init_hdc(void)
 {

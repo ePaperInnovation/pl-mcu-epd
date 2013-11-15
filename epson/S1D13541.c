@@ -58,7 +58,10 @@
 
 /* 541 register bit field value list */
 #define INTERNAL_CLOCK_ENABLE      ((uint16_t)(1 << 7))
+#define INTERNAL_CLOCK_DISABLE     ((uint16_t)(0 << 7))
 #define INIT_CODE_CHECKSUM_ERROR   ((uint16_t)(0 << 15))
+#define POWER_PASSIVE              ((uint16_t)(0 << 8))
+#define POWER_ACTIVE               ((uint16_t)(1 << 8))
 
 /* 541 constant value list */
 #define PRODUCT_CODE 0x0053
@@ -406,4 +409,51 @@ void s1d13541_measure_temperature(struct s1d135xx *epson, u8 *needs_update)
 	epson->temp_measured = temp_measured;
 
 	LOG("Temperature: %d", temp_measured);
+}
+
+int s1d13541_pwrstate_sleep(struct s1d135xx *epson)
+{
+	uint16_t current_clk_state;
+	epson_mode_sleep(epson);
+	epson_wait_for_idle();
+	epson_reg_read(REG_CLOCK_CONFIGURATION, &current_clk_state);
+	epson_wait_for_idle();
+	epson_reg_write(REG_CLOCK_CONFIGURATION, (current_clk_state & 0xFB7F) | INTERNAL_CLOCK_DISABLE);
+	epson_wait_for_idle();
+	epson_reg_write(PWR_SAVE_MODE_REG, POWER_PASSIVE);
+	epsonif_assert_reset();
+	return 0;
+}
+
+int s1d13541_pwrstate_standby(struct s1d135xx *epson)
+{
+	uint16_t current_pwr_state;
+	epsonif_negate_reset();
+	epson_reg_write(REG_CLOCK_CONFIGURATION, INTERNAL_CLOCK_ENABLE);
+	epson_wait_for_idle();
+	epson_reg_read(PWR_SAVE_MODE_REG, &current_pwr_state);
+	epson_wait_for_idle();
+	epson_reg_write(PWR_SAVE_MODE_REG, (current_pwr_state &
+			~POWER_ACTIVE) | POWER_ACTIVE);
+	/* Must not check HRDY before issuing command as this won't work on a *
+	 * sleep -> standby transition */
+	epson_mode_standby(epson);
+	epson_wait_for_idle();
+	return 0;
+}
+
+int s1d13541_pwrstate_run(struct s1d135xx *epson)
+{
+	uint16_t current_pwr_state;
+	epsonif_negate_reset();
+	epson_reg_write(REG_CLOCK_CONFIGURATION, INTERNAL_CLOCK_ENABLE);
+	epson_wait_for_idle();
+	epson_reg_read(PWR_SAVE_MODE_REG, &current_pwr_state);
+	epson_wait_for_idle();
+	epson_reg_write(PWR_SAVE_MODE_REG, (current_pwr_state &
+			~POWER_ACTIVE) | POWER_ACTIVE);
+	epson_wait_for_idle();
+	epson_mode_run(epson);
+	epson_wait_for_idle();
+	return 0;
 }

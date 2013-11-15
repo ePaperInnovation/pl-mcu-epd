@@ -99,4 +99,16 @@ extern int8_t s1d13541_get_temperature(struct s1d135xx *epson);
 extern void s1d13541_measure_temperature(struct s1d135xx *epson,
 					 uint8_t *needs_update);
 
+
+/* -- Power management -- */
+
+/* Set power mode to sleep */
+extern int s1d13541_pwrstate_sleep(struct s1d135xx *epson);
+
+/* Set power mode to standby */
+extern int s1d13541_pwrstate_standby(struct s1d135xx *epson);
+
+/* Set power mode to run */
+extern int s1d13541_pwrstate_run(struct s1d135xx *epson);
+
 #endif /* S1D13541_H_ */
