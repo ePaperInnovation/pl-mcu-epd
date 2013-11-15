@@ -266,7 +266,7 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 #endif
 
 	/* initialise the Epson interface */
-	epsonif_init(0, 4);
+	epsonif_init(0, 1);
 
 	/* define gpio's required for operation */
 	ret |= gpio_request(B_HWSW_CTRL,PIN_GPIO | PIN_OUTPUT | PIN_INIT_LOW);
