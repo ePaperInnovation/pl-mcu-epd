@@ -1,3 +1,59 @@
+Release v002 -> v003 - 2013-11-15
+
+Andrew Cox (5):
+      S1D13541: Add S1D13541 power management control functions.
+      plat-hbz6: Add control for power states for hbz6 platform.
+      plat-hbz6: Add "power off" and "power on" power state transitions.
+      Config: Update sample config files to include power state demo flag.
+      plat-hbz6: Return SPI clock speed back to 20Mhz...
+
+Guillaume Tucker (45):
+      epson: code tidy-up
+      remove config.h and add files for Type18 and Type19 and none
+      add config.h to .gitignore
+      types.h: add `struct area' for rectangular coordinate areas
+      utils: add lightweight string parser
+      utils.h: add basic LOG macro
+      epson: add support for regional image data transfers + tidy-up
+      epson/S1D13541: add update_display_area and wait_update_end
+      epson/S1D135xx.h: fix the waveform type enumeration
+      plat-*: update show_image and use wait_update_end
+      crc16: remove unused crc16_wf
+      slideshow: add image area support + global tidy-up
+      epson/S1D135xx: add _get_wfid to get wavefrom id from string
+      plat-hbz6.c: add support for regional slideshow
+      vcom.h: use stdint and packed structure
+      psu-data: remove all dead code and use new struct psu_data
+      psu-data: fix log format - FIXUP
+      plat-hbz6.c: use new psu_data
+      plat-raven.c: use new psu_data
+      utils: add dump_hex to print binary data in hex
+      plwf: simplify API and do not use malloc
+      plwf: use separate I/O contexts
+      i2c-eeprom.h: include missing types.h
+      epson/S1D13541: remove _eeprom functions as it's handled by plwf
+      plat-hbz6: fix bug with VCOM read back from EEPROM + tidy-up
+      epson: add epson_fill_area + tidy-up
+      plat-hbz6: add fill and sleep commands + tidy-up
+      assert: reduce code size + add abort_msg
+      msp430-gpio: fix compiler warning when NDEBUG is enabled
+      epson-cmd: tidy-up
+      epson-util: fix error propagation and simplify API
+      epson/S1D13541: tidy-up
+      plat-hbz6: reflect latest API changes
+      utils: add is_file_present to test if a file is present
+      plat-hbz6: run sequence if slides.txt is present
+      epson/S1D13541: remove unnecessary _init_waveform_sd
+      vcom: clean-up code
+      plat-hbz6: use latest vcom API
+      plat-cuckoo: use latest vcom API
+      plat-hbz13: use latest vcom API
+      rename img_convert.py -> prepare_pgm.py + add options
+      types.h: use unsigned for area width and height
+      epson-utils: fix integer overflow in transfer_image
+      epson/S1D135xx: fix wf string to id table
+      slideshow: fix log messages
+
 Release v001 -> v002 - 2013-11-06
 
 Guillaume Tucker (4):
