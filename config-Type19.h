@@ -50,4 +50,7 @@
  * EEPROM when set to 0 (standard behaviour) */
 #define CONFIG_WF_ON_SD_CARD	1
 
+/** Set to 1 to use the power state transition demo rather than the slideshow */
+#define CONFIG_DEMO_POWERMODES  0
+
 #endif /* INCLUDE_CONFIG_H */
