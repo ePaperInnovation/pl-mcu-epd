@@ -421,14 +421,12 @@ int s1d13541_pwrstate_sleep(struct s1d135xx *epson)
 	epson_reg_write(REG_CLOCK_CONFIGURATION, (current_clk_state & 0xFB7F) | INTERNAL_CLOCK_DISABLE);
 	epson_wait_for_idle();
 	epson_reg_write(PWR_SAVE_MODE_REG, POWER_PASSIVE);
-	epsonif_assert_reset();
 	return 0;
 }
 
 int s1d13541_pwrstate_standby(struct s1d135xx *epson)
 {
 	uint16_t current_pwr_state;
-	epsonif_negate_reset();
 	epson_reg_write(REG_CLOCK_CONFIGURATION, INTERNAL_CLOCK_ENABLE);
 	epson_wait_for_idle();
 	epson_reg_read(PWR_SAVE_MODE_REG, &current_pwr_state);
@@ -445,7 +443,6 @@ int s1d13541_pwrstate_standby(struct s1d135xx *epson)
 int s1d13541_pwrstate_run(struct s1d135xx *epson)
 {
 	uint16_t current_pwr_state;
-	epsonif_negate_reset();
 	epson_reg_write(REG_CLOCK_CONFIGURATION, INTERNAL_CLOCK_ENABLE);
 	epson_wait_for_idle();
 	epson_reg_read(PWR_SAVE_MODE_REG, &current_pwr_state);

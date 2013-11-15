@@ -128,25 +128,33 @@ static int power_down(void)
 	return 0;
 }
 
+#if CONFIG_DEMO_POWERMODES
 /* Board specific power state calls*/
-/* Sleep */
-static int sleep_mode(void)
+/* Off */
+static int pwrstate_off_mode(void)
 {
 	s1d13541_pwrstate_sleep(epson);
 	/* Turn off epson clock and 3v3 */
 	gpio_set_value(EPSON_CLK_EN, false);
 	gpio_set_value(EPSON_3V3_EN, false);
 	gpio_set_value(EPSON_CS_0, false);
+	return 0;
+}
+
+/* Sleep */
+static int pwrstate_sleep_mode(void)
+{
+	s1d13541_pwrstate_sleep(epson);
+	/* Turn off epson clock */
+	gpio_set_value(EPSON_CLK_EN, false);
 
 	return 0;
 }
 
 /* Standby */
-static int standby_mode(void)
+static int pwrstate_standby_mode(void)
 {
-	/* Enable epson 3v3 and clock */
-	gpio_set_value(EPSON_CS_0, true);
-	gpio_set_value(EPSON_3V3_EN, true);
+	/* Enable epson 3v3 clock */
 	gpio_set_value(EPSON_CLK_EN, true);
 	s1d13541_pwrstate_standby(epson);
 
@@ -154,22 +162,55 @@ static int standby_mode(void)
 }
 
 /* Run */
-static int run_mode(void)
+static int pwrstate_run_mode(void)
 {
-	/* Enable epson 3v3 and clock */
-	gpio_set_value(EPSON_CS_0, true);
-	gpio_set_value(EPSON_3V3_EN, true);
+	/* Enable epson clock */
 	gpio_set_value(EPSON_CLK_EN, true);
 	s1d13541_pwrstate_run(epson);
 
 	return 0;
 }
 
+static int pwrstate_poweron_mode(void)
+{
+	/* Re-enable power, clock and chip select */
+	gpio_set_value(EPSON_3V3_EN, true);
+	gpio_set_value(EPSON_CLK_EN, true);
+	gpio_set_value(EPSON_CS_0, true);
+
+	/* Need to re-init epson chip */
+	check(s1d13541_init_prodcode(epson) == 0);
+	check(s1d13541_init_clock(epson) == 0);
+	check(s1d13541_init_initcode(epson) == 0);
+	check(s1d13541_init_pwrstate(epson) == 0);
+	check(s1d13541_init_keycode(epson) == 0);
+#if CONFIG_WF_ON_SD_CARD
+	LOG("Loading display data from SD card");
+
+	if (s1d13541_send_waveform())
+		abort_msg("Failed to load waveform from SD card");
+#else /* !WAVEFORM_ON_SD_CARD */
+	LOG("Loading display data from EEPROM");
+
+	eeprom_init(i2c, I2C_PLWF_EEPROM_ADDR, EEPROM_24AA256, &plwf_eeprom);
+
+	if (plwf_data_init(&plwf_data, plwf_eeprom))
+		abort_msg("Failed to initialise display data");
+
+	if (plwf_load_wf(&plwf_data, plwf_eeprom, epson, S1D13541_WF_ADDR))
+		abort_msg("Failed to load waveform from EEPROM");
+
+	vcom = plwf_data.info.vcom;
+#endif
+	check(s1d13541_init_gateclr(epson) == 0);
+return 0;
+}
+
 /* Cycle through available power modes */
 static int powerdemo_run(void)
 {
 	/* Set RUN mode and update display */
-	run_mode();
+	pwrstate_run_mode();
 
 	slideshow_load_image("img/01_n.pgm", 0x0030, false);
 	power_up();
@@ -180,23 +221,30 @@ static int powerdemo_run(void)
 
 	/* Set SLEEP mode */
 	printk("Setting SLEEP mode\n");
-	sleep_mode();
+	pwrstate_sleep_mode();
 	msleep(2000);
 
 	/* Set STANDBY mode */
 	printk("Setting STANDBY mode\n");
-	standby_mode();
+	pwrstate_standby_mode();
 	msleep(2000);
 
 	/* Set back to RUN mode, update display with previous image */
-	run_mode();
+	pwrstate_run_mode();
 	power_up();
 	s1d13541_update_display(epson, WVF_REFRESH);
 	s1d13541_wait_update_end(epson);
 	power_down();
 
+	/* Power down the epson chip, wait for 2s then power back up */
+	pwrstate_off_mode();
+	msleep(2000);
+	pwrstate_poweron_mode();
+	msleep(1000);
+
 	return 0;
 }
+#endif /* CONFIG_DEMO_POWERMODES */
 
 /* Initialise the Hummingbird Z[6|7].x platform */
 int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
@@ -218,7 +266,7 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 #endif
 
 	/* initialise the Epson interface */
-	epsonif_init(0, 1);
+	epsonif_init(0, 4);
 
 	/* define gpio's required for operation */
 	ret |= gpio_request(B_HWSW_CTRL,PIN_GPIO | PIN_OUTPUT | PIN_INIT_LOW);
