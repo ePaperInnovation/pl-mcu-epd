@@ -71,7 +71,7 @@ static struct dac5820_info *dac_info;
 static struct max17135_info *pmic_info;
 static struct i2c_adapter *i2c;
 static struct s1d135xx *epson;
-static struct vcom_cal *vcom_calibration;
+static struct vcom_cal vcom_calibration;
 
 static int show_image(const char *image, void *arg);
 
@@ -158,7 +158,7 @@ int plat_hbz13_init(const char *platform_path, int i2c_on_epson)
 	check(s1d13541_init_initcode(epson) == 0);
 	check(s1d13541_init_pwrstate(epson) == 0);
 	check(s1d13541_init_keycode(epson) == 0);
-	check(s1d13541_init_waveform_sd(epson) == 0);
+	check(s1d13541_send_waveform() == 0);
 	check(s1d13541_init_gateclr(epson) == 0);
 	check(s1d13541_init_end(epson, prev_screen) == 0);
 #endif
@@ -175,12 +175,11 @@ int plat_hbz13_init(const char *platform_path, int i2c_on_epson)
 	max17135_temp_enable(pmic_info);
 
 	/* initialise the vcom calibration data */
-	vcom_init(&psu_calibration, VCOM_VGSWING, &vcom_calibration);
+	vcom_init(&vcom_calibration, &psu_calibration, VCOM_VGSWING);
 
 	/* initialise the VCOM Dac and pass it the VCOM calibration data */
 	dac5820_init(i2c, I2C_DAC_ADDR, &dac_info);
-	dac5820_configure(dac_info, vcom_calibration);
-
+	dac5820_configure(dac_info, &vcom_calibration);
 	dac5820_set_voltage(dac_info, vcom);
 
 #if CONFIG_PSU_ONLY
