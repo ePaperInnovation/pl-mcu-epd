@@ -60,7 +60,7 @@ static struct i2c_adapter *i2c;
 static struct dac5820_info *dac_info;
 static struct max17135_info *pmic_info;
 static struct s1d135xx *epson;
-static struct vcom_cal *vcom_calibration;
+static struct vcom_cal vcom_calibration;
 
 /* No PSU calibration data so always use defaults */
 static struct vcom_info psu_calibration = {
@@ -127,7 +127,7 @@ int plat_cuckoo_init(void)
 	check(epson_i2c_init(epson, &i2c)==0);
 
 	/* initialise the vcom calibration data */
-	vcom_init(&psu_calibration, VCOM_VGSWING, &vcom_calibration);
+	vcom_init(&vcom_calibration, &psu_calibration, VCOM_VGSWING);
 
 	/* intialise the PMIC */
 	max17135_init(i2c, I2C_PMIC_ADDR, &pmic_info);
@@ -136,7 +136,7 @@ int plat_cuckoo_init(void)
 
 	/* intialise the DAC and pass it the vcom calibration data */
 	dac5820_init(i2c, I2C_DAC_ADDR, &dac_info);
-	dac5820_configure(dac_info, vcom_calibration);
+	dac5820_configure(dac_info, &vcom_calibration);
 
 	dac5820_set_voltage(dac_info, vcom);
 
