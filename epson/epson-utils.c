@@ -32,9 +32,9 @@
 #include "epson-cmd.h"
 #include "FatFs/ff.h"
 #include "S1D135xx.h"
-#include "utils.h"
 
 #define LOG_TAG "epson"
+#include "utils.h"
 
 /* Size of the buffer used for plain file transfers */
 #define FILE_BUFFER_SIZE 256
@@ -196,7 +196,7 @@ static int transfer_image(FIL *f, int swap, int pack,
 		return -1;
 	}
 
-	f_lseek(f, f->fptr + (top * img_width));
+	f_lseek(f, f->fptr + ((long)top * (unsigned long)img_width));
 
 	for (line = area->height; line; --line) {
 		if (read_file_data(f, data, img_width, &count, swap, pack))
