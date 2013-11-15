@@ -61,8 +61,6 @@
 #define B_POK		GPIO(1,0)
 #define B_PMIC_EN	GPIO(1,1)
 #define	EPSON_CS_0	GPIO(3,6)
-
-#else
 #endif
 
 /* 1 to cycle power supplies only, no display update (testing only) */
@@ -79,7 +77,7 @@ static const char SEP[] = ", ";
 static struct tps65185_info *pmic_info;
 static struct i2c_adapter *i2c;
 static struct s1d135xx *epson;
-static struct vcom_cal *vcom_calibration;
+static struct vcom_cal vcom_calibration;
 static struct i2c_eeprom *psu_eeprom;
 #if !CONFIG_WF_ON_SD_CARD
 static struct i2c_eeprom *plwf_eeprom;
@@ -91,7 +89,7 @@ static int run_region_slideshow(struct s1d135xx *epson);
 static int run_std_slideshow(struct s1d135xx *epson);
 
 /* Fallback VCOM calibration data if PSU EEPROM corrupt */
-static struct vcom_info psu_calibration = {
+static const struct vcom_info DEF_VCOM_PSU = {
 	.dac_x1 = 127,
 	.dac_y1 = 4172,
 	.dac_x2 = 381,
@@ -99,6 +97,7 @@ static struct vcom_info psu_calibration = {
 	.vgpos_mv = 25080,
 	.vgneg_mv = -32300,
 };
+
 #define VCOM_VGSWING 56886
 
 /* Board specific power up control */
@@ -177,18 +176,19 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 #if !CONFIG_PSU_ONLY
 #if CONFIG_WF_ON_SD_CARD
 	LOG("Loading display data from SD card");
-	check(s1d13541_init_waveform_sd(epson) == 0);
+
+	if (s1d13541_send_waveform())
+		abort_msg("Failed to load waveform from SD card");
 #else /* !WAVEFORM_ON_SD_CARD */
 	LOG("Loading display data from EEPROM");
+
 	eeprom_init(i2c, I2C_PLWF_EEPROM_ADDR, EEPROM_24AA256, &plwf_eeprom);
 
-	if (plwf_data_init(&plwf_data, plwf_eeprom)) {
-		LOG("Failed to initialise display data");
-		return -1;
-	}
+	if (plwf_data_init(&plwf_data, plwf_eeprom))
+		abort_msg("Failed to initialise display data");
 
 	if (plwf_load_wf(&plwf_data, plwf_eeprom, epson, S1D13541_WF_ADDR))
-		return -1;
+		abort_msg("Failed to load waveform from EEPROM");
 
 	vcom = plwf_data.info.vcom;
 #endif /* !WAVEFORM_ON_SD_CARD */
@@ -201,21 +201,17 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 
 	/* read the psu calibration data and ready it for use */
 	if (psu_data_init(&psu_data, psu_eeprom)) {
-		LOG("Failed to initialise VCOM PSU data from EEPROM");
 #if 1
-		LOG("Using hard-coded default values instead");
+		LOG("Using hard-coded default VCOM PSU values");
 		psu_data.version = PSU_DATA_VERSION;
-		memcpy(&psu_data.info, &psu_calibration, sizeof psu_data.info);
+		memcpy(&psu_data.info, &DEF_VCOM_PSU, sizeof psu_data.info);
 #else
-		return -1;
+		abort_msg("Failed to initialise VCOM PSU data from EEPROM");
 #endif
 	}
 
 	/* initialise the VCOM */
-	if (vcom_init(&psu_data.info, VCOM_VGSWING, &vcom_calibration) < 0) {
-		LOG("Failed to initialise VCOM");
-		return -1;
-	}
+	vcom_init(&vcom_calibration, &psu_data.info, VCOM_VGSWING);
 
 	/* select the controller for future operations */
 	s1d135xx_select(epson, &previous);
@@ -225,7 +221,7 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 
 	/* initialise the PMIC and pass it the vcom calibration data */
 	tps65185_init(i2c, I2C_PMIC_ADDR, &pmic_info);
-	tps65185_configure(pmic_info, vcom_calibration);
+	tps65185_configure(pmic_info, &vcom_calibration);
 	tps65185_set_vcom_voltage(pmic_info, vcom);
 
 #if CONFIG_PSU_ONLY
