@@ -40,9 +40,20 @@ struct  __attribute__((__packed__)) vcom_info {
 	int32_t vgneg_mv;   /* VGNEG in mV */
 };
 
-struct vcom_cal;
+struct vcom_cal {
+	int32_t swing;
+	int32_t swing_ideal;
+	int32_t dac_offset;
+	int32_t dac_dx;
+	int32_t dac_dy;
+	int32_t dac_step_mv;
+};
 
-int vcom_init(struct vcom_info *c, s32 vgswing_ideal, struct vcom_cal **p);
-int vcom_calculate(struct vcom_cal *p, int mv);
+/** Initialise a vcom_cal structure */
+extern void vcom_init(struct vcom_cal *v, const struct vcom_info *c,
+		      int32_t vgswing_ideal);
+
+/** Get the DAC register value for a given VCOM input voltage */
+extern int vcom_calculate(const struct vcom_cal *v, int input_mv);
 
 #endif /* VCOM_H_ */

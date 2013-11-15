@@ -23,54 +23,41 @@
  *
  */
 
-#include "types.h"
 #include "assert.h"
 #include "vcom.h"
+#include <stdlib.h>
 
-struct vcom_cal {
-	struct vcom_info vcom;	/* Variable Power board calibration data */
-	s32 swing;
-	s32 swing_ideal;
- 	s32 dac_offset;
- 	s32 dac_dx;
- 	s32 dac_dy;
-	s32 dac_step_mv;
-};
+#define LOG_TAG "vcom"
+#include "utils.h"
 
-static struct vcom_cal vcom;
-
-int vcom_init(struct vcom_info *c, s32 vgswing_ideal, struct vcom_cal **p)
+void vcom_init(struct vcom_cal *v, const struct vcom_info *c,
+	       int32_t vgswing_ideal)
 {
-	struct vcom_cal *v = &vcom;
+	assert(v != NULL);
+	assert(c != NULL);
 
-	assert(c);
-	assert(p);
-
-	memcpy(&v->vcom, c, sizeof(struct vcom_info));
 	v->dac_dx = c->dac_x2 - c->dac_x1;
 	v->dac_dy = c->dac_y2 - c->dac_y1;
-	v->dac_offset = c->dac_y1 - DIV_ROUND_CLOSEST((c->dac_x1 * v->dac_dy),  v->dac_dx);
+	v->dac_offset = c->dac_y1 -
+		DIV_ROUND_CLOSEST((c->dac_x1 * v->dac_dy),  v->dac_dx);
 	v->swing = c->vgpos_mv - c->vgneg_mv;
 	v->swing_ideal = vgswing_ideal;
 	v->dac_step_mv = DIV_ROUND_CLOSEST(v->dac_dy, v->dac_dx);
-
-	*p = v;
-
-	return 0;
 }
 
-
-int vcom_calculate(struct vcom_cal *p, int mv)
+int vcom_calculate(const struct vcom_cal *v, int input_mv)
 {
-	s32 mv_scaled;
+	int32_t scaled_mv;
 	int dac_value;
 
-	assert(p);
+	assert(v != NULL);
 
-	mv_scaled = DIV_ROUND_CLOSEST(mv * p->swing, p->swing_ideal);
-	dac_value = DIV_ROUND_CLOSEST((mv_scaled - p->dac_offset) * p->dac_dx, p->dac_dy);
+	scaled_mv = DIV_ROUND_CLOSEST(input_mv * v->swing, v->swing_ideal);
+	dac_value = DIV_ROUND_CLOSEST((scaled_mv - v->dac_offset) * v->dac_dx,
+				      v->dac_dy);
 
-	printk("vcom: mv(input):%d, mv(target):%ld, Reg:(%d)\n", mv, mv_scaled, dac_value);
+	LOG("input: %d, scaled: %ld, DAC reg: 0x%02X",
+	    input_mv, scaled_mv, dac_value);
 
 	return dac_value;
 }
