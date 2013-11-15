@@ -31,6 +31,9 @@
 #define LOG(msg, ...)
 #endif
 
+/** Check for the presence of a file in FatFs */
+#define is_file_present(_path) ({ FILINFO i; f_stat(_path, &i) == FR_OK; })
+
 /* -- Lightweight string parser -- */
 
 /** Return the offset of the first occurence of any sep characters in str if
