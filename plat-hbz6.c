@@ -73,13 +73,8 @@
 #define I2C_PSU_EEPROM_ADDR  0x50
 #define I2C_PLWF_EEPROM_ADDR 0x54
 
-/* Run regional update sequence of standard full-screen slideshow */
-#define USE_REGION_SLIDESHOW 1
-
-#if USE_REGION_SLIDESHOW
 static const char SLIDES_PATH[] = "img/slides.txt";
 static const char SEP[] = ", ";
-#endif
 
 static struct tps65185_info *pmic_info;
 static struct i2c_adapter *i2c;
@@ -91,12 +86,9 @@ static struct i2c_eeprom *plwf_eeprom;
 static struct plwf_data plwf_data;
 #endif
 
-static int check_temperature(struct s1d135xx *epson);
-#if USE_REGION_SLIDESHOW
+static void check_temperature(struct s1d135xx *epson);
 static int run_region_slideshow(struct s1d135xx *epson);
-#else
 static int run_std_slideshow(struct s1d135xx *epson);
-#endif
 
 /* Fallback VCOM calibration data if PSU EEPROM corrupt */
 static struct vcom_info psu_calibration = {
@@ -253,18 +245,15 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	power_down();
 
 	/* run the slideshow */
-#if USE_REGION_SLIDESHOW
-	ret = run_region_slideshow(epson);
-#else
-	ret = run_std_slideshow(epson);
-#endif
+	if (is_file_present(SLIDES_PATH))
+		ret = run_region_slideshow(epson);
+	else
+		ret = run_std_slideshow(epson);
 
 	s1d135xx_deselect(epson, previous);
 
 	return ret;
 }
-
-#if USE_REGION_SLIDESHOW
 
 static int cmd_update(struct s1d135xx *epson, const char *line)
 {
@@ -315,9 +304,7 @@ static int cmd_power(struct s1d135xx *epson, const char *line)
 		return -1;
 
 	if (!strcmp(on_off, "on")) {
-		if (check_temperature(epson))
-			return -1;
-
+		check_temperature(epson);
 		power_up();
 	} else if (!strcmp(on_off, "off")) {
 		s1d13541_wait_update_end(epson);
@@ -398,6 +385,8 @@ static int run_region_slideshow(struct s1d135xx *epson)
 	FIL slides;
 	int stat;
 
+	LOG("Running sequence from %s", SLIDES_PATH);
+
 	if (f_open(&slides, SLIDES_PATH, FA_READ) != FR_OK) {
 		LOG("Failed to open slideshow text file [%s]", SLIDES_PATH);
 		return -1;
@@ -467,17 +456,14 @@ static int run_region_slideshow(struct s1d135xx *epson)
 	return stat;
 }
 
-#else /* !USE_REGION_SLIDESHOW */
-
 static int show_image(const char *image, void *arg)
 {
 	struct s1d135xx *epson = arg;
 
-	slideshow_load_image(image, 0x0030, false);
-
-	if (check_temperature(epson))
+	if (slideshow_load_image(image, 0x0030, false))
 		return -1;
 
+	check_temperature(epson);
 	power_up();
 	s1d13541_update_display(epson, WVF_REFRESH);
 	s1d13541_wait_update_end(epson);
@@ -490,35 +476,28 @@ static int run_std_slideshow(struct s1d135xx *epson)
 {
 	int run = 1;
 
+	LOG("Running standard slideshow");
+
 	while (run)
 		slideshow_run("img", show_image, epson);
 
 	return 0;
 }
 
-#endif /* !USE_REGION_SLIDESHOW */
-
-static int check_temperature(struct s1d135xx *epson)
+static void check_temperature(struct s1d135xx *epson)
 {
 	u8 needs_update;
 
-	/* Ask Epson to determine if waveform needs reloading */
 	s1d13541_measure_temperature(epson, &needs_update);
 
-	if (needs_update) {
-#if CONFIG_WF_ON_SD_CARD
-		if (s1d13541_send_waveform()) {
-			LOG("Failed to reload waveform from SD card");
-			return -1;
-		}
-#else
-		if (plwf_load_wf(&plwf_data, plwf_eeprom, epson,
-				 S1D13541_WF_ADDR)) {
-			LOG("Failed to reload waveform from EEPROM");
-			return -1;
-		}
-#endif /* WAVEFORM_ON_SD_CARD */
-	}
+	if (!needs_update)
+		return;
 
-	return 0;
+#if CONFIG_WF_ON_SD_CARD
+	if (s1d13541_send_waveform())
+		abort_msg("Failed to reload waveform from SD card");
+#else
+	if (plwf_load_wf(&plwf_data, plwf_eeprom, epson, S1D13541_WF_ADDR))
+		abort_msg("Failed to reload waveform from EEPROM");
+#endif /* WAVEFORM_ON_SD_CARD */
 }
