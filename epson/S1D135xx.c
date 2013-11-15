@@ -33,7 +33,7 @@
 int s1d135xx_get_wfid(const char *wf_name)
 {
 	static const char *wfid_table[_WVF_N_] = {
-		"init", "refresh", "delta", "delta/mono"
+		"init", "refresh", "delta/mono", "delta"
 	};
 	int wfid;
 
