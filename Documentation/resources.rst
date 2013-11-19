@@ -15,3 +15,7 @@ Detailed schematics and design documents are available for all of the boards sup
 
 An overview of the electronics required to drive a small displays is available in the document “Electronics
 for small displays” available from Plastic Logic.
+
+.. raw:: pdf 
+
+   PageBreak

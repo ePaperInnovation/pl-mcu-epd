@@ -3,6 +3,7 @@ Appendix A - License Text
 
 The license text for third party components is reproduced below:
 
+
 FatFs
 -----
 
@@ -23,6 +24,7 @@ FatFs
     * / * Redistributions of source code must retain the above copyright notice.
     * /
     * /-----------------------------------------------------------------------------/
+
 
 Texas Instruments
 ----------------
@@ -62,3 +64,7 @@ Texas Instruments
     *
     *******************************************************************************
     */ 
+
+.. raw:: pdf
+   
+   PageBreak

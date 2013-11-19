@@ -12,6 +12,7 @@ use the 8.3 compatible filenames. These names can be displayed under Windows by 
 
 21/05/2011 07:01 8,863,336 NVWGF2~1.DLL nvwgf2umx.dll
 
+
 +---------------------------------------+-------------------------------------------------------+
 |SD Card path                           | Contents                                              |
 +=======================================+=======================================================+
@@ -28,6 +29,7 @@ use the 8.3 compatible filenames. These names can be displayed under Windows by 
 
 Note a default waveform and VCOM is provided for each display type. These should be replaced with
 module specific data in order to get the best display quality.
+
 
 Epson Controller Interface
 --------------------------
@@ -68,6 +70,7 @@ To prepare the controller for operation it is necessary to send two files to it:
 1. A controller initialisation file which customises the controllers behaviour to the type of display it is going to drive, e.g. resolution, driver configuration, clock timings.
 2. A waveform data file which provides display specific timing information required to maximise the performance and image quality of a display.
 
+
 Epson S1D135xx I2C Interface
 ----------------------------
 The Epson controllers provide an SPI to I2C bridge that can be used to communicate with I2C peripherals
@@ -80,6 +83,7 @@ traffic is limited to one-time device configuration.
 
 Note that some peripherals, the MAXIM 17135 PMIC specifically, have inbuilt timeouts which can be
 triggered when Epson command tracing is taking place and the Epson I2C bridge is in use.
+
 
 Temperature Measurement
 -----------------------
@@ -100,6 +104,7 @@ range of the currently cached waveform data.
 
 Currently only the Manual and Internal modes are implemented.
 
+
 VCOM Calibration
 ----------------
 The accurate setting of the VCOM voltage is essential to obtaining the best image quality from the display.
@@ -114,16 +119,19 @@ measured once and stored in the code.
 The VCOM calibration procedure is described in the document “Electronics for small displays” available
 from Plastic Logic.
 
+
 Hardware Components
 -------------------
 This section lists the hardware components commonly found on boards intended to drive Plastic Logic
 displays that require software drivers.
+
 
 Maxim 5820 DAC
 --------------
 The 5820 DAC is a general purpose I2C 8bit DAC used to set the VCOM voltage on some boards. It can be
 turned off to save power. The need for an external DAC has largely been removed from new designs by the
 ability to use the VCOM DAC provided in the PMIC instead.
+
 
 Microchip EEPROMs
 -----------------
@@ -133,12 +141,14 @@ The code supports I2C EEPROMs up to 64KB in size. The code currently supports tw
 2. 24AA256 – this is a 32KB EEPROM found on some display types. It is intended to store waveform information so that the necessary information to drive a display travels with the display. This allows the system to ensure the correct waveform information is used for the display. Since waveforms are likely to exceed 32KB in size some sort of compression will be required. Support of this feature will be in Version 2.0 of this software.
 3. EEPROM types can be added by extending the table that defines the device characteristics.
 
+
 Maxim LM75 Temperature Sensor
 -----------------------------
 The LM75 temperature sensor is a configurable I2C temperature sensor that can measure temperature
 autonomously at programmable intervals. It can be used when the temperature measuring facilities of the
 PMIC’s cannot be used for some reason.
 The measured temperature register can be read automatically by the Epson controllers.
+
 
 Maxim 17135 HV PMIC
 -------------------
@@ -150,6 +160,7 @@ The Maxim PMIC is used on boards primarily intended to drive the large 10.7” d
 4. Inbuilt 8bit VCOM DAC
 5. In built LM75 compatible temperature sensor with automatic temperature sensing
 
+
 TI 65185 HV PMIC
 ----------------
 The TI PMIC is used on boards intended to drive the small displays. Its key features are:
@@ -159,6 +170,7 @@ The TI PMIC is used on boards intended to drive the small displays. Its key feat
 3. I2C commands for PowerUp/Down and power supply monitoring
 4. Inbuilt 9bit VCOM DAC
 5. In built LM75 compatible temperature sensor with on demand temperature sensing.
+
 
 Putting it all Together
 -----------------------
@@ -173,3 +185,7 @@ which are still supported as they provide useful references.
 
 Reviewing these files will make it much clearer how the software components are put together to create a
 working system.
+
+.. raw:: pdf
+
+   PageBreak

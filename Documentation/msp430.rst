@@ -5,11 +5,12 @@ This section provides information specific to deploying the code on the referenc
 hardware available from Plastic Logic. This provides a supported, stable environment in which to
 investigate the behaviour of the code before moving on to a customised platform.
 
+
 MSP430 - Getting Started
 ------------------------
 
 Importing the project
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 The project code needs to be imported into the Code Composer Studio (CCS) IDE in order to build it using
 the following steps:
 
@@ -23,8 +24,9 @@ the following steps:
    warning is in the Fat file-system code and can be ignored. The error indicates that the code has not
    yet been correctly configured.
 	
+
 Configuring the code
---------------------
+^^^^^^^^^^^^^^^^^^^^
 The code is configured at compile time to define the type of display interface board and display-type that it
 will be driving.
 
@@ -37,8 +39,9 @@ At the top of main.c (shown in the Project Explorer window with a red cross) are
 Rebuild the code (Project | Build All (or Control-B)). The error in main.c will go away and the code is now
 configured to drive the selected board and display type.
 
+
 Download and Run
-----------------
+^^^^^^^^^^^^^^^^
 Plug the USB MSP430-FET430UIF programmer into the JTAG programming port on the MSP430 board.
 Turn on the 5V supply to the Ruddock2 and select “Run | Debug” in the IDE.
 
@@ -55,14 +58,16 @@ Debug messages will be displayed in the Debugger Console in the IDE.
 Once the MSP430 has been programmed the slideshow will run automatically when power is applied to the
 board (unless the debugger is attached holding it in reset).
 
+
 Target Processor
-----------------
+^^^^^^^^^^^^^^^^
 The code is targeted to the MSP430F5438A controller. This part was chosen because it gave plenty of
 resources to work with during early development and was compatible with the MSP-EXP430F5438
 development board from TI.
 
 Further development has refined the resources required and the MSP430F5310 would have sufficient
 resources to drive a display with similar performance while using only 48 pins.
+
 
 Parrot - MSP430 Processor Board
 -------------------------------
@@ -84,6 +89,7 @@ The board has the following features:
 
 If required the board can be used as a standalone development platform be powered from the JTAG-FET
 programmer.
+
 
 Toolchains
 ----------
@@ -109,12 +115,14 @@ necessary to add a compiler flag to tell it to behave more like gcc.
 
 The shipped project configuration file has these settings changes made.
 
+
 msp430-gcc
 ^^^^^^^^^^
 There is an open source msp430 tool chain available for Linux – msp430-gcc. Some work has been done to
 support this tool chain but the work is not yet complete. Much of the code compiles cleanly however there
 are some issues related to pragmas used to declare interrupt handlers. Full support for this tool chain will
 depend on customer demand.
+
 
 MSP430 Specific Host Interfaces
 ===============================
@@ -127,6 +135,7 @@ call – e.g. when defining an 8 bit bus as output or input. The code attempts t
 it can. Much of the error checking code can be disabled once the porting process to a new platform has
 been completed and the platform configuration is stable.
 
+
 I2C Interface
 -------------
 A single i2c interface is supported. I2C is only supported in UCSB modules and the chosen UCSB module is
@@ -134,6 +143,7 @@ defined in the msp430-i2c.c source file by setting the macros “USCI_UNIT” an
 The code will then reconfigure itself to reference the correct I2C unit. In addition to specifying which UCSI
 module to use the I2C SDA and SCL pins need to be connected to the USCI unit by defining the appropriate
 pins as PIN_SPECIAL in the gpio_request() call.
+
 
 SPI Interface – Epson
 ---------------------
@@ -149,6 +159,7 @@ connected to this bus and are selected using their chip select lines as required
 20Mbps reliably. Due to the need to keep the Epson chip selected for the duration of the image data
 transfer the Epson controller must be placed on a separate bus to the SD card so that multiple blocks can
 be read from the SD card.
+
 
 SPI Interface – SD Card
 -----------------------
@@ -167,6 +178,7 @@ UART Interface
 A serial interface is supported using a pin header on the MSP430 board into which can be plugged an FTDI
 active serial –to-USB cable. The code can be configured to route all standard output to the serial port rather
 than back to the debugger. This allows debug output still be seen when no debugger is attached.
+
 
 Porting the Existing Code to a New MSP430 Processor
 ---------------------------------------------------
@@ -218,3 +230,7 @@ To reconfigure the reference code follow the sequence below:
     #define EPSON_CS_0 GPIO(3,6)
 	
 Recompile the code and it has now been retargeted to the new pin assignments.
+
+.. raw:: pdf
+
+   PageBreak

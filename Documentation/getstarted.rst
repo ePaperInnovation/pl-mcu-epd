@@ -3,11 +3,13 @@ Getting Started
 This section covers setting up the hardware and software so that a given display type can be driven. Please
 follow the steps outlined in order to setup and build the software.
 
+
 Obtaining the Code
 ------------------
 The code is delivered as a zip archive containing the source code, SD card contents (initialisation data,
 waveforms and images), and documentation. Unzip this archive in some suitable location that the
 development tools will be able to access.
+
 
 Hardware Setup
 --------------
@@ -21,12 +23,14 @@ On the Ruddock 2 ensure that:
 3. The switch SW7 is set to ON
 4. 5V power supply, 200mA for small displays, 2A for large displays
 	
+
 The processor board plugs into the Ruddock2 using the two parallel headers, note the processor board
 outline in the silk screen on the Ruddock2 for correct orientation.
 
 The display interface board connects to the Ruddock2 serial interface connector (the smaller of the two FFC
 connectors) using a flexi-cable and finally the display itself connects to the display interface board either
 directly in the case of the small displays or via a Mercury board using a 50way flexi cable.
+
 
 SD Card Setup
 -------------
@@ -43,6 +47,7 @@ display you are using. These files are located at:
 
 Place the micro SD card in the micro SD card socket on the processor board.
 
+
 Building and Configuring the Code
 ---------------------------------
 Please refer to the microcontroller specific section for details on how to configure and build the code for
@@ -54,3 +59,6 @@ You should now be able to see a slide show of stock images from the “0:/<Displ
 shown on the display until execution is halted. The slideshow will skip any files that do not have the
 extension “.pgm”
 
+.. raw:: pdf
+
+   PageBreak
