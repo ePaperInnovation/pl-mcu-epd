@@ -1,0 +1,1 @@
+rst2pdf index.rst -s stylesheet.txt -o pl-mcu-manual.pdf && evince pl-mcu-manual.pdf
