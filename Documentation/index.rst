@@ -39,9 +39,6 @@ ucEpson
 
 .. _PLMCU
 
-Plasic Logic Microcontroller Platform
-=====================================
-
 .. include:: intro.rst
 .. include:: supportedhw.rst
 .. include:: getstarted.rst
