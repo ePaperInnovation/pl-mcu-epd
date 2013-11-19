@@ -91,8 +91,8 @@ extern u32 __bswap_32(u32 x);
 struct area {
 	int left;
 	int top;
-	unsigned width;
-	unsigned height;
+	int width;
+	int height;
 };
 
 #if CPU_LITTLE_ENDIAN
