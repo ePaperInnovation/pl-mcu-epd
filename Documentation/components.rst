@@ -13,19 +13,19 @@ use the 8.3 compatible filenames. These names can be displayed under Windows by 
 21/05/2011 07:01 8,863,336 NVWGF2~1.DLL nvwgf2umx.dll
 
 
-+---------------------------------------+-------------------------------------------------------+
-|SD Card path                           | Contents                                              |
-+=======================================+=======================================================+
-|0:/<display-type>                      | Root of the subtree for the selected display type     |
-+---------------------------------------+-------------------------------------------------------+
-|0:/<display-type>/bin/ecode.bin        | Epson controller initialisation file for display type |
-+---------------------------------------+-------------------------------------------------------+
-|0:/<display-type>/img/*.pgm            | Image files to be displayed                           |
-+---------------------------------------+-------------------------------------------------------+
-|0:/<display-type>/display/vcom.txt     | VCOM voltage for display                              |
-+---------------------------------------+-------------------------------------------------------+
-|0:/<display-type>/display/waveform.bin | Waveform for the display                              |
-+---------------------------------------+-------------------------------------------------------+
++----------------------------------------+-------------------------------------------------------+
+| SD Card path                           | Contents                                              |
++========================================+=======================================================+
+| 0:/<display-type>                      | Root of the subtree for the selected display type     |
++----------------------------------------+-------------------------------------------------------+
+| 0:/<display-type>/bin/ecode.bin        | Epson controller initialisation file for display type |
++----------------------------------------+-------------------------------------------------------+
+| 0:/<display-type>/img/\*.pgm           | Image files to be displayed                           |
++----------------------------------------+-------------------------------------------------------+
+| 0:/<display-type>/display/vcom.txt     | VCOM voltage for display                              |
++----------------------------------------+-------------------------------------------------------+
+| 0:/<display-type>/display/waveform.bin | Waveform for the display                              |
++----------------------------------------+-------------------------------------------------------+
 
 Note a default waveform and VCOM is provided for each display type. These should be replaced with
 module specific data in order to get the best display quality.

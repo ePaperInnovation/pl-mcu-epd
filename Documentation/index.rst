@@ -37,8 +37,6 @@ ucEpson
 
    PageBreak oneColumn
 
-.. _PLMCU
-
 .. include:: intro.rst
 .. include:: supportedhw.rst
 .. include:: getstarted.rst

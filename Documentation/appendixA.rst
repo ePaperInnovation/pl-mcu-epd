@@ -27,7 +27,7 @@ FatFs
 
 
 Texas Instruments
-----------------
+-----------------
 
 .. code-block:: ti
 
