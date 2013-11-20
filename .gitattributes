@@ -1,2 +1,14 @@
 # Auto detect text files and perform CRLF normalization
 *        text eol=crlf
+
+# Text files
+*.c text
+*.h text
+*.rst text
+*.txt text
+*.sh text
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
