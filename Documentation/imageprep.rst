@@ -125,11 +125,11 @@ effects with appropriate sequencing of the drawing and display update commands.
 
   # Fill the screen with white and trigger a refresh update
   #
-  #                             x,    y,    w,    h, gl
-  fill,                         0,    0,  400,  240, 15
-  power, on
-  update, refresh,              0,    0,  400,  240, 50
-  power, off
+  #                              x,    y,    w,    h, gl
+  fill,                          0,    0,  400,  240, 15
+  power,  on
+  update, refresh,               0,    0,  400,  240, 50
+  power,  off
   #
   # Load some image data in 4 different areas
   #
@@ -141,13 +141,13 @@ effects with appropriate sequencing of the drawing and display update commands.
   #
   # Update the same 4 areas with a small delay in between each
   #
-  #       waveform,     left,  top,  wid,  hgt, delay
-  power, on
-  update, refresh,       290,   20,  100,  120, 50
-  update, refresh,        10,   10,  140,  180, 50
-  update, refresh,       155,    0,  130,   90, 50
-  update, refresh,       150,  150,  240,   80, 50
-  power, off
+  #       waveform,           left,  top,  wid,  hgt, delay
+  power,  on
+  update, refresh,             290,   20,  100,  120, 50
+  update, refresh,              10,   10,  140,  180, 50
+  update, refresh,             155,    0,  130,   90, 50
+  update, refresh,             150,  150,  240,   80, 50
+  power,  off
 
 .. _Waveforms identifiers:
 
