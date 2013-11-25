@@ -6,7 +6,7 @@ Overview
 The diagram below shows an overview of the code base.
 
 
-.. image:: overview.jpg
+.. image:: overview.jpeg
    :width: 100%
 
 Things to note are:
