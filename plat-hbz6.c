@@ -505,10 +505,14 @@ static int cmd_sleep(struct s1d135xx *epson, const char *line)
 	return 0;
 }
 
+#define SLIDES_LOG(msg, ...)					\
+	LOG("[%s:%4lu] "msg, SLIDES_PATH, lno, ##__VA_ARGS__)
+
 static int run_region_slideshow(struct s1d135xx *epson)
 {
 	FIL slides;
 	int stat;
+	unsigned long lno;
 
 	LOG("Running sequence from %s", SLIDES_PATH);
 
@@ -518,6 +522,7 @@ static int run_region_slideshow(struct s1d135xx *epson)
 	}
 
 	stat = 0;
+	lno = 1;
 
 	while (!stat) {
 		struct cmd {
@@ -540,24 +545,25 @@ static int run_region_slideshow(struct s1d135xx *epson)
 		stat = parser_read_file_line(&slides, line, sizeof(line));
 
 		if (stat < 0) {
-			LOG("Failed to read line from %s", SLIDES_PATH);
+			SLIDES_LOG("Failed to read line");
 			break;
 		}
 
 		if (!stat) {
 			f_lseek(&slides, 0);
+			lno = 1;
 			continue;
 		}
 
 		stat = 0;
 
-		if (line[0] == '#')
+		if ((line[0] == '\0') || (line[0] == '#'))
 			continue;
 
 		len = parser_read_str(line, SEP, cmd_name, sizeof(cmd_name));
 
 		if (len < 0) {
-			LOG("Failed to read command");
+			SLIDES_LOG("Failed to read command");
 			stat = -1;
 			break;
 		}
@@ -570,16 +576,20 @@ static int run_region_slideshow(struct s1d135xx *epson)
 		}
 
 		if (cmd->name == NULL) {
-			LOG("Invalid command: %s", cmd_name);
+			SLIDES_LOG("Invalid command");
 			stat = -1;
 			break;
 		}
+
+		++lno;
 	}
 
 	f_close(&slides);
 
 	return stat;
 }
+
+#undef SLIDES_LOG
 
 static int show_image(const char *image, void *arg)
 {
