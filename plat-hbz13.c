@@ -200,7 +200,7 @@ int plat_hbz13_init(const char *platform_path, int i2c_on_epson)
 	epson_fill_buffer(0x0030, false, epson->yres, epson->xres, 0xff);
 	s1d13541_init_display(epson);
 	power_up();
-	s1d13541_update_display(epson, WVF_INIT);
+	s1d13541_update_display(epson, s1d135xx_get_wfid(wf_init));
 	s1d13541_wait_update_end(epson);
 	power_down();
 
@@ -231,7 +231,7 @@ static int show_image(const char *image, void *arg)
 	slideshow_load_image(image, 0x0030, false);
 
 	power_up();
-	s1d13541_update_display(epson, WVF_REFRESH);
+	s1d13541_update_display(epson, s1d135xx_get_wfid(wf_refresh));
 	s1d13541_wait_update_end(epson);
 	power_down();
 

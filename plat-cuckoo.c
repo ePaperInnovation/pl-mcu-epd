@@ -148,7 +148,7 @@ int plat_cuckoo_init(void)
 
 	/* clear the display */
 	power_up();
-	s1d13524_update_display(epson, WVF_INIT);
+	s1d13524_update_display(epson, s1d135xx_get_wfid(wf_init));
 	power_down();
 
 	/* run the slideshow */
@@ -175,7 +175,7 @@ static int show_image(const char *image, void *arg)
 	slideshow_load_image(image, 0x0000, true);
 
 	power_up();
-	s1d13524_update_display(epson, WVF_REFRESH);
+	s1d13524_update_display(epson, s1d135xx_get_wfid(wf_refresh));
 	power_down();
 
 	return 0;

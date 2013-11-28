@@ -207,12 +207,14 @@ return 0;
 /* Cycle through available power modes */
 static int powerdemo_run(void)
 {
+	const int wfid_refresh = s1d135xx_get_wfid(wf_refresh);
+
 	/* Set RUN mode and update display */
 	pwrstate_run_mode();
 
 	slideshow_load_image("img/01_n.pgm", 0x0030, false);
 	power_up();
-	s1d13541_update_display(epson, WVF_REFRESH);
+	s1d13541_update_display(epson, wfid_refresh);
 	s1d13541_wait_update_end(epson);
 	power_down();
 	msleep(2000);
@@ -230,7 +232,7 @@ static int powerdemo_run(void)
 	/* Set back to RUN mode, update display with previous image */
 	pwrstate_run_mode();
 	power_up();
-	s1d13541_update_display(epson, WVF_REFRESH);
+	s1d13541_update_display(epson, wfid_refresh);
 	s1d13541_wait_update_end(epson);
 	power_down();
 
@@ -356,7 +358,7 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	epson_fill_buffer(0x0030, false, epson->yres, epson->xres, 0xff);
 	s1d13541_init_display(epson);
 	power_up();
-	s1d13541_update_display(epson, WVF_INIT);
+	s1d13541_update_display(epson, s1d135xx_get_wfid(wf_init));
 	s1d13541_wait_update_end(epson);
 	power_down();
 
@@ -598,7 +600,7 @@ static int show_image(const char *image, void *arg)
 
 	check_temperature(epson);
 	power_up();
-	s1d13541_update_display(epson, WVF_REFRESH);
+	s1d13541_update_display(epson, s1d135xx_get_wfid(wf_refresh));
 	s1d13541_wait_update_end(epson);
 	power_down();
 
