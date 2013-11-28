@@ -406,9 +406,10 @@ void s1d13541_measure_temperature(struct s1d135xx *epson, u8 *needs_update)
 		break;
 	}
 
-	epson->temp_measured = temp_measured;
+	if (temp_measured != epson->temp_measured)
+		LOG("Temperature: %d", temp_measured);
 
-	LOG("Temperature: %d", temp_measured);
+	epson->temp_measured = temp_measured;
 }
 
 int s1d13541_pwrstate_sleep(struct s1d135xx *epson)
