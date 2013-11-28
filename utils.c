@@ -163,10 +163,8 @@ int parser_read_file_line(FIL *f, char *buffer, int max_length)
 		if (f_read(f, out, 1, &count) != FR_OK)
 			return -1;
 
-		if ((*out == '\n') || !count) {
-			*out = '\0';
+		if ((*out == '\n') || !count)
 			break;
-		}
 
 		if (*out == '\r')
 			--out;
@@ -175,7 +173,9 @@ int parser_read_file_line(FIL *f, char *buffer, int max_length)
 	if (i == max_length)
 		return -1;
 
-	return i;
+	*out = '\0';
+
+	return !!count;
 }
 
 /* ----------------------------------------------------------------------------

@@ -54,7 +54,9 @@ extern int parser_read_int_list(const char *str, const char *sep, int **list);
 /** Read area coordinates (left, top, width, height) */
 extern int parser_read_area(const char *str, const char *sep, struct area *a);
 
-/** Read one line worth of data from a text file */
+/** Read one line worth of data from a text file
+ *  Return 1 if some data was read, 0 if end of file reached and no data was
+ *  read but no error occured and -1 if an error occured.  */
 extern int parser_read_file_line(FIL *f, char *buffer, int max_length);
 
 /* -- Debug utilities */
