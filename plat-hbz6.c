@@ -105,7 +105,6 @@ static const struct vcom_info DEF_VCOM_PSU = {
 /* Board specific power up control */
 static int power_up(void)
 {
-	LOG("Powering up");
 	gpio_set_value(B_HWSW_CTRL, false);
 	gpio_set_value(B_PMIC_EN, true);
 
@@ -123,7 +122,6 @@ static int power_down(void)
 {
 	gpio_set_value(B_HWSW_CTRL, false);
 	gpio_set_value(B_PMIC_EN, false);
-	LOG("Powered down");
 
 	return 0;
 }
