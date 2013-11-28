@@ -120,7 +120,6 @@ void s1d13541_init_display(struct s1d135xx *epson)
 void s1d13541_update_display(struct s1d135xx *epson, int waveform)
 {
 	assert(epson != NULL);
-	assert(waveform < _WVF_N_);
 
 	epson_cmd_p1(UPD_FULL, WAVEFORM_MODE(waveform) | UPDATE_LUT(0));
 	epson_wait_for_idle();
@@ -134,7 +133,6 @@ void s1d13541_update_display_area(struct s1d135xx *epson, int waveform,
 {
 	assert(epson != NULL);
 	assert(area != NULL);
-	assert(waveform < _WVF_N_);
 
 	epson_cmd_p5(UPD_FULL_AREA, WAVEFORM_MODE(waveform),
 		     (area->left & S1D135XX_XMASK),
