@@ -33,6 +33,9 @@
 #include "plat-raven.h"
 #include "plat-ruddock2.h"
 
+#define LOG_TAG "main"
+#include "utils.h"
+
 // global file system information used by FatFs
 static FATFS Sd_Card;
 
@@ -46,6 +49,8 @@ static int sdcard_init(void)
 
 int app_main(void)
 {
+	LOG("Starting pl-mcu-epd %s", VERSION);
+
 	/* initialise the Ruddock2 motherboard */
 	ruddock2_init();
 
@@ -70,4 +75,3 @@ int app_main(void)
 		udelay(1);
 	} while(1);
 }
-
