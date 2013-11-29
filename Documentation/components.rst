@@ -127,14 +127,14 @@ displays that require software drivers.
 
 
 Maxim 5820 DAC
---------------
+^^^^^^^^^^^^^^
 The 5820 DAC is a general purpose I2C 8bit DAC used to set the VCOM voltage on some boards. It can be
 turned off to save power. The need for an external DAC has largely been removed from new designs by the
 ability to use the VCOM DAC provided in the PMIC instead.
 
 
 Microchip EEPROMs
------------------
+^^^^^^^^^^^^^^^^^
 The code supports I2C EEPROMs up to 64KB in size. The code currently supports two I2C EEPROM types:
 
 1. 24LC014 – this is a small 128B EEPROM fitted to later display interface boards and is used to store power supply calibration data. This permits accurate VCOM voltages to be achieved when the display interface board is swapped.
@@ -143,7 +143,7 @@ The code supports I2C EEPROMs up to 64KB in size. The code currently supports tw
 
 
 Maxim LM75 Temperature Sensor
------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The LM75 temperature sensor is a configurable I2C temperature sensor that can measure temperature
 autonomously at programmable intervals. It can be used when the temperature measuring facilities of the
 PMIC’s cannot be used for some reason.
@@ -151,7 +151,7 @@ The measured temperature register can be read automatically by the Epson control
 
 
 Maxim 17135 HV PMIC
--------------------
+^^^^^^^^^^^^^^^^^^^
 The Maxim PMIC is used on boards primarily intended to drive the large 10.7” displays. Its key features are:
 
 1. I2C interface for configuration of power sequence timings
@@ -162,7 +162,7 @@ The Maxim PMIC is used on boards primarily intended to drive the large 10.7” d
 
 
 TI 65185 HV PMIC
-----------------
+^^^^^^^^^^^^^^^^
 The TI PMIC is used on boards intended to drive the small displays. Its key features are:
 
 1. I2C interface for configuration of power sequence timings
