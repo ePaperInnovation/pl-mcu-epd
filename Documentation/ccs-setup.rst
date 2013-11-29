@@ -35,9 +35,11 @@ The Plastic Logic reference code project uses Texas Instrument's Code Composer S
 
 5. Compiler configuration
 
+   Firstly, click on the "Show Advanced Settings" link in the bottom left of the settings window.
+
    The following project settings need to be modified:
 
-   * **CCS Build -> MSP430 Compiler -> Debug Options**
+   * **CCS Build -> MSP430 Compiler -> Advanced Debugging Options**
         **Debugging Model:** Should be set to **'Full Symbolic Debug'**
 
    * **CCS Build -> MSP430 Compiler -> Advanced Options -> Language Options:** 
@@ -46,7 +48,7 @@ The Plastic Logic reference code project uses Texas Instrument's Code Composer S
    * **CCS Build -> MSP430 Compiler -> Advanced Options -> Library Function Assumptions:** 
         Set the level of printf support to **nofloat**
 
-   * **CCS Build -> MSP430 Linker -> ULP Advisor:** 
+   * **CCS Build -> MSP430 Compiler -> ULP Advisor:** 
        Disable numbers **2** and **5** in the list
 
 
