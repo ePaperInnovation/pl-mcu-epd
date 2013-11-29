@@ -152,6 +152,8 @@ int plat_raven_init(void)
 #endif
 	}
 
+	vcom_init(&vcom_calibration, &psu_data.info, VCOM_VGSWING);
+
 	/* select the controller for future operations */
 	s1d135xx_select(epson, &previous);
 
