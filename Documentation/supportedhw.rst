@@ -21,6 +21,143 @@ controller supports large and color displays and is fitted to a circuit board wi
 controller supports smaller displays and is physically bonded to the display module.
 
 
+Power State Management
+^^^^^^^^^^^^^^^^^^^^^^
+The Epson S1D13541 controller can be configured to one of several power states; helping to minimise power use 
+when appropriate. 
+
+These power states are:
+
+- Power Off
+   - Internal clock disabled
+   - 3V3 power to S1D13541 disabled
+- Standby
+   - Can be set from SLEEP or RUN mode
+   - Internal clock enabled
+   - Power save status bit set to 0
+   - Source/gate driver powered off  
+- Run 
+   - Can be set from SLEEP or STANDBY mode
+   - Internal clock enabled
+   - Power save status bit set to 1
+   - Source/gate driver powered on
+- Sleep 
+   - Can be set from RUN or STANDBY mode
+   - Internal clock disabled
+   - Source/gate driver powered off 
+   - Power save status bit set to 0
+
+
+
+Fig 4-1-1, below, shows the possible power state transitions.
+
+.. image:: pwr_transitions.jpeg
+   :width: 75%
+
+*Fig 4-1-1: Power State Transition Diagram*
+
+
+Below is a breakdown of the actions that must be taken for each of the power state transitions:
+
+Run -> Standby:
+***************
+
+- STBY command (CMD(0x04), no parameters) issued to epson controller
+- Wait for HRDY = 1
+- Standby Mode entered
+
+Sleep -> Standby
+****************
+
+- Set CLK_EN GPIO true to re-enable clock
+- Set REG[0x0006] bit 8 to 1 for normal power supply
+- STBY command (CMD(0x04), no parameters) issued to epson controller
+- Wait for HRDY = 1
+- Standby Mode entered
+
+Run/Standby -> Sleep:
+*********************
+
+- SLP command (CMD(0x05), no parameters) issued to epson controller
+- Wait for HRDY = 1
+- Set REG[0x0006] bit 8 to 0 for minimum power supply
+- Set CLK_EN GPIO to false to disable clock
+- Sleep Mode entered
+
+Standby -> Run:
+***************
+
+- RUN command (CMD(0x02), no parameters) issued to epson controller
+- Wait for HRDY = 1
+- Run Mode entered
+
+Sleep -> Run:
+*************
+
+- Set CLK_EN GPIO to true to re-enable clock
+- Set REG[0x0006] bit 8 to 1 for normal power supply
+- RUN command (CMD(0x02), no parameters) issued to epson controller
+- Wait for HRDY
+- Run Mode entered
+
+Run/Standby/Sleep -> Power Off
+******************************
+
+Note: Any data in the image buffer will be lost when going into off mode. If the current displayed image
+is to be retained when powering back up, the contents of the image buffer should be copied to a suitable
+location (eg. an SD card) before continuing with the power off. This image can then be loaded back into 
+the image buffer when coming out of power off mode.
+
+- SLP command (CMD(0x05), no parameters) issued to epson controller
+- Set CLK_EN GPIO to false to disable clock
+- Set 3V3_EN GPIO to false to disable 3V3 power supply
+
+
+Power Off -> Standby Mode:
+**************************
+
+Note: after each of the following commands, the host should wait for HRDY to be 1 before continuing
+
+- Set 3V3_EN GPIO to true to enable 3V3 power supply
+- Set CLK_EN GPIO to true to enable clock
+- INIT_CMD_SET command (CMD(0x00 + EPSON Instruction Code Binaries)) issued to epson controller
+- INIT_SYS_STBY command (CMD(0x06, no parameters) issued to epson controller
+- Set Protect Key Code to REG[0x042C] and REG[0x042E]
+- BST_WR_MEM command (CMD(0x1D) + Waveform Storage Address) to start loading waveform data
+- WR_REG command (CMD(0x11), 0x154 + Waveform) to load waveform data
+- BST_END_MEM command (CMD(0x1E), no parameters) to end loading waveform data
+- RUN command (CMD(0x02), no parameters) issued to epson controller
+- UPD_GDRV_CLR command (CMD(0x37), no parameters)
+- WAIT_DSPE_TRG command (CMD(0x28), no parameters)
+- S1D13541 is initialised into known state
+
+The EPD Panel and Image Buffer should now be initialised to a known state; either the standard
+white initialisation waveform, or image data copied to a safe medium before power off was called.
+
+
+Power State Demo
+****************
+
+A power state demo can be launched using the Plastic Logic Parrot reference code by including the following in config.h:
+
+.. code-block:: pwrstate
+
+   #define CONFIG_DEMO_POWERMODES 1
+
+This demo will transition through the power states with the following behaviour:
+
+- Go into RUN mode
+- Load an image into the image buffer
+- Update the display
+- Go into SLEEP mode for 2 seconds
+- Go into STANDBY mode for 2 seconds
+- Go into RUN mode
+- Update the display (with image data retained from the previous update)
+- Go into POWER OFF mode (CLKI and 3V3 disabled) for 2 seconds
+- Go through power on initialize
+
+
+
 Plastic Logic Evaluation Hardware
 ---------------------------------
 Display Types
