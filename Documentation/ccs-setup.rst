@@ -27,7 +27,9 @@ The Plastic Logic reference code project uses Texas Instrument's Code Composer S
    - Open this menu: **File -> Import -> General**
    - To import a clone repository, choose **File System**
    - To import a source archive, choose **Archive File**
-   (Note: When using a source archive, the source will need to be moved out of the extra sub-directory that is created.)
+
+     (Note: When using a source archive, the source will need to be moved out
+     of the extra sub-directory that is created.)
 
    - Browse to select your pl-mcu-epd cloned repository or archive file
    - Select all the files (checkbox near pl-mcu-epd)
