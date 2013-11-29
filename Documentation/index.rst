@@ -6,7 +6,7 @@ ucEpson
 
 :Description: Plastic Logic Microcontroller Platform Manual
 :Date: |date|
-:Revision: v003
+:Revision: v004
 
 .. Global document settings
 
