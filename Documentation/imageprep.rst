@@ -83,6 +83,7 @@ The format of the file can be summarised with the following characteristics:
   numbers of values
 * a line starting with a hash sign ``#`` is a comment and is ignored by the
   software
+* blank lines are allowed
 * there is no limit to the length of the file other than what the file system
   infrastructure permits
 * the file needs to be named ``slides.txt`` and located in the same directory
@@ -130,7 +131,7 @@ effects with appropriate sequencing of the drawing and display update commands.
   power,  on
   update, refresh,               0,    0,  400,  240, 50
   power,  off
-  #
+
   # Load some image data in 4 different areas
   #
   #      file,     i_x,  i_y,  o_x,  o_y,  wid,  hgt
@@ -138,7 +139,7 @@ effects with appropriate sequencing of the drawing and display update commands.
   image, 06_N.PGM, 150,   50,   10,   10,  140,  180
   image, 11_N.PGM, 150,    0,  155,    0,  130,   90
   image, 13_N.PGM,  20,   20,  150,  150,  240,   80
-  #
+
   # Update the same 4 areas with a small delay in between each
   #
   #       waveform,           left,  top,  wid,  hgt, delay
@@ -154,19 +155,29 @@ effects with appropriate sequencing of the drawing and display update commands.
 Waveforms identifiers
 ^^^^^^^^^^^^^^^^^^^^^
 
-+---------------+--------+-----------------------------------------+----------+
-| Path          | Grey \ | Description                             | Length \ |
-|               | levels |                                         | (ms)     |
-+===============+========+=========================================+==========+
-| refresh       | 16     | All pixels are updated.                 | 670      |
-+---------------+--------+-----------------------------------------+----------+
-| delta         | 16     | Only changing pixels are updated.       | 670      |
-+---------------+--------+-----------------------------------------+----------+
-| delta/mono    | 2      | Only changing b&w pixels are updated.   | 250      |
-+---------------+--------+-----------------------------------------+----------+
-| init          | 2      | Use only to whipe the screen when image | 1300     |
-|               |        | content is lost.                        |          |
-+---------------+--------+-----------------------------------------+----------+
+The following waveforms are always available in Plastic Logic's waveform
+libraries:
+
++------------------+--------+--------------------------------------+----------+
+| Path             | Grey \ | Description                          | Length \ |
+|                  | levels |                                      | (ms)     |
++==================+========+======================================+==========+
+| ``refresh``      | 16     | All pixels are updated.              | 670      |
++------------------+--------+--------------------------------------+----------+
+| ``delta``        | 16     | Only changing pixels are updated.    | 670      |
++------------------+--------+--------------------------------------+----------+
+| ``refresh/mono`` | 2      | All b&w pixels are updated.          | 250      |
++------------------+--------+--------------------------------------+----------+
+| ``delta/mono``   | 2      | Only changing b&w pixels are         | 250      |
+|                  |        | updated.                             |          |
++------------------+--------+--------------------------------------+----------+
+| ``init``         | 2      | Use only to wipe the screen when     | 1300     |
+|                  |        | the image content is lost.           |          |
++------------------+--------+--------------------------------------+----------+
+
+They all have a unique numerical identifier which can be different in each
+waveform library.  To get the identifier of a waveform for a given path string,
+use the ``s1d135xx_get_wfid`` function in your application.
 
 .. raw:: pdf
 
