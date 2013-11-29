@@ -46,8 +46,8 @@ ucEpson
 .. include:: hostAL.rst
 .. include:: msp430.rst
 .. include:: ccs-setup.rst
-.. include:: pic.rst
-.. include:: arm.rst
+.. .. include:: pic.rst
+.. .. include:: arm.rst
 .. include:: resources.rst
 .. include:: appendixA.rst
 
