@@ -74,7 +74,7 @@ static struct i2c_adapter *i2c;
 static struct max17135_info *pmic_info;
 static struct s1d135xx *epson;
 static struct lm75_info *lm75_info;
-static struct vcom_cal *vcom_calibration;
+static struct vcom_cal vcom_calibration;
 static struct i2c_eeprom *eeprom;
 static struct psu_data psu_data;
 
@@ -162,7 +162,7 @@ int plat_raven_init(void)
 
 	/* intialise the PMIC and pass it the vcom calibration data */
 	max17135_init(i2c, I2C_PMIC_ADDR, &pmic_info);
-	max17135_configure(pmic_info, vcom_calibration, MAX17135_SEQ_1);
+	max17135_configure(pmic_info, &vcom_calibration, MAX17135_SEQ_1);
 	max17135_set_vcom_voltage(pmic_info, vcom);
 
 	/* initialise the i2c temperature sensor */
