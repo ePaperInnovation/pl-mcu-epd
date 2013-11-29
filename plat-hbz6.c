@@ -522,7 +522,7 @@ static int run_region_slideshow(struct s1d135xx *epson)
 	}
 
 	stat = 0;
-	lno = 1;
+	lno = 0;
 
 	while (!stat) {
 		struct cmd {
@@ -542,6 +542,7 @@ static int run_region_slideshow(struct s1d135xx *epson)
 		char cmd_name[16];
 		int len;
 
+		++lno;
 		stat = parser_read_file_line(&slides, line, sizeof(line));
 
 		if (stat < 0) {
@@ -551,7 +552,7 @@ static int run_region_slideshow(struct s1d135xx *epson)
 
 		if (!stat) {
 			f_lseek(&slides, 0);
-			lno = 1;
+			lno = 0;
 			continue;
 		}
 
@@ -580,8 +581,6 @@ static int run_region_slideshow(struct s1d135xx *epson)
 			stat = -1;
 			break;
 		}
-
-		++lno;
 	}
 
 	f_close(&slides);
