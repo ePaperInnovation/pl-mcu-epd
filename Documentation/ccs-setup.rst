@@ -1,3 +1,5 @@
+.. _Code Composer Studio Setup:
+
 Code Composer Studio Setup
 ==========================
 

@@ -5,70 +5,6 @@ This section provides information specific to deploying the code on the referenc
 hardware available from Plastic Logic. This provides a supported, stable environment in which to
 investigate the behaviour of the code before moving on to a customised platform.
 
-
-MSP430 - Getting Started
-------------------------
-
-Importing the project
-^^^^^^^^^^^^^^^^^^^^^
-The project code needs to be imported into the Code Composer Studio (CCS) IDE in order to build it using
-the following steps:
-
-1. Project | Import Existing CCS Eclipse Project
-2. “Select Search-directory:” and use the Browse button to navigate to the folder created when the distribution archive was unzipped.
-3. In the “Discovered projects” window select the uc-epson project
-4. Click Finish and the project will be imported into the IDE
-5. Click on uc-epson [Active - Debug] in the Project Explorer Window
-6. Project | Build All
-   This will rebuild the code. Note that there is one error and one warning. This is expected. The
-   warning is in the Fat file-system code and can be ignored. The error indicates that the code has not
-   yet been correctly configured.
-	
-
-Configuring the code
-^^^^^^^^^^^^^^^^^^^^
-The code is configured at compile time to define the type of display interface board and display-type that it
-will be driving.
-
-At the top of main.c (shown in the Project Explorer window with a red cross) are several macros.
-
-1. Select a display interface board type: define one of PLAT_CUCKOO, PLAT_RAVEN, PLAT_Z13, PLAT_Z6 or PLAT_Z7 to be 1
-2. Select a display type to be driven by uncommenting the appropriate CONFIG_DISPLAY_TYPE macro. The available options are shown directly below the corresponding PLAT_* macros. The Cuckoo and Raven boards can only drive a single display type so no display needs to be selected.
-3. If the I2C interface is to be provided by the Epson controller define CONFIG_I2C_ON_EPSON to be 1. The Cuckoo and Raven boards have this predefined by the board design so this macro will be ignored. 0 is the safe default.
-
-Rebuild the code (Project | Build All (or Control-B)). The error in main.c will go away and the code is now
-configured to drive the selected board and display type.
-
-
-Download and Run
-^^^^^^^^^^^^^^^^
-Plug the USB MSP430-FET430UIF programmer into the JTAG programming port on the MSP430 board.
-Turn on the 5V supply to the Ruddock2 and select “Run | Debug” in the IDE.
-
-The first time the IDE downloads the code the “Ultra-Low-Power Advisor” may appear warning about
-possible power optimisations. Select “Do not show this again” and proceed.
-
-The code will be downloaded into the MSP430 and the IDE will stop at the entry to main().
-
-To run the code press F8 (or the green go arrow in the debugger tool bar). The code will start and the
-display should initialise and start to cycle through the images appropriate for the type of display selected.
-
-Debug messages will be displayed in the Debugger Console in the IDE.
-
-Once the MSP430 has been programmed the slideshow will run automatically when power is applied to the
-board (unless the debugger is attached holding it in reset).
-
-
-Target Processor
-^^^^^^^^^^^^^^^^
-The code is targeted to the MSP430F5438A controller. This part was chosen because it gave plenty of
-resources to work with during early development and was compatible with the MSP-EXP430F5438
-development board from TI.
-
-Further development has refined the resources required and the MSP430F5310 would have sufficient
-resources to drive a display with similar performance while using only 48 pins.
-
-
 Parrot - MSP430 Processor Board
 -------------------------------
 The Parrot board docks with the Ruddock2 motherboard to provide access to the display interfaces. It has
@@ -113,15 +49,15 @@ A small amount of source code in the platform common layer was taken from Plasti
 Linux drivers. The code uses anonymous unions extensively and in order to get the code to compile it was
 necessary to add a compiler flag to tell it to behave more like gcc.
 
-The shipped project configuration file has these settings changes made.
+For full instructions on how to configure Code Composer Studio for the Plastic Logic reference code project
+please see the chapter 11: Code Composer Studio Setup.
 
 
 msp430-gcc
 ^^^^^^^^^^
-There is an open source msp430 tool chain available for Linux – msp430-gcc. Some work has been done to
-support this tool chain but the work is not yet complete. Much of the code compiles cleanly however there
-are some issues related to pragmas used to declare interrupt handlers. Full support for this tool chain will
-depend on customer demand.
+There is an open source msp430 tool chain available – msp430-gcc. Some work has been done to support this tool 
+chain but the work is not yet complete. Much of the code compiles cleanly however there are some issues related 
+to pragmas used to declare interrupt handlers. Full support for this tool chain will depend on customer demand.
 
 
 MSP430 Specific Host Interfaces
@@ -211,7 +147,7 @@ To reconfigure the reference code follow the sequence below:
     #define SD_SOMI GPIO(3,2)
     #define SD_CLK GPIO(3,3)
 
-7. In epson-if.c define the EPSON SPI interface signals E.g.:
+7. In epson-if.c define the Epson SPI interface signals E.g.:
 
 .. code-block:: spi
 

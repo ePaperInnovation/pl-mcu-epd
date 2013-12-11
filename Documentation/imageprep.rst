@@ -45,7 +45,7 @@ Execute the script from the command line in either operating system, passing the
 the first argument. If the target device is using a Type-19 display, pass "scramble" as the second argument
 in order to generate the correct pixel data ordering.
 
-E.g. (Linux example):
+e.g. (Linux example):
 $: python img_convert.png image.png scramble
 
 For the above example, the output will be a file called image_s.pgm. For a non-scrambled image, the
@@ -102,7 +102,7 @@ effects with appropriate sequencing of the drawing and display update commands.
 *Supported commands*:
 
 ``update, WAVEFORM, LEFT, TOP, WIDTH, HEIGHT, DELAY``
-  Update the display with the given ``WAVEFORM`` (see `Waveforms identifiers`_)
+  Update the display with the given ``WAVEFORM`` (see `Waveform identifiers`_)
   in the area starting with the (``LEFT``, ``TOP``) pixel coordinates and the
   given ``WIDTH`` and ``HEIGHT``.  The software will wait until the update
   request has been processed by the controller, and then wait for ``DELAY``
@@ -150,9 +150,9 @@ effects with appropriate sequencing of the drawing and display update commands.
   update, refresh,             150,  150,  240,   80, 50
   power,  off
 
-.. _Waveforms identifiers:
+.. _Waveform identifiers:
 
-Waveforms identifiers
+Waveform identifiers
 ^^^^^^^^^^^^^^^^^^^^^
 
 The following waveforms are always available in Plastic Logic's waveform
@@ -160,7 +160,7 @@ libraries:
 
 +------------------+--------+--------------------------------------+----------+
 | Path             | Grey \ | Description                          | Length \ |
-|                  | levels |                                      | (ms)     |
+|                  | levels |                                      | (ms)*    |
 +==================+========+======================================+==========+
 | ``refresh``      | 16     | All pixels are updated.              | 670      |
 +------------------+--------+--------------------------------------+----------+
@@ -174,6 +174,8 @@ libraries:
 | ``init``         | 2      | Use only to wipe the screen when     | 1300     |
 |                  |        | the image content is lost.           |          |
 +------------------+--------+--------------------------------------+----------+
+
+* At typical room temperature. For full specification see the relevent display datasheet.
 
 They all have a unique numerical identifier which can be different in each
 waveform library.  To get the identifier of a waveform for a given path string,

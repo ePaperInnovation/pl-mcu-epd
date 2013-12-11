@@ -1,5 +1,5 @@
 =======
-ucEpson
+PL-MCU
 =======
 
 .. |date| date:: %d %B %Y
@@ -18,7 +18,15 @@ ucEpson
       :align: left
       :scale: 50%
 
-.. footer:: Copyright (C) 2013 Plastic Logic Limited. All rights reserved.
+.. footer:: 
+   
+   .. class:: right
+
+      Page ###Page###
+
+   Copyright (C) 2013 Plastic Logic Limited. All rights reserved.
+   
+
 
 
 .. Table of contents

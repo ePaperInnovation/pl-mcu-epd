@@ -29,21 +29,21 @@ when appropriate.
 These power states are:
 
 - Power Off
-   - Internal clock disabled
+   - Clock chip disabled
    - 3V3 power to S1D13541 disabled
 - Standby
    - Can be set from SLEEP or RUN mode
-   - Internal clock enabled
+   - Clock chip enabled
    - Power save status bit set to 0
    - Source/gate driver powered off  
 - Run 
    - Can be set from SLEEP or STANDBY mode
-   - Internal clock enabled
+   - Clock chip enabled
    - Power save status bit set to 1
    - Source/gate driver powered on
 - Sleep 
    - Can be set from RUN or STANDBY mode
-   - Internal clock disabled
+   - Clock chip disabled
    - Source/gate driver powered off 
    - Power save status bit set to 0
 
@@ -58,6 +58,7 @@ Fig 4-1-1, below, shows the possible power state transitions.
 
 
 Below is a breakdown of the actions that must be taken for each of the power state transitions:
+
 
 Run -> Standby:
 ***************
@@ -112,7 +113,6 @@ the image buffer when coming out of power off mode.
 - Set CLK_EN GPIO to false to disable clock
 - Set 3V3_EN GPIO to false to disable 3V3 power supply
 
-
 Power Off -> Standby Mode:
 **************************
 
@@ -120,7 +120,7 @@ Note: after each of the following commands, the host should wait for HRDY to be 
 
 - Set 3V3_EN GPIO to true to enable 3V3 power supply
 - Set CLK_EN GPIO to true to enable clock
-- INIT_CMD_SET command (CMD(0x00 + EPSON Instruction Code Binaries)) issued to epson controller
+- INIT_CMD_SET command (CMD(0x00 + Epson Instruction Code Binaries)) issued to epson controller
 - INIT_SYS_STBY command (CMD(0x06, no parameters) issued to epson controller
 - Set Protect Key Code to REG[0x042C] and REG[0x042E]
 - BST_WR_MEM command (CMD(0x1D) + Waveform Storage Address) to start loading waveform data
@@ -134,11 +134,10 @@ Note: after each of the following commands, the host should wait for HRDY to be 
 The EPD Panel and Image Buffer should now be initialised to a known state; either the standard
 white initialisation waveform, or image data copied to a safe medium before power off was called.
 
-
 Power State Demo
 ****************
 
-A power state demo can be launched using the Plastic Logic Parrot reference code by including the following in config.h:
+A power state demo can be launched using the Plastic Logic reference code by including the following in config.h:
 
 .. code-block:: pwrstate
 
@@ -182,7 +181,7 @@ required.
 |              |            | 4.0" @115ppi                                         |
 +--------------+------------+------------------------------------------------------+
 | Type-19      | 720x120    | Bonded Controller                                    |
-|              |            | 4.9" @115ppi                                         |
+|              |            | 4.9" @150ppi                                         |
 |              |            | Requires pixel data to be reordered                  |
 +--------------+------------+------------------------------------------------------+
 
@@ -200,12 +199,13 @@ be safely exchanged. The board has a 128B EEPROM which can be used as non-volati
 
 HB Z6/Z7
 ^^^^^^^^
-The Z6 and Z7 are very similar boards differing in the display connector used and the provision on the Z7 to
-turn off 3V3 power to the display controller. Both boards are intended to drive an S1D13541 small display
-controller which is bonded to the display itself. The board has a TI PMIC and a 128B EEPROM for storing
-power supply calibration data. The VCOM DAC in the PMIC is used to set the VCOM value for the display.
-The Z7 board is used to drive the Type-19 “Bracelet display” and the Z6 is used to drive all other Plastic
-Logic small displays.
+The Z6 and Z7 are very similar boards differing in the display connector used. All versions of the  Z7 board 
+have the provision to turn off 3V3 power to the display controller; this feature is absent on version 6.1 of 
+the Z6, but has been introduced as of version 6.3, along with the ability to control the clock enable and 
+PMIC wake signals. Both boards are intended to drive an S1D13541 small display controller which is bonded to 
+the display itself. The board has a TI PMIC and a 128B EEPROM for storing power supply calibration data. The 
+VCOM DAC in the PMIC is used to set the VCOM value for the display. The Z7 board is used to drive the 
+Type-19 “Bracelet display” and the Z6 is used to drive all other Plastic Logic small displays.
 
 
 HB Z1.3

@@ -25,7 +25,7 @@ The code is able to drive a slideshow of full size, pre-rendered, images in the 
 display. Due to restrictions on resources the code is not currently able to manipulate the images in any
 way.
 The code focusses on functionality and does not pretend to implement best practice for any specific
-microcontroller. Power efficiency and data transfer speed improvements are planned for subsequent
+microcontroller. Data transfer speed improvements are planned for subsequent
 releases.
 The code attempts to strike a balance between minimising microcontroller resource usage while preserving
 portability, good coding practices and the provision of good debug support (e.g. use of assertions).

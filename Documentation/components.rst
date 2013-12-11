@@ -27,8 +27,11 @@ use the 8.3 compatible filenames. These names can be displayed under Windows by 
 | 0:/<display-type>/display/waveform.bin | Waveform for the display                              |
 +----------------------------------------+-------------------------------------------------------+
 
-Note a default waveform and VCOM is provided for each display type. These should be replaced with
-module specific data in order to get the best display quality.
+Note: The VCOM and waveform data for each display should be stored on the display's EEPROM where applicable
+(Type 19 displays have no EEPROM). The Plastic Logic reference code uses the data stored on the EEPROM by
+default. The data on the SD card can be used instead by modifying the value of ``CONFIG_WF_ON_SD_CARD`` in
+the config header file (``config.h``). For the best results, it is advisable to use the EEPROM-based data
+as this is tuned for each display.
 
 
 Epson Controller Interface
@@ -67,7 +70,7 @@ MOSI, and DO(DataOut) => MISO.
 
 To prepare the controller for operation it is necessary to send two files to it:
 
-1. A controller initialisation file which customises the controllers behaviour to the type of display it is going to drive, e.g. resolution, driver configuration, clock timings.
+1. A controller initialisation file which customises the controller's behaviour to the type of display it is going to drive, e.g. resolution, driver configuration, clock timings.
 2. A waveform data file which provides display specific timing information required to maximise the performance and image quality of a display.
 
 
@@ -95,9 +98,10 @@ code as “modes”:
 
 1. Manual – The application software will obtain the temperature from some other component, e.g. the PMIC and pass it to the controller.
 2. Internal – The display controller will use its own internal temperature sensor, if it has one, to measure the temperature.
+   - The S1D13541 controller contains a temperature sensor, which requires an NTC thermistor to be fitted.
 3. External – The display controller will communicate directly with an LM75 compatible I2C temperature sensor to obtain the temperature.
 
-To trigger the acquisition or processing of temperature data the controllers measure _temperature()
+To trigger the acquisition or processing of temperature data the controller's measure _temperature()
 function is called. On completion a new temperature will be in effect. On the ‘541 controller an indication
 that the waveform data must be reloaded is given if the temperature measured has moved outside the
 range of the currently cached waveform data.
@@ -113,7 +117,7 @@ translate from mV to the required VCOM DAC value a software component takes the 
 value and the power supply calibration information and returns a value to be written to the DAC register.
 The calibration data is determined by measuring a sample of power supplies using a defined calibration
 procedure. The output of the calibration procedure must be made available to the VCOM software module
-when it is initialised. The display interface boards either store this data in an EEPROM on the board or it is
+when it is initialised (See ``vcom_init()`` in the ``vcom.c`` source file). The display interface boards either store this data in an EEPROM on the board or it is
 measured once and stored in the code.
 
 The VCOM calibration procedure is described in the document “Electronics for small displays” available
@@ -138,7 +142,7 @@ Microchip EEPROMs
 The code supports I2C EEPROMs up to 64KB in size. The code currently supports two I2C EEPROM types:
 
 1. 24LC014 – this is a small 128B EEPROM fitted to later display interface boards and is used to store power supply calibration data. This permits accurate VCOM voltages to be achieved when the display interface board is swapped.
-2. 24AA256 – this is a 32KB EEPROM found on some display types. It is intended to store waveform information so that the necessary information to drive a display travels with the display. This allows the system to ensure the correct waveform information is used for the display. Since waveforms are likely to exceed 32KB in size some sort of compression will be required. Support of this feature will be in Version 2.0 of this software.
+2. 24AA256 – this is a 32KB EEPROM found on some display types. It is intended to store waveform information so that the necessary information to drive a display travels with the display. This allows the system to ensure the correct waveform information is used for the display. Since waveforms can exceed 32KB in size, the data stored on this EEPROM is compressed using the LZSS compression alorithm.
 3. EEPROM types can be added by extending the table that defines the device characteristics.
 
 

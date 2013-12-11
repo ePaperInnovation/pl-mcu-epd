@@ -6,9 +6,9 @@ follow the steps outlined in order to setup and build the software.
 
 Obtaining the Code
 ------------------
-The code is delivered as a zip archive containing the source code, SD card contents (initialisation data,
-waveforms and images), and documentation. Unzip this archive in some suitable location that the
-development tools will be able to access.
+The code can be retrieved from the Plastic Logic GitHub repository (https://github.com/plasticlogic/pl-mcu-epd.git).
+The archive contains the source code, SD card contents (initialisation data and images), and documentation. 
+Unzip this archive in some suitable location that the development tools will be able to access.
 
 
 Hardware Setup
