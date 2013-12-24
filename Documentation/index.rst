@@ -6,7 +6,7 @@ PL-MCU
 
 :Description: Plastic Logic Microcontroller Platform Manual
 :Date: |date|
-:Revision: v004
+:Revision: v005
 
 .. Global document settings
 
