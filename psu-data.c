@@ -38,13 +38,16 @@
 int psu_data_init(struct psu_data *data, struct i2c_eeprom *eeprom)
 {
 	uint16_t crc;
-	struct vcom_info *info;
+	struct vcom_info *vcom_info;
+	struct hw_info *hw_info;
 
 	assert(data != NULL);
 	assert(eeprom != NULL);
 
-	if (eeprom_read(eeprom, 0, sizeof(*data), data) < 0)
+	if (eeprom_read(eeprom, 0, sizeof(*data), data) < 0) {
+		LOG("Failed to read PSU eeprom");
 		return -1;
+	}
 
 	if (data->version != PSU_DATA_VERSION) {
 		LOG("Unsupported version number: %d, required version is %d",
@@ -53,7 +56,7 @@ int psu_data_init(struct psu_data *data, struct i2c_eeprom *eeprom)
 	}
 
 	crc = crc16_run(crc16_init, (const uint8_t *)data,
-			sizeof(data->version) + sizeof(data->info));
+			sizeof(data->version) + sizeof(data->vcom_info) + sizeof(data->hw_info));
 	data->crc = be16toh(data->crc);
 
 	if (crc != data->crc) {
@@ -61,17 +64,33 @@ int psu_data_init(struct psu_data *data, struct i2c_eeprom *eeprom)
 		return -1;
 	}
 
-	info = &data->info;
-	info->dac_x1 = be16toh(info->dac_x1);
-	info->dac_y1 = be16toh(info->dac_y1);
-	info->dac_x2 = be16toh(info->dac_x2);
-	info->dac_y2 = be16toh(info->dac_y2);
-	info->vgpos_mv = be32toh(info->vgpos_mv);
-	info->vgneg_mv = be32toh(info->vgneg_mv);
+	vcom_info = &data->vcom_info;
+	hw_info = &data->hw_info;
+	vcom_info->dac_x1 = be16toh(vcom_info->dac_x1);
+	vcom_info->dac_y1 = be16toh(vcom_info->dac_y1);
+	vcom_info->dac_x2 = be16toh(vcom_info->dac_x2);
+	vcom_info->dac_y2 = be16toh(vcom_info->dac_y2);
+	vcom_info->vgpos_mv = be32toh(vcom_info->vgpos_mv);
+	vcom_info->vgneg_mv = be32toh(vcom_info->vgneg_mv);
 
-	LOG("dac[0x%x]=%d, dac[0x%x]=%d, vgpos=%ld, vgneg=%ld",
-	    info->dac_x1, info->dac_y1, info->dac_x2, info->dac_y2,
-	    info->vgpos_mv, info->vgneg_mv);
+	LOG("PSU EEPROM VCOM info: dac[0x%x]=%d, dac[0x%x]=%d, vgpos=%ld,"
+		" vgneg=%ld", vcom_info->dac_x1, vcom_info->dac_y1, vcom_info->dac_x2,
+		vcom_info->dac_y2, vcom_info->vgpos_mv, vcom_info->vgneg_mv);
+
+	hw_info->swing_ideal = be32toh(hw_info->swing_ideal);
+	hw_info->board_type[8] = '\0';
+	hw_info->adc_scale_1 = be16toh(hw_info->adc_scale_1);
+	hw_info->adc_scale_2 = be16toh(hw_info->adc_scale_2);
+
+	LOG("PSU EEPROM HW info: ideal swing=%ld, board_type=%s, "
+		"board version=%d.%d, vcom mode=%d, hv pmic=%d, vcom dac=%d, "
+		"vcom_adc=%d, io config=%d, i2c_mode=%d, temp sensor=%d, "
+		"frame_buffer=%d, adc scale 1=%d, adc scale 2 = %d",
+		hw_info->swing_ideal, hw_info->board_type, hw_info->board_ver_maj,
+		hw_info->board_ver_min,	hw_info->vcom_mode, hw_info->hv_pmic,
+		hw_info->vcom_dac, hw_info->vcom_adc, hw_info->io_config,
+		hw_info->i2c_mode, hw_info->temp_sensor, hw_info->frame_buffer,
+		hw_info->adc_scale_1, hw_info->adc_scale_2);
 
 	return 0;
 }

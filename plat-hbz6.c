@@ -323,7 +323,7 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 
 	/* read the psu calibration data and ready it for use */
 	if (psu_data_init(&psu_data, psu_eeprom)) {
-#if 1
+#if 0
 		LOG("Using hard-coded default VCOM PSU values");
 		psu_data.version = PSU_DATA_VERSION;
 		memcpy(&psu_data.info, &DEF_VCOM_PSU, sizeof psu_data.info);
@@ -333,7 +333,7 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	}
 
 	/* initialise the VCOM */
-	vcom_init(&vcom_calibration, &psu_data.info, VCOM_VGSWING);
+	vcom_init(&vcom_calibration, &psu_data.vcom_info, VCOM_VGSWING);
 
 	/* select the controller for future operations */
 	s1d135xx_select(epson, &previous);

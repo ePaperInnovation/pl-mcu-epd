@@ -146,13 +146,13 @@ int plat_raven_init(void)
 #if 1
 		LOG("Using hard-coded default values instead");
 		psu_data.version = PSU_DATA_VERSION;
-		memcpy(&psu_data.info, &psu_calibration, sizeof psu_data.info);
+		memcpy(&psu_data.vcom_info, &psu_calibration, sizeof psu_data.vcom_info);
 #else
 		return -1;
 #endif
 	}
 
-	vcom_init(&vcom_calibration, &psu_data.info, VCOM_VGSWING);
+	vcom_init(&vcom_calibration, &psu_data.vcom_info, VCOM_VGSWING);
 
 	/* select the controller for future operations */
 	s1d135xx_select(epson, &previous);

@@ -31,12 +31,30 @@
 #include <stdint.h>
 
 /** Version of the VCOM PSU EEPROM format */
-#define PSU_DATA_VERSION 0
+#define PSU_DATA_VERSION 1
+
+struct __attribute__((__packed__)) hw_info {
+	int32_t swing_ideal;
+	char board_type[9];
+	uint8_t board_ver_maj;
+	uint8_t board_ver_min;
+	uint8_t vcom_mode;
+	uint8_t hv_pmic;
+	uint8_t vcom_dac;
+	uint8_t vcom_adc;
+	uint8_t io_config;
+	uint8_t i2c_mode;
+	uint8_t temp_sensor;
+	uint8_t frame_buffer;
+	int16_t adc_scale_1;
+	int16_t adc_scale_2;
+};
 
 /** Data used in VCOM PSU EEPROM format v0 */
 struct __attribute__((__packed__)) psu_data {
 	uint8_t version;
-	struct vcom_info info;
+	struct vcom_info vcom_info;
+	struct hw_info hw_info;
 	uint16_t crc;
 };
 
