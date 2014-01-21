@@ -27,11 +27,13 @@
 #include "types.h"
 #include "config.h"
 #include "FatFs/ff.h"
+#include "platform.h"
 #include "plat-hbz13.h"
 #include "plat-cuckoo.h"
 #include "plat-hbz6.h"
 #include "plat-raven.h"
 #include "plat-ruddock2.h"
+#include "plat-epson.h"
 
 #define LOG_TAG "main"
 #include "utils.h"
@@ -49,6 +51,7 @@ static int sdcard_init(void)
 
 int app_main(void)
 {
+	int platform_type = 0;
 	LOG("Starting pl-mcu-epd %s", VERSION);
 
 	/* initialise the Ruddock2 motherboard */
@@ -57,18 +60,26 @@ int app_main(void)
 	/* ready the SD card support */
 	check(sdcard_init() == 0);
 
-	/* initialise the desired platform */
+	/* Determine platform from PSU eeprom contents */
+	platform_type = check_platform();
+
+	if (platform_type == EPDC_S1D13524 || platform_type == EPDC_S1D13541) {
+		plat_epson_init();
+	}
+	else {
+		/* initialise the desired platform */
 #if PLAT_CUCKOO
-	plat_cuckoo_init();
+		plat_cuckoo_init();
 #elif PLAT_Z13
-	plat_hbz13_init(CONFIG_DISPLAY_TYPE, CONFIG_I2C_ON_EPSON);
+		plat_hbz13_init(CONFIG_DISPLAY_TYPE, CONFIG_I2C_ON_EPSON);
 #elif PLAT_Z6 || PLAT_Z7
-	plat_hbZn_init(CONFIG_DISPLAY_TYPE, CONFIG_I2C_ON_EPSON);
+		plat_hbZn_init(CONFIG_DISPLAY_TYPE, CONFIG_I2C_ON_EPSON);
 #elif PLAT_RAVEN
-	plat_raven_init();
+		plat_raven_init();
 #else
 #error No hardware platform/display type selected
 #endif
+	}
 
 	/* Do not return from app_main */
 	do {

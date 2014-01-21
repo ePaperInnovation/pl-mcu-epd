@@ -46,6 +46,7 @@ struct __attribute__((__packed__)) hw_info {
 	uint8_t i2c_mode;
 	uint8_t temp_sensor;
 	uint8_t frame_buffer;
+	uint8_t epdc_ref;
 	int16_t adc_scale_1;
 	int16_t adc_scale_2;
 };

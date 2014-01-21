@@ -17,18 +17,16 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
- * plat-hbz6.h -- Plastic Logic Hummingbird Z6 adapter
+ * plat-generic.h -- Plastic Logic non-platform specific calls
  *
- * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ * Authors: Andrew Cox <andrew.cox@plasticlogic.com>
  *
  */
 
-#ifndef PLAT_HBZ6_H_
-#define PLAT_HBZ6_H_
+#ifndef PLAT_GENERIC_H_
+#define PLAT_GENERIC_H_
 
-int plat_hbZn_init(const char *platform_path, int i2c_on_epson);
-int plat_s1d13541_slideshow(struct s1d135xx *epson);
-int plat_s1d13541_init_display(struct s1d135xx *epson);
+int check_platform();
+int plat_epson_init();
 
-
-#endif /* PLAT_HBZ6_H_ */
+#endif /* PLAT_GENERIC_H_ */

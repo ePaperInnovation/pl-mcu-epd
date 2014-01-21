@@ -51,6 +51,7 @@
 #include "i2c-eeprom.h"
 #include "psu-data.h"
 #include "config.h"
+#include "plat-hbz6.h"
 
 #define LOG_TAG "hbz6"
 #include "utils.h"
@@ -268,6 +269,8 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	/* initialise the Epson interface */
 	epsonif_init(0, 1);
 
+	s1d135xx_set_wfid_table(EPDC_S1D13541);
+
 	/* define gpio's required for operation */
 	ret |= gpio_request(B_HWSW_CTRL,PIN_GPIO | PIN_OUTPUT | PIN_INIT_LOW);
 	ret |= gpio_request(B_PMIC_EN,	PIN_GPIO | PIN_OUTPUT | PIN_INIT_LOW);
@@ -292,8 +295,6 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	/* initialise the i2c interface as required */
 	if (i2c_on_epson)
 		check(epson_i2c_init(epson, &i2c) == 0);
-	else
-		check(msp430_i2c_init(0, &i2c) == 0);
 
 #if !CONFIG_PSU_ONLY
 #if CONFIG_WF_ON_SD_CARD
@@ -323,10 +324,10 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 
 	/* read the psu calibration data and ready it for use */
 	if (psu_data_init(&psu_data, psu_eeprom)) {
-#if 0
+#if 1
 		LOG("Using hard-coded default VCOM PSU values");
 		psu_data.version = PSU_DATA_VERSION;
-		memcpy(&psu_data.info, &DEF_VCOM_PSU, sizeof psu_data.info);
+		memcpy(&psu_data.vcom_info, &DEF_VCOM_PSU, sizeof psu_data.vcom_info);
 #else
 		abort_msg("Failed to initialise VCOM PSU data from EEPROM");
 #endif
@@ -346,6 +347,16 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	tps65185_configure(pmic_info, &vcom_calibration);
 	tps65185_set_vcom_voltage(pmic_info, vcom);
 
+	plat_s1d13541_init_display(epson);
+	plat_s1d13541_slideshow(epson);
+
+	s1d135xx_deselect(epson, previous);
+
+	return ret;
+}
+
+int plat_s1d13541_init_display(struct s1d135xx *epson)
+{
 #if CONFIG_PSU_ONLY
 	while (1) {
 		/* always power down first in case we last left HV on */
@@ -361,8 +372,12 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	s1d13541_update_display(epson, s1d135xx_get_wfid(wf_init));
 	s1d13541_wait_update_end(epson);
 	power_down();
+	return 0;
+}
 
-
+int plat_s1d13541_slideshow(struct s1d135xx *epson)
+{
+	int ret = 0;
 #if CONFIG_DEMO_POWERMODES
 	/* run the power states demo */
 	while (1)
@@ -374,8 +389,6 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	else
 		ret = run_std_slideshow(epson);
 #endif
-
-	s1d135xx_deselect(epson, previous);
 
 	return ret;
 }
@@ -606,7 +619,7 @@ static int show_image(const char *image, void *arg)
 	return 0;
 }
 
-static int run_std_slideshow(struct s1d135xx *epson)
+int run_std_slideshow(struct s1d135xx *epson)
 {
 	int run = 1;
 

@@ -85,12 +85,12 @@ int psu_data_init(struct psu_data *data, struct i2c_eeprom *eeprom)
 	LOG("PSU EEPROM HW info: ideal swing=%ld, board_type=%s, "
 		"board version=%d.%d, vcom mode=%d, hv pmic=%d, vcom dac=%d, "
 		"vcom_adc=%d, io config=%d, i2c_mode=%d, temp sensor=%d, "
-		"frame_buffer=%d, adc scale 1=%d, adc scale 2 = %d",
+		"frame_buffer=%d, epdc_ref=%d, adc scale 1=%d, adc scale 2 = %d",
 		hw_info->swing_ideal, hw_info->board_type, hw_info->board_ver_maj,
 		hw_info->board_ver_min,	hw_info->vcom_mode, hw_info->hv_pmic,
 		hw_info->vcom_dac, hw_info->vcom_adc, hw_info->io_config,
 		hw_info->i2c_mode, hw_info->temp_sensor, hw_info->frame_buffer,
-		hw_info->adc_scale_1, hw_info->adc_scale_2);
+		hw_info->epdc_ref, hw_info->adc_scale_1, hw_info->adc_scale_2);
 
 	return 0;
 }

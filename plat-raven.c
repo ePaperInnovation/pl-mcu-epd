@@ -51,6 +51,7 @@
 #include "epson/epson-utils.h"
 #include "slideshow.h"
 #include "utils.h"
+#include "plat-raven.h"
 
 #define LOG_TAG "raven"
 
@@ -112,7 +113,6 @@ static int power_down(void)
 /* Initialise the platform */
 int plat_raven_init(void)
 {
-	int done = 0;
 	screen_t previous;
 	int vcom;
 
@@ -127,6 +127,8 @@ int plat_raven_init(void)
 
 	/* initialise the Epson interface */
 	epsonif_init(0, 1);
+
+	s1d135xx_set_wfid_table(EPDC_S1D13524);
 
 	/* define gpio's required for operation */
 	check(gpio_request(EPSON_CS_0,	PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH) == 0);
@@ -168,18 +170,28 @@ int plat_raven_init(void)
 	/* initialise the i2c temperature sensor */
 	lm75_init(i2c, I2C_TEMP_SENSOR, &lm75_info);
 
-	power_up();
-	s1d13524_update_display(epson, s1d135xx_get_wfid(wf_init));
-	power_down();
-
-	/* run the slideshow */
-	while(!done) {
-		slideshow_run("img", show_image, NULL);
-	}
+	plat_s1d13524_init_display(epson);
+	plat_s1d13524_slideshow(epson);
 
 	s1d135xx_deselect(epson, previous);
 
 	return 0;
+}
+
+int plat_s1d13524_init_display(struct s1d135xx *epson)
+{
+	power_up();
+	s1d13524_update_display(epson, s1d135xx_get_wfid(wf_init));
+	power_down();
+	return 0;
+}
+
+void plat_s1d13524_slideshow(struct s1d135xx *epson)
+{
+	/* run the slideshow */
+	while(1) {
+		slideshow_run("img", show_image, NULL);
+	}
 }
 
 static int show_image(const char *image, void *arg)
@@ -198,6 +210,18 @@ static int show_image(const char *image, void *arg)
 	power_up();
 	s1d13524_update_display(epson, s1d135xx_get_wfid(wf_refresh));
 	power_down();
+
+	return 0;
+}
+
+int plat_s1d12524_run_std_slideshow(struct s1d135xx *epson)
+{
+	int run = 1;
+
+	LOG("Running standard S1D12524 slideshow");
+
+	while (run)
+		slideshow_run("img", show_image, epson);
 
 	return 0;
 }

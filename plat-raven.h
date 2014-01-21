@@ -27,5 +27,7 @@
 #define PLAT_RAVEN_H_
 
 int plat_raven_init(void);
+int plat_s1d13524_init_display(struct s1d135xx *epson);
+void plat_s1d13524_slideshow(struct s1d135xx *epson);
 
 #endif /* PLAT_RAVEN_H_ */

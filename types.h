@@ -85,6 +85,12 @@ typedef union {
 	};
 } param32;
 
+enum epdc_type {
+	EPDC_NONE = 0,
+	EPDC_S1D13524,
+	EPDC_S1D13541
+};
+
 extern u16 __bswap_16(u16 x);
 extern u32 __bswap_32(u32 x);
 
