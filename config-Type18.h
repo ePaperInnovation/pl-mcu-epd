@@ -19,6 +19,8 @@
 #ifndef INCLUDE_CONFIG_H
 #define INCLUDE_CONFIG_H 1
 
+#include "types.h"
+
 /*
  * This file contains global configuration values for the Plastic Logic
  * hardware as well as some various build-time software options.
@@ -46,11 +48,18 @@
 /** Use the I2C master bus from the Epson controller (either -524 or -541) */
 #define	CONFIG_I2C_ON_EPSON     0
 
-/** Load the waveform data from the SD card when set to 1, or from the display
- * EEPROM when set to 0 (standard behaviour) */
-#define CONFIG_WF_ON_SD_CARD	0
+/** Load the display data from either the display EEPROM or SD card
+ * Available options:
+ * 		PLWF_EEPROM_SD - Try EEPROM first, then SD card
+ *  	PLWF_EEPROM_ONLY - Try EEPROM only
+ *  	PLWF_SD_ONLY - Try SD card only
+ *  	PLWF_SD_EEPROM - Try SD card first, then EEPROM */
+#define CONFIG_PLWF_MODE	PLWF_EEPROM_SD
 
 /** Set to 1 to use the power state transition demo rather than the slideshow */
 #define CONFIG_DEMO_POWERMODES  0
+
+/** Set to 1 to use the VCOM and hardware info stored on the PMIC eeprom **/
+#define CONFIG_USE_PSU_EEPROM   0
 
 #endif /* INCLUDE_CONFIG_H */
