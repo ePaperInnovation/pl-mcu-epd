@@ -91,6 +91,13 @@ enum epdc_type {
 	EPDC_S1D13541
 };
 
+enum plwf_mode {
+	PLWF_EEPROM_SD = 0,
+	PLWF_EEPROM_ONLY,
+	PLWF_SD_ONLY,
+	PLWF_SD_EEPROM
+};
+
 extern u16 __bswap_16(u16 x);
 extern u32 __bswap_32(u32 x);
 
