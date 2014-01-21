@@ -187,6 +187,7 @@ extern const char * const wf_refresh_mono;  /**< refresh/mono */
 extern const char * const wf_delta_mono;    /**< delta/mono */
 
 /** Get the waveform identifier to use in updates for the given path */
+extern int s1d135xx_set_wfid_table(int epdc);
 extern int s1d135xx_get_wfid(const char *wf_path);
 
 #endif /* S1D135XX_H_ */

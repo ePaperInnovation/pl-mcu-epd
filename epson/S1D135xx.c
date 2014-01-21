@@ -56,7 +56,6 @@ static const struct wfid wfid_s1d13541[] = {
 	{ NULL, 0 }
 };
 
-#if 0 /* not tested yet - needs ePDC abstraction layer first */
 static const struct wfid wfid_s1d13524[] = {
 	{ _wf_refresh,      2 },
 	{ _wf_delta,        3 },
@@ -65,7 +64,6 @@ static const struct wfid wfid_s1d13524[] = {
 	{ _wf_init,         0 },
 	{ NULL, 0 }
 };
-#endif
 
 #if 0 /* some E-Ink libraries appear to use this convention */
 static const struct wfid wfid_eink[] = {
@@ -78,10 +76,27 @@ static const struct wfid wfid_eink[] = {
 };
 #endif
 
+const static struct wfid *wfid_table;
+
+int s1d135xx_set_wfid_table(int epdc)
+{
+	switch (epdc) {
+	case EPDC_S1D13524:
+		wfid_table = wfid_s1d13524;
+		break;
+	case EPDC_S1D13541:
+		wfid_table = wfid_s1d13541;
+		break;
+	default:
+		/* Default to use '541 table */
+		wfid_table = wfid_s1d13541;
+		break;
+	}
+	return 0;
+}
+
 int s1d135xx_get_wfid(const char *wf_path)
 {
-	/* ToDo: include wfid_table in ePDC context */
-	const struct wfid *wfid_table = wfid_s1d13541;
 	const struct wfid *wfid;
 
 	assert(wf_path != NULL);
