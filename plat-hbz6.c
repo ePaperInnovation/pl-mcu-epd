@@ -338,6 +338,8 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	/* initialise the i2c interface as required */
 	if (i2c_on_epson)
 		check(epson_i2c_init(epson, &i2c) == 0);
+	else
+		msp430_i2c_init(0, &i2c);
 
 #if !CONFIG_PSU_ONLY
 
