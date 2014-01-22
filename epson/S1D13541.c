@@ -157,6 +157,8 @@ int s1d13541_init_start(screen_t screen, screen_t *previous,
 	struct s1d135xx *epson;
 
 	*controller = epson = malloc(sizeof(struct s1d135xx));
+	memset(epson, 0, sizeof(struct s1d135xx));
+
 	if (NULL == epson)
 		return -1;
 
