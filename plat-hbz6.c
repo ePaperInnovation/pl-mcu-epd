@@ -82,10 +82,8 @@ static struct i2c_adapter *i2c;
 static struct s1d135xx *epson;
 static struct vcom_cal vcom_calibration;
 static struct i2c_eeprom *psu_eeprom;
-#if !CONFIG_WF_ON_SD_CARD
 static struct i2c_eeprom *plwf_eeprom;
 static struct plwf_data plwf_data;
-#endif
 
 static void check_temperature(struct s1d135xx *epson);
 static int run_region_slideshow(struct s1d135xx *epson);
@@ -714,11 +712,28 @@ static void check_temperature(struct s1d135xx *epson)
 	if (!needs_update)
 		return;
 
-#if CONFIG_WF_ON_SD_CARD
-	if (s1d13541_send_waveform())
-		abort_msg("Failed to reload waveform from SD card");
-#else
-	if (plwf_load_wf(&plwf_data, plwf_eeprom, epson, S1D13541_WF_ADDR))
-		abort_msg("Failed to reload waveform from EEPROM");
-#endif /* WAVEFORM_ON_SD_CARD */
+	switch (CONFIG_PLWF_MODE) {
+	case PLWF_EEPROM_SD:
+		if (plwf_load_wf(&plwf_data, plwf_eeprom, epson, S1D13541_WF_ADDR)) {
+			LOG("Failed to reload waveform from EEPROM, trying SD card");
+			if (s1d13541_send_waveform())
+				abort_msg("Failed to reload waveform from SD card");
+		}
+		break;
+	case PLWF_EEPROM_ONLY:
+		if (plwf_load_wf(&plwf_data, plwf_eeprom, epson, S1D13541_WF_ADDR))
+			abort_msg("Failed to reload waveform from EEPROM");
+		break;
+	case PLWF_SD_ONLY:
+		if (s1d13541_send_waveform())
+			abort_msg("Failed to reload waveform from SD card");
+		break;
+	case PLWF_SD_EEPROM:
+		if (s1d13541_send_waveform()) {
+			LOG("Failed to reload waveform from SD card, trying EEPROM");
+			if (plwf_load_wf(&plwf_data, plwf_eeprom, epson, S1D13541_WF_ADDR))
+				abort_msg("Failed to reload waveform from EEPROM");
+		}
+		break;
+	}
 }
