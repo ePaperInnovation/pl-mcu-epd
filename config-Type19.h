@@ -40,9 +40,9 @@
 /* Select one of the following small display types when using the S1D13541
  * controller.  These strings effectively map to the directory path on the SD
  * card to collect the correct data. */
-#define	DISPLAY_TYPE16          "0:/Type-16" /**< 4.7" 320x240 */
-#define	DISPLAY_TYPE18          "0:/Type-18" /**< 4.0" 400x240 */
-#define	DISPLAY_TYPE19          "0:/Type-19" /**< 4.9" 720x120 */
+#define	DISPLAY_TYPE16          "0:/Type16" /**< 4.7" 320x240 */
+#define	DISPLAY_TYPE18          "0:/Type18" /**< 4.0" 400x240 */
+#define	DISPLAY_TYPE19          "0:/Type19" /**< 4.9" 720x120 */
 #define CONFIG_DISPLAY_TYPE     DISPLAY_TYPE19
 
 /** Use the I2C master bus from the Epson controller (either -524 or -541) */
