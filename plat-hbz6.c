@@ -276,22 +276,21 @@ static int powerdemo_run(void)
 
 static int wf_from_eeprom()
 {
-	int ret = 0;
 	LOG("Loading display data from EEPROM");
 
 	eeprom_init(i2c, I2C_PLWF_EEPROM_ADDR, EEPROM_24AA256, &plwf_eeprom);
 
 	if (plwf_data_init(&plwf_data, plwf_eeprom)) {
-		abort_msg("Failed to initialise display data");
-		ret = -1;
+		LOG("Failed to initialise display data");
+		return -1;
 	}
 
 	if (plwf_load_wf(&plwf_data, plwf_eeprom, epson, S1D13541_WF_ADDR)) {
-		abort_msg("Failed to load waveform from EEPROM");
-		ret = -1;
+		LOG("Failed to load waveform from EEPROM");
+		return -1;
 	}
 
-	return ret;
+	return 0;
 }
 
 /* Initialise the Hummingbird Z[6|7].x platform */
@@ -325,8 +324,7 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 
 #if !CONFIG_PSU_ONLY
 	/* initialise the Epson controller */
-	check(s1d13541_init_start(EPSON_CS_0, &prev_screen, &epson) == 0);
-	check(s1d13541_init_prodcode(epson) == 0);
+	check(s1d13541_early_init(EPSON_CS_0, &prev_screen, &epson) == 0);
 	check(s1d13541_init_clock(epson) == 0);
 	check(s1d13541_init_initcode(epson) == 0);
 	check(s1d13541_init_pwrstate(epson) == 0);
@@ -337,7 +335,7 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	if (i2c_on_epson)
 		check(epson_i2c_init(epson, &i2c) == 0);
 	else
-		msp430_i2c_init(0, &i2c);
+		check(msp430_i2c_init(0, &i2c) == 0);
 
 #if !CONFIG_PSU_ONLY
 

@@ -25,6 +25,7 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #include "types.h"
 #include "assert.h"
 #include "S1D13541.h"
@@ -151,9 +152,10 @@ void s1d13541_wait_update_end(struct s1d135xx *epson)
 	epson_wait_for_idle();
 }
 
-int s1d13541_init_start(screen_t screen, screen_t *previous,
-			struct s1d135xx **controller)
+int s1d13541_early_init(screen_t screen, screen_t *previous,
+		struct s1d135xx **controller)
 {
+	uint16_t product_code;
 	struct s1d135xx *epson;
 
 	*controller = epson = malloc(sizeof(struct s1d135xx));
@@ -170,6 +172,52 @@ int s1d13541_init_start(screen_t screen, screen_t *previous,
 	epson->keycode2 = KEY_1;
 	epson->temp_mode = TEMP_MODE_UNDEFINED;
 	epson->power_mode = PWR_STATE_UNDEFINED;
+
+	if (epsonif_claim(0, screen, previous) < 0)
+		return -1;
+
+	epson_reg_write(REG_CLOCK_CONFIGURATION, INTERNAL_CLOCK_ENABLE);
+	msleep(10);
+	epson_wait_for_idle();
+
+	epson_reg_read(PROD_CODE_REG, &product_code);
+
+	LOG("Product code: 0x%04x", product_code);
+
+	if (product_code != PRODUCT_CODE) {
+		LOG("invalid product code, %04X instead of %04X",
+		    product_code, PRODUCT_CODE);
+		return -1;
+	}
+
+	return 0;
+}
+
+int s1d13541_early_init_end(struct s1d135xx *epson, screen_t previous)
+{
+	assert(epson != NULL);
+
+	epsonif_release(0, previous);
+	return 0;
+}
+
+int s1d13541_init_start(screen_t screen, screen_t *previous,
+			struct s1d135xx *epson)
+{
+	assert (epson);
+
+	epson_wait_for_idle_mask(0x2000, 0x2000);
+
+	epson->screen = screen;
+
+	epson->keycode1 = KEY_2;
+	epson->keycode2 = KEY_1;
+	epson->temp_mode = TEMP_MODE_UNDEFINED;
+	epson->power_mode = PWR_STATE_UNDEFINED;
+
+	epsonif_assert_reset();
+	mdelay(4);
+	epsonif_negate_reset();
 
 	if (epsonif_claim(0, screen, previous) < 0)
 		return -1;

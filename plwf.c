@@ -47,7 +47,7 @@
 #define PLWF_WF_OFFS (sizeof(struct plwf_data))
 
 /* Context to read from the EEPROM */
-struct rd_ctx {
+struct __attribute__((__packed__)) rd_ctx {
 	uint8_t buffer[64];        /* buffer to read a block of data */
 	size_t buflen;             /* length of payload in buffer */
 	size_t datalen;            /* length of the data left to read */
@@ -58,7 +58,7 @@ struct rd_ctx {
 };
 
 /* Context to write to the Epson controller */
-struct wr_ctx {
+struct __attribute__((__packed__)) wr_ctx {
 	uint8_t buffer[128];       /* buffer to read a block of data */
 	size_t buflen;             /* length of payload in buffer */
 	size_t index;              /* index of current byte in buffer */

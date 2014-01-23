@@ -78,10 +78,8 @@ static struct i2c_adapter *i2c;
 static struct s1d135xx *epson;
 static struct vcom_cal vcom_calibration;
 static struct lm75_info *lm75_info;
-#if !CONFIG_WF_ON_SD_CARD
 static struct i2c_eeprom *plwf_eeprom;
 static struct plwf_data plwf_data;
-#endif
 
 static struct psu_data psu_data;
 
@@ -97,17 +95,23 @@ static const struct vcom_info DEF_VCOM_PSU = {
 
 #define VCOM_VGSWING 56886
 
-static int wf_from_eeprom()
+static int wf_init_eeprom()
 {
-	int ret = 0;
 	LOG("Loading display data from EEPROM");
 
 	eeprom_init(i2c, I2C_PLWF_EEPROM_ADDR, EEPROM_24AA256, &plwf_eeprom);
 
 	if (plwf_data_init(&plwf_data, plwf_eeprom)) {
-		abort_msg("Failed to initialise display data");
-		ret = -1;
+		LOG("Failed to initialise display data");
+		return -1;
 	}
+	return 0;
+}
+
+static int wf_from_eeprom()
+{
+	int ret = 0;
+	LOG("Loading waveform from EEPROM");
 
 	if (plwf_load_wf(&plwf_data, plwf_eeprom, epson, S1D13541_WF_ADDR)) {
 		abort_msg("Failed to load waveform from EEPROM");
@@ -120,19 +124,20 @@ static int wf_from_eeprom()
 int check_platform()
 {
 #if CONFIG_USE_PSU_EEPROM
-	struct i2c_adapter *i2c;
 	struct i2c_eeprom *psu_eeprom;
 
 	msp430_i2c_init(0, &i2c);
 	eeprom_init(i2c, 0x50, EEPROM_24LC014, &psu_eeprom);
 
 	if (psu_data_init(&psu_data, psu_eeprom)) {
-		abort_msg("Failed to initialise VCOM PSU data from EEPROM");
+		LOG("Failed to initialise VCOM PSU data from EEPROM");
+		return EPDC_NONE;
 	}
 
 	return psu_data.hw_info.epdc_ref;
-#endif
+#else
 	return EPDC_NONE;
+#endif
 }
 
 int plat_epson_init()
@@ -141,7 +146,7 @@ int plat_epson_init()
 	screen_t prev_screen;
 	int vcom;
 	char * platform_path = "0:/";
-	/* Filesystem Check */
+	char full_path[10];
 
 	switch (CONFIG_PLWF_MODE) {
 	case PLWF_SD_ONLY:
@@ -182,9 +187,7 @@ int plat_epson_init()
 	case EPDC_S1D13541:
 #if !CONFIG_PSU_ONLY
 		/* Epson S1D13541 controller early init */
-		check(s1d13541_init_start(EPSON_CS_0, &prev_screen, &epson) == 0);
-		check(s1d13541_init_prodcode(epson) == 0);
-		check(s1d13541_init_clock(epson) == 0);
+		check(s1d13541_early_init(EPSON_CS_0, &prev_screen, &epson) == 0);
 #endif
 		break;
 	default:
@@ -192,14 +195,14 @@ int plat_epson_init()
 	}
 
 	switch(psu_data.hw_info.i2c_mode) {
-	case 1:
-		check(msp430_i2c_init(0, &i2c) == 0);
+	case 1: /* MSP430 */
+		/* No action taken, i2c already initialised for msp430 */
 		break;
-	case 2:
-		check(epson_i2c_init(epson, &i2c) == 0);
+	case 2: /* Epson */
+		//check(epson_i2c_init(epson, &i2c) == 0);
 		break;
-	case 3:
-		check(epson_i2c_init(epson, &i2c) == 0);
+	case 3: /* Epson */
+		//check(epson_i2c_init(epson, &i2c) == 0);
 		break;
 	case 4:
 	case 0:
@@ -207,13 +210,61 @@ int plat_epson_init()
 		break;
 	}
 
+	/* Determine which display is connected, check appropriate path exists
+	 * on the SD card in order to load the Epson initialistaion binary */
+	switch (CONFIG_PLWF_MODE) {
+	case PLWF_EEPROM_SD: /* Try EEPROM first, then SD card */
+		if (wf_init_eeprom()) {
+			LOG("Failed to load display data from EEPROM");
+			check(f_chdir(CONFIG_DISPLAY_TYPE) == FR_OK);
+		}
+		else {
+			sprintf(full_path, "%s%s", platform_path, plwf_data.info.panel_type);
+			check(f_chdir(full_path) == FR_OK);
+		}
+		break;
+	case PLWF_EEPROM_ONLY: /* EEPROM only */
+		if (wf_init_eeprom())
+			abort_msg("Failed to load display data from EEPROM");
+		else {
+			sprintf(full_path, "%s%s", platform_path, plwf_data.info.panel_type);
+			check(f_chdir(full_path) == FR_OK);
+		}
+		break;
+	case PLWF_SD_ONLY: /* SD card only */
+		LOG("Loading display data from SD card");
+		check(f_chdir(CONFIG_DISPLAY_TYPE) == FR_OK);
+		break;
+	case PLWF_SD_EEPROM: /* Try SD card first, then EEPROM */
+		LOG("Loading display data from SD card");
+		if (f_chdir(CONFIG_DISPLAY_TYPE) != FR_OK) {
+			LOG("Failed to load waveform from SD card");
+			if (wf_init_eeprom())
+				abort_msg("Failed to load display data from EEPROM");
+			sprintf(full_path, "%s%s", platform_path, plwf_data.info.panel_type);
+			check(f_chdir(full_path) == FR_OK);
+		}
+		break;
+	default:
+		LOG("No valid PLWF mode set");
+		break;
+	}
+
 	if (psu_data.hw_info.epdc_ref == EPDC_S1D13541) {
 #if !CONFIG_PSU_ONLY
+		check(s1d13541_early_init_end(epson, prev_screen) == 0);
+		check(s1d13541_init_start(EPSON_CS_0, &prev_screen, epson) == 0);
+		check(s1d13541_init_prodcode(epson) == 0);
+		check(s1d13541_init_clock(epson) == 0);
+		check(s1d13541_init_initcode(epson) == 0);
+		check(s1d13541_init_pwrstate(epson) == 0);
+		check(s1d13541_init_keycode(epson) == 0);
+
 		switch (CONFIG_PLWF_MODE) {
-		case PLWF_EEPROM_SD:
+		case PLWF_EEPROM_SD: /* Try EEPROM first, then SD card */
 			if (wf_from_eeprom()) {
 				LOG("Failed to load waveform from EEPROM");
-				LOG("Loading display data from SD card");
+				LOG("Loading waveform from SD card");
 				if (s1d13541_send_waveform())
 					abort_msg("Failed to load waveform from SD card");
 				/* read the display vcom */
@@ -222,27 +273,23 @@ int plat_epson_init()
 			}
 			else {
 				vcom = plwf_data.info.vcom;
-				strcat(platform_path, plwf_data.info.panel_type);
-				check(f_chdir(platform_path) == FR_OK);
 			}
 			break;
-		case PLWF_EEPROM_ONLY:
+		case PLWF_EEPROM_ONLY: /* EEPROM only */
 			if (wf_from_eeprom())
 				abort_msg("Failed to load waveform from EEPROM");
 			vcom = plwf_data.info.vcom;
-			strcat(platform_path, plwf_data.info.panel_type);
-			check(f_chdir(platform_path) == FR_OK);
 			break;
-		case PLWF_SD_ONLY:
-			LOG("Loading display data from SD card");
+		case PLWF_SD_ONLY: /* SD card only */
+			LOG("Loading waveform from SD card");
 			if (s1d13541_send_waveform())
 				abort_msg("Failed to load waveform from SD card");
 			/* read the display vcom */
 			vcom = util_read_vcom();
 			assert(vcom > 0);
 			break;
-		case PLWF_SD_EEPROM:
-			LOG("Loading display data from SD card");
+		case PLWF_SD_EEPROM: /* Try SD card first, then EEPROM */
+			LOG("Loading waveform from SD card");
 			if (s1d13541_send_waveform()) {
 				LOG("Failed to load waveform from SD card");
 				if (wf_from_eeprom())
@@ -260,12 +307,9 @@ int plat_epson_init()
 			break;
 		}
 
-#endif /* !WAVEFORM_ON_SD_CARD */
-		check(s1d13541_init_initcode(epson) == 0);
-		check(s1d13541_init_pwrstate(epson) == 0);
-		check(s1d13541_init_keycode(epson) == 0);
 		check(s1d13541_init_gateclr(epson) == 0);
 		check(s1d13541_init_end(epson, prev_screen) == 0);
+#endif /* !CONFIG_PSU_ONLY */
 	}
 
 	/* read the psu calibration data and ready it for use */
