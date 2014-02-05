@@ -1,3 +1,17 @@
+Release v005 -> v006 - 2014-01-23
+
+Andrew Cox (10):
+      Add support for version 1 of the PSU eeprom format.
+      Add ability to set the waveform id table based on EPDC type
+      Add means to read and consume PSU EEPROM data.
+      Add fallback support for retrieving display data
+      Update sample config files to reflect changes made for EEPROM support
+      Add msp430 i2c init back to hbz6 platform initialisation sequence
+      Update hbz6 temperature check to ensure waveform is reloaded from the correct location.
+      Memset epson structure after malloc-ing.
+      Update sample configs to reflect sd-card directory changes
+      Add support for detecting display type from EEPROM data
+
 Release v004 -> v005 - 2013-12-11
 
 Andrew Cox (1):

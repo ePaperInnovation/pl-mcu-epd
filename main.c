@@ -41,7 +41,7 @@
 // global file system information used by FatFs
 static FATFS Sd_Card;
 
-static const char VERSION[] = "v005";
+static const char VERSION[] = "v006";
 
 static int sdcard_init(void)
 {
