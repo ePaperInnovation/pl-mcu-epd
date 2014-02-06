@@ -6,9 +6,9 @@
 *.h text
 *.rst text
 *.txt text
-*.sh text
 
 # Binary files
 *.png binary
 *.jpg binary
 *.jpeg binary
+*.sh binary
