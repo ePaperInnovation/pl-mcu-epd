@@ -49,7 +49,7 @@ union lm75_temp_value {
 		int padding:7;
 		int measured:9;
 	};
-	u16 word;
+	uint16_t word;
 };
 
 int lm75_init(struct i2c_adapter *i2c, u8 i2c_addr, struct lm75_info **lm75)
@@ -82,7 +82,8 @@ int lm75_temperature_measure(struct lm75_info *lm75, short *measured)
 	union lm75_temp_value temp;
 	int ret;
 
-	ret = i2c_reg_read16be(lm75->i2c, lm75->i2c_addr, lm75->sensor.reg, &temp.word);
+	ret = i2c_reg_read_16be(lm75->i2c, lm75->i2c_addr, lm75->sensor.reg,
+				&temp.word);
 
 	if (ret) {
 		*measured = LM75_TEMP_DEFAULT;
