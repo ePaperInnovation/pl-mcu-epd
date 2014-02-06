@@ -129,7 +129,7 @@ union max17135_temp_value {
 		int padding:7;
 		int measured:9;
 	};
-	u16 word;
+	uint16_t word;
 };
 
 struct max17135_info {
@@ -163,12 +163,9 @@ static int max17135_load_timings(struct max17135_info *pmic)
 	for (i = 0, reg = HVPMIC_REG_TIMING_1;
 	     i < HVPMIC_NB_TIMINGS;
 	     ++i, ++reg) {
-		int stat;
-
-		stat = i2c_reg_write(pmic->i2c, pmic->i2c_addr,
-						  reg, pmic->hvpmic.timings[i]);
-		if (stat)
-			return stat;
+		if (i2c_reg_write_8(pmic->i2c, pmic->i2c_addr,
+				    reg, pmic->hvpmic.timings[i]))
+			return -1;
 	}
 
 	return 0;
@@ -177,7 +174,6 @@ static int max17135_load_timings(struct max17135_info *pmic)
 int max17135_configure(struct max17135_info *pmic, struct vcom_cal *cal, int power_sequence)
 {
 	u8 timings[HVPMIC_NB_TIMINGS];
-	int stat;
 
 	assert(pmic);
 
@@ -217,24 +213,19 @@ int max17135_configure(struct max17135_info *pmic, struct vcom_cal *cal, int pow
 	       timings[0], timings[1], timings[2], timings[3],
 	       timings[4], timings[5], timings[6], timings[7]);
 
-	stat = i2c_reg_read(pmic->i2c, pmic->i2c_addr,
-					HVPMIC_REG_PROD_REV,
-					&pmic->hvpmic.prod_rev);
-	if (stat)
-		return stat;
+	if (i2c_reg_read_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_PROD_REV,
+			   &pmic->hvpmic.prod_rev))
+		return -1;
 
-	stat = i2c_reg_read(pmic->i2c, pmic->i2c_addr,
-					HVPMIC_REG_PROD_ID,
-					&pmic->hvpmic.prod_id);
-	if (stat)
-		return stat;
+	if (i2c_reg_read_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_PROD_ID,
+			   &pmic->hvpmic.prod_id))
+		return -1;
 
 	printk("MAX17135: HVPMIC rev 0x%02X, id 0x%02X\n",
 	       pmic->hvpmic.prod_rev, pmic->hvpmic.prod_id);
 
-	stat = max17135_temp_disable(pmic);
-	if (stat)
-		return stat;
+	if (max17135_temp_disable(pmic))
+		return -1;
 
 	return max17135_load_timings(pmic);
 }
@@ -243,12 +234,12 @@ int max17135_set_vcom_register(struct max17135_info *pmic, int dac_value)
 {
 	assert(pmic);
 
-	return i2c_reg_write(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_DVR, (u8)dac_value);
+	return i2c_reg_write_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_DVR,
+			       (uint8_t)dac_value);
 }
 
 int max17135_set_vcom_voltage(struct max17135_info *pmic, int mv)
 {
-	int ret;
 	int dac_value;
 
 	assert(pmic);
@@ -260,9 +251,8 @@ int max17135_set_vcom_voltage(struct max17135_info *pmic, int mv)
 	else if (dac_value > HVPMIC_DAC_MAX)
 		dac_value = HVPMIC_DAC_MAX;
 
-	ret = i2c_reg_write(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_DVR, (u8)dac_value);
-
-	return ret;
+	return i2c_reg_write_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_DVR,
+			       (uint8_t)dac_value);
 }
 
 int max17135_wait_pok(struct max17135_info *pmic)
@@ -270,7 +260,6 @@ int max17135_wait_pok(struct max17135_info *pmic)
 	static const unsigned POLL_DELAY_MS = 5;
 	unsigned timeout = 100;
 	int pok = 0;
-	int stat = 0;
 
 	assert(pmic);
 
@@ -279,11 +268,10 @@ int max17135_wait_pok(struct max17135_info *pmic)
 
 		mdelay(POLL_DELAY_MS);
 
-		stat = i2c_reg_read(pmic->i2c, pmic->i2c_addr,
-			HVPMIC_REG_FAULT, &fault.byte);
-		if (stat) {
+		if (i2c_reg_read_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_FAULT,
+				   &fault.byte)) {
 			printk("MAX17135: failed to read HVPMIC POK\n");
-			break;
+			return -1;
 		}
 
 		pok = fault.pok;
@@ -295,13 +283,12 @@ int max17135_wait_pok(struct max17135_info *pmic)
 
 			if (!pok) {
 				printk("MAX17135: POK timeout\n");
-				stat = -ETIME;
-				break;
+				return -1;
 			}
 		}
 	}
 
-	return stat;
+	return 0;
 }
 
 /* use the i2c interface to power up the PMIC */
@@ -324,9 +311,8 @@ int max17135_temp_enable(struct max17135_info *pmic)
 	config.byte = 0;
 	config.shutdown = 0;
 
-	return i2c_reg_write(pmic->i2c, pmic->i2c_addr,
-					HVPMIC_REG_CONF,
-					config.byte);
+	return i2c_reg_write_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_CONF,
+			       config.byte);
 }
 
 /* disable temperature sensing */
@@ -337,9 +323,8 @@ int max17135_temp_disable(struct max17135_info *pmic)
 	config.byte = 0;
 	config.shutdown = 1;
 
-	return i2c_reg_write(pmic->i2c, pmic->i2c_addr,
-					HVPMIC_REG_CONF,
-					config.byte);
+	return i2c_reg_write_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_CONF,
+			       config.byte);
 }
 
 /* read the temperature from the PMIC */
@@ -349,17 +334,12 @@ int max17135_temperature_measure(struct max17135_info *pmic, short *measured)
 	union max17135_temp_value temp;
 	int stat;
 
-	stat = i2c_reg_read(pmic->i2c, pmic->i2c_addr,
-					HVPMIC_REG_TEMP_STAT,
-					&status.byte);
-	if (stat)
+	if (i2c_reg_read_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_TEMP_STAT,
+			   &status.byte))
 		goto error;
 
-	stat = i2c_reg_read16be(pmic->i2c, pmic->i2c_addr,
-					HVPMIC_REG_EXT_TEMP,
-					&temp.word);
-
-	if (stat)
+	if (i2c_reg_read_16be(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_EXT_TEMP,
+			      &temp.word))
 		goto error;
 
 	if (status.byte & (HVPMIC_TEMP_OPEN | HVPMIC_TEMP_SHORT)) {
@@ -369,8 +349,7 @@ int max17135_temperature_measure(struct max17135_info *pmic, short *measured)
 	if (temp.word == HVPMIC_TEMP_INVALID) {
 		*measured = HVPMIC_TEMP_DEFAULT;
 		stat = -EDEFAULT;
-	}
-	else {
+	} else {
 		*measured = (temp.measured >> 1);
 		stat = 0;
 	}
