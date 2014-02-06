@@ -44,7 +44,7 @@ int psu_data_init(struct psu_data *data, struct i2c_eeprom *eeprom)
 	assert(data != NULL);
 	assert(eeprom != NULL);
 
-	if (eeprom_read(eeprom, 0, sizeof(*data), data) < 0) {
+	if (eeprom_read(eeprom, 0, sizeof(*data), (uint8_t *)data) < 0) {
 		LOG("Failed to read PSU eeprom");
 		return -1;
 	}
