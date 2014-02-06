@@ -1,7 +1,7 @@
 /*
   Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2013 Plastic Logic Limited
+  Copyright (C) 2013, 2014 Plastic Logic Limited
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,139 +17,131 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
- * i2c_eeprom.c -- Microchip i2c EEPROM driver
+ * i2c_eeprom.c -- I2C EEPROM driver
  *
- * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ * Authors:
+ *   Nick Terry <nick.terry@plasticlogic.com>
+ *   Guillaume Tucker <guillaume.tucker@plasticlogic.com>
  *
  */
 
+#include "i2c-eeprom.h"
 #include "platform.h"
 #include <stdlib.h>
-#include "types.h"
 #include "assert.h"
 #include "i2c.h"
+#include "types.h" /* min() */
 
-#define	EEPROM_16BIT_ADDRESS	0x01
+enum i2c_eeprom_flags {
+	EEPROM_16BIT_ADDRESS = 0x01
+};
 
 struct eeprom_data {
-	u16	size;			// size in bytes (-1)
-	u8	page_size;		// size of a page
-	u8  flags;			// various flags
+	uint16_t size;               /* size in bytes (-1) */
+	uint8_t page_size;           /* size of a page in bytes */
+	uint8_t flags;               /* flags from i2c_eeprom_flags */
 };
 
-static struct eeprom_data device_data[] = {
-		{ 0x007F, 16, 0 },						// 24lc014 (power board EEPROM)
-		{ 0x7FFF, 64, EEPROM_16BIT_ADDRESS }	// 24aa256 (Display EEPROM)
+static const struct eeprom_data device_data[] = {
+	{ 0x007F, 16, 0 },                   /* 24lc014 (128 Bytes) */
+	{ 0x7FFF, 64, EEPROM_16BIT_ADDRESS } /* 24aa256 (32 KBytes) */
 };
 
-struct i2c_eeprom {
-	struct i2c_adapter *i2c;
-	u8 i2c_addr;
-	u8 type;
-};
-
-int eeprom_init(struct i2c_adapter *i2c, u8 i2c_addr, u8 type, struct i2c_eeprom **eeprom)
+int eeprom_read(struct i2c_eeprom *eeprom, uint16_t offset, uint16_t count,
+		uint8_t *data)
 {
-	struct i2c_eeprom *p = (struct  i2c_eeprom*)malloc(sizeof(struct i2c_eeprom));
+	const struct eeprom_data *device;
+	uint8_t addr[2];
+	int ret;
 
-	assert(p);
-	assert(eeprom);
-	assert(type < ARRAY_SIZE(device_data));
+	assert(eeprom != NULL);
+	assert(data != NULL);
 
-	p->i2c = i2c;
-	p->i2c_addr = i2c_addr;
-	p->type = type;
+#if MCU_DEBUG
+	LOG("eeprom_read (i2c_addr=0x%02x, offset=0x%04X, count=0x%04X)",
+	    eeprom->i2c_addr, offset, count);
+#endif
 
-	*eeprom = p;
+	device = &device_data[eeprom->type];
+
+	if (offset + count >= device->size)
+		return -1;
+
+	addr[0] = (offset >> 8) & 0x00FF;
+	addr[1] = offset & 0x00FF;
+
+	if (device->flags & EEPROM_16BIT_ADDRESS) {
+		ret = i2c_write_bytes(eeprom->i2c, eeprom->i2c_addr, addr, 2,
+				      I2C_NO_STOP);
+	} else {
+		ret = i2c_write_bytes(eeprom->i2c, eeprom->i2c_addr, &addr[1],
+				      1, I2C_NO_STOP);
+	}
+
+	if (ret)
+		return -1;
+
+	while (count) {
+		const uint8_t n = min(count, 255);
+
+		if (i2c_read_bytes(eeprom->i2c, eeprom->i2c_addr, data, n, 0))
+			return -1;
+
+		count -= n;
+		data += n;
+	}
 
 	return 0;
 }
 
-int eeprom_read(struct i2c_eeprom *eeprom, u16 address, u16 count, void *data)
+#ifdef CONFIG_EEPROM_WRITE
+int eeprom_write(struct i2c_eeprom *eeprom, uint16_t offset, uint16_t count,
+		 const uint8_t *data)
 {
-	int ret;
 	struct eeprom_data *device;
-	u8 addr[2];
+	uint8_t addr[2];
+	int ret;
 
-	assert(eeprom);
-	assert(data);
-
-	device = &device_data[eeprom->type];
-
-	if (address + count >= device->size)
-		return -EINVAL;
+	assert(eeprom != NULL);
+	assert(data != NULL);
 
 #if MCU_DEBUG
-	printk("eeprom_read(0x%02x): addr:0x%04X, Len:0x%04X\n", eeprom->i2c_addr, address, count);
+	LOG("eeprom_write (i2c_addr=0x%02x, offset=0x%04X, count=0x%04X)",
+	    eeprom->i2c_addr, offset, count);
 #endif
-
-	addr[0] = ((address >> 8) & 0x00FF);
-	addr[1] = (address & 0x00FF);
-
-	if (device->flags & EEPROM_16BIT_ADDRESS)
-	{
-		ret = i2c_write_bytes(eeprom->i2c, eeprom->i2c_addr, &addr[0], 2, I2C_NO_STOP);
-	}
-	else
-	{
-		ret = i2c_write_bytes(eeprom->i2c, eeprom->i2c_addr, &addr[1], 1, I2C_NO_STOP);
-	}
-	if (ret >= 0) {
-		/* i2c_read_bytes a count of, at most, a u8. Read multiple times with max count if
-		 * a read count greater than 255 is required */
-		int numbytes = count / 255;
-		int remainder = count % 255;
-		u8 offset = 0;
-
-		while (numbytes) {
-			ret = i2c_read_bytes(eeprom->i2c, eeprom->i2c_addr, (u8*)data+offset, 255, 0);
-			numbytes--;
-			offset += 255;
-		}
-		ret = i2c_read_bytes(eeprom->i2c, eeprom->i2c_addr, (u8*)data+offset, remainder, 0);
-	}
-	return ret;
-}
-
-int eeprom_write(struct i2c_eeprom *eeprom, u16 address, u16 count, void *data)
-{
-	int ret = 0;
-	struct eeprom_data *device;
-	u8 addr[2];
-
-	assert(eeprom);
-	assert(data);
 
 	device = &device_data[eeprom->type];
 
-	if (address + count >= device->size)
-		return -EINVAL;
+	if (offset + count >= device->size)
+		return -1;
 
-	while (count && (ret == 0))
-	{
-		int write_count = min(count, (device->page_size - (address % device->page_size)));
+	while (count) {
+		const int n = min(count, (device->page_size -
+					  (offset % device->page_size)));
 
-		printk("eeprom_write(0x%02x): addr:0x%04X, Len:0x%02X\n", eeprom->i2c_addr, address, write_count);
+		addr[0] = ((offset >> 8) & 0x00FF);
+		addr[1] = (offset & 0x00FF);
 
-		addr[0] = ((address >> 8) & 0x00FF);
-		addr[1] = (address & 0x00FF);
-
-		if (device->flags & EEPROM_16BIT_ADDRESS)
-		{
-			ret = i2c_write_bytes(eeprom->i2c, eeprom->i2c_addr, &addr[0], 2, I2C_NO_STOP);
-		}
-		else
-		{
-			ret = i2c_write_bytes(eeprom->i2c, eeprom->i2c_addr, &addr[1], 1, I2C_NO_STOP);
+		if (device->flags & EEPROM_16BIT_ADDRESS) {
+			ret = i2c_write_bytes(eeprom->i2c, eeprom->i2c_addr,
+					      addr, 2, I2C_NO_STOP);
+		} else {
+			ret = i2c_write_bytes(eeprom->i2c, eeprom->i2c_addr,
+					      &addr[1], 1, I2C_NO_STOP);
 		}
 
-		if (ret >= 0)
-			ret = i2c_write_bytes(eeprom->i2c, eeprom->i2c_addr, (u8*)data, write_count, I2C_NO_START);
+		if (ret)
+			return -1;
 
-		count -= write_count;
-		address += write_count;
-		data = ((u8*)data) + write_count;
+		if (i2c_write_bytes(eeprom->i2c, eeprom->i2c_addr,
+				    data, n, I2C_NO_START))
+			return -1;
+
+		count -= n;
+		offset += n;
+		data += n;
 	}
 
-	return ret;
+	return 0;
 }
+#endif

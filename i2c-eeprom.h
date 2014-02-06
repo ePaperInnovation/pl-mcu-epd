@@ -1,7 +1,7 @@
 /*
   Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2013 Plastic Logic Limited
+  Copyright (C) 2013, 2014 Plastic Logic Limited
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,26 +17,37 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
- * i2c_eeprom.h -- Microchip i2c EEPROM driver
+ * i2c_eeprom.h -- I2C EEPROM driver
  *
- * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ * Authors:
+ *   Nick Terry <nick.terry@plasticlogic.com>
+ *   Guillaume Tucker <guillaume.tucker@plasticlogic.com>
  *
  */
 
-#ifndef I2C_EEPROM_H_
-#define I2C_EEPROM_H_
+#ifndef I2C_EEPROM_H
+#define I2C_EEPROM_H 1
 
-#include "types.h"
+#include <stdint.h>
 
-struct i2c_eeprom;
 struct i2c_adapter;
 
-#define	EEPROM_24LC014	0
-#define	EEPROM_24AA256	1
+enum i2c_eeprom_type {
+	EEPROM_24LC014,
+	EEPROM_24AA256,
+};
 
-int eeprom_init(struct i2c_adapter *i2c, u8 i2c_addr, u8 type,
-		struct i2c_eeprom **eeprom);
-int eeprom_read(struct i2c_eeprom *eeprom, u16 address, u16 count, void *data);
-int eeprom_write(struct i2c_eeprom *eeprom, u16 address, u16 count, void *data);
+struct i2c_eeprom {
+	struct i2c_adapter *i2c;
+	enum i2c_eeprom_type type;
+	uint8_t i2c_addr;
+};
 
-#endif /* I2C_EEPROM_H_ */
+extern int eeprom_read(struct i2c_eeprom *eeprom, uint16_t offset,
+		       uint16_t count, uint8_t *data);
+#ifdef CONFIG_EEPROM_WRITE
+extern int eeprom_write(struct i2c_eeprom *eeprom, uint16_t offset,
+			uint16_t count, const uint8_t *data);
+#endif
+
+#endif /* I2C_EEPROM_H */
