@@ -29,8 +29,8 @@
 struct max17135_info;
 
 enum {
-	MAX17135_SEQ_0,	// Type-4, Maxim Driver timing
-	MAX17135_SEQ_1	// Type-11, ST driver timing
+	MAX17135_SEQ_0,	// Type4, Maxim Driver timing
+	MAX17135_SEQ_1	// Type11, ST driver timing
 };
 
 int max17135_init(struct i2c_adapter *i2c, u8 i2c_addr, struct max17135_info **pmic);

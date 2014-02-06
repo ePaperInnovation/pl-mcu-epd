@@ -46,7 +46,7 @@
 #define MV_OFFSET	2066	// DAC value of 0 => 2066mV
 #endif
 
-/* HVPMIC MAX17135 timings for Type-4 Display (Maxim Drivers) */
+/* HVPMIC MAX17135 timings for Type4 Display (Maxim Drivers) */
 #define HVPMIC_NB_TIMINGS 8
 #define HVPMIC_TIMING_SEQ0_UP_VGNEG 24
 #define HVPMIC_TIMING_SEQ0_UP_VSNEG 7
@@ -57,7 +57,7 @@
 #define HVPMIC_TIMING_SEQ0_DOWN_VSNEG 12
 #define HVPMIC_TIMING_SEQ0_DOWN_VGNEG 2
 
-/* HVPMIC MAX17135 timings for Type-11 Display (ST Drivers) */
+/* HVPMIC MAX17135 timings for Type11 Display (ST Drivers) */
 #define HVPMIC_TIMING_SEQ1_UP_VGNEG 12
 #define HVPMIC_TIMING_SEQ1_UP_VSNEG 7
 #define HVPMIC_TIMING_SEQ1_UP_VSPOS 2
