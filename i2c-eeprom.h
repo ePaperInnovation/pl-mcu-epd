@@ -39,8 +39,8 @@ enum i2c_eeprom_type {
 
 struct i2c_eeprom {
 	struct i2c_adapter *i2c;
-	enum i2c_eeprom_type type;
 	uint8_t i2c_addr;
+	enum i2c_eeprom_type type;
 };
 
 extern int eeprom_read(struct i2c_eeprom *eeprom, uint16_t offset,
