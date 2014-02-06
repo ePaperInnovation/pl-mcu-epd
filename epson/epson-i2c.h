@@ -1,7 +1,7 @@
 /*
   Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2013 Plastic Logic Limited
+  Copyright (C) 2013, 2014 Plastic Logic Limited
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -19,13 +19,18 @@
 /*
  * epson-i2c.h -- Epson i2c master Controller driver
  *
- * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ * Authors:
+ *   Nick Terry <nick.terry@plasticlogic.com>
+ *   Guillaume Tucker <guillaume.tucker@plasticlogic.com>
  *
  */
 
-#ifndef EPSON_I2C_H_
-#define EPSON_I2C_H_
+#ifndef EPSON_I2C_H
+#define EPSON_I2C_H 1
 
-int epson_i2c_init(struct s1d135xx *epson, struct i2c_adapter **i2c);
+struct s1d135xx;
+struct i2c_adapter;
 
-#endif /* EPSON_I2C_H_ */
+extern int epson_i2c_init(struct s1d135xx *epson, struct i2c_adapter *i2c);
+
+#endif /* EPSON_I2C_H */

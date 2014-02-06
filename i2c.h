@@ -1,7 +1,7 @@
 /*
   Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2013 Plastic Logic Limited
+  Copyright (C) 2013, 2014 Plastic Logic Limited
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -19,14 +19,16 @@
 /*
  * i2c.h -- i2c interface abstraction layer
  *
- * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ * Authors:
+ *   Nick Terry <nick.terry@plasticlogic.com>
+ *   Guillaume Tucker <guillaume.tucker@plasticlogic.com>
  *
  */
 
-#ifndef I2C_H_
-#define I2C_H_
+#ifndef I2C_H
+#define I2C_H 1
 
-#include "types.h"
+#include <stdint.h>
 
 enum i2c_flags {
 	I2C_NO_STOP  = (1 << 0),
@@ -34,17 +36,25 @@ enum i2c_flags {
 };
 
 struct i2c_adapter {
-	int (*write_bytes)(struct i2c_adapter *i2c, u8 i2c_addr, u8 *data, u8 count, u8 flags);
-	int (*read_bytes)(struct i2c_adapter *i2c, u8 i2c_addr, u8 *data, u8 count, u8 flags);
+	int (*read_bytes)(struct i2c_adapter *i2c, uint8_t i2c_addr,
+			  uint8_t *data, uint8_t count, uint8_t flags);
+	int (*write_bytes)(struct i2c_adapter *i2c, uint8_t i2c_addr,
+			   const uint8_t *data, uint8_t count, uint8_t flags);
 };
 
-int i2c_write_bytes(struct i2c_adapter *i2c, u8 i2c_addr, u8 *data, u8 count, u8 flags);
-int i2c_read_bytes(struct i2c_adapter *i2c, u8 i2c_addr, u8 *data, u8 count, u8 flags);
+extern int i2c_read_bytes(struct i2c_adapter *i2c, uint8_t i2c_addr,
+			  uint8_t *data, uint8_t count, uint8_t flags);
+extern int i2c_write_bytes(struct i2c_adapter *i2c, uint8_t i2c_addr,
+			   const uint8_t *data, uint8_t count, uint8_t flags);
 
-int i2c_reg_read(struct i2c_adapter *i2c, u8 i2c_addr, u8 reg, u8 *data);
-int i2c_reg_write(struct i2c_adapter *i2c, u8 i2c_addr, u8 reg, u8 data);
+extern int i2c_reg_read_8(struct i2c_adapter *i2c, uint8_t i2c_addr,
+			  uint8_t reg, uint8_t *data);
+extern int i2c_reg_write_8(struct i2c_adapter *i2c, uint8_t i2c_addr,
+			   uint8_t reg, uint8_t data);
 
-int i2c_reg_read16be(struct i2c_adapter *i2c, u8 i2c_addr, u8 reg, u16 *data);
-int i2c_reg_write16be(struct i2c_adapter *i2c, u8 i2c_addr, u8 reg, u16 data);
+extern int i2c_reg_read_16be(struct i2c_adapter *i2c, uint8_t i2c_addr,
+			     uint8_t reg, uint16_t *data);
+extern int i2c_reg_write_16be(struct i2c_adapter *i2c, uint8_t i2c_addr,
+			      uint8_t reg, uint16_t data);
 
-#endif /* I2C_H_ */
+#endif /* I2C_H */

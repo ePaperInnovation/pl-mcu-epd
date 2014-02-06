@@ -1,7 +1,7 @@
 /*
   Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2013 Plastic Logic Limited
+  Copyright (C) 2013, 2014 Plastic Logic Limited
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -19,7 +19,9 @@
 /*
  * msp430-i2c.c -- MSP430 i2c interface driver
  *
- * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ * Authors:
+ *   Nick Terry <nick.terry@plasticlogic.com>
+ *   Guillaume Tucker <guillaume.tucker@plasticlogic.com>
  *
  */
 
@@ -59,40 +61,19 @@
  */
 #define SCL_CLOCK_DIV 50					// SCL clock divider
 
-#if 0
-// Linux i2c interface. Should we make it look more like this?
-struct i2c_msg {
-  __u16 addr;
-  __u16 flags;
-#define I2C_M_TEN		0x0010
-#define I2C_M_RD		0x0001
-#define I2C_M_NOSTART		0x4000
-#define I2C_M_REV_DIR_ADDR	0x2000
-#define I2C_M_IGNORE_NAK	0x1000
-#define I2C_M_NO_RD_ACK		0x0800
-#define I2C_M_RECV_LEN		0x0400
-  __u16 len;
-  __u8 * buf;
-};
-int i2c_transfer (	struct i2c_adapter * adap,
- 	struct i2c_msg * msgs,
- 	int num);
-Note: In linux all i2c_msg start with START, STOP send when all msgs complete
-#endif
+struct i2c_adapter msp430_i2c;
 
-struct msp430_i2c {
-	struct i2c_adapter i2c;
-} msp430_i2c;
-
-static int msp430_i2c_write_bytes(struct i2c_adapter *i2c, u8 i2c_addr, u8 *data, u8 count, u8 flags);
-static int msp430_i2c_read_bytes(struct i2c_adapter *i2c, u8 i2c_addr, u8 *data, u8 count, u8 flags);
+static int msp430_i2c_write_bytes(struct i2c_adapter *i2c, u8 i2c_addr,
+				  const u8 *data, u8 count, u8 flags);
+static int msp430_i2c_read_bytes(struct i2c_adapter *i2c, u8 i2c_addr,
+				 u8 *data, u8 count, u8 flags);
 
 
 /*
  *   Initialization of the I2C Module.
  *   Which i2c interface is determined at compile time.
  */
-int msp430_i2c_init(u8 channel, struct i2c_adapter **i2c)
+int msp430_i2c_init(u8 channel, struct i2c_adapter *i2c)
 {
 	// we only support one i2c channel on MSP430 */
 	assert(channel == 0);
@@ -111,16 +92,14 @@ int msp430_i2c_init(u8 channel, struct i2c_adapter **i2c)
 	UCxnCTL1 &= ~UCSWRST;                   // Clear SW reset, resume operation
 
 	// if bus not free generate a manual clock pulse.
-	if (UCxnSTAT & UCBBUSY)
-	{
+	if (UCxnSTAT & UCBBUSY)	{
 		gpio_request(I2C_SCL, PIN_GPIO | PIN_OUTPUT | PIN_INIT_LOW | PIN_REDEFINE);
 		gpio_request(I2C_SCL, PIN_SPECIAL | PIN_REDEFINE);
 		assert ((UCxnSTAT & UCBBUSY) == 0);
 	}
 
-	msp430_i2c.i2c.read_bytes = msp430_i2c_read_bytes;
-	msp430_i2c.i2c.write_bytes = msp430_i2c_write_bytes;
-	*i2c = (struct i2c_adapter*)&msp430_i2c;
+	i2c->read_bytes = msp430_i2c_read_bytes;
+	i2c->write_bytes = msp430_i2c_write_bytes;
 
 	return 0;
 }
@@ -129,7 +108,8 @@ int msp430_i2c_init(u8 channel, struct i2c_adapter **i2c)
  * Write bytes to specified device - optional start and stop
  * First byte has to be preloaded for start to complete
  */
-static int msp430_i2c_write_bytes(struct i2c_adapter *i2c, u8 i2c_addr, u8 *data, u8 count, u8 flags)
+static int msp430_i2c_write_bytes(struct i2c_adapter *i2c, u8 i2c_addr,
+				  const u8 *data, u8 count, u8 flags)
 {
 	int result = -EIO;
 	unsigned int gie = __get_SR_register() & GIE; //Store current GIE state

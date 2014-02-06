@@ -1,7 +1,7 @@
 /*
   Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2013 Plastic Logic Limited
+  Copyright (C) 2013, 2014 Plastic Logic Limited
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -19,7 +19,9 @@
 /*
  * epson-i2c.c -- Epson i2c master Controller driver
  *
- * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ * Authors:
+ *   Nick Terry <nick.terry@plasticlogic.com>
+ *   Guillaume Tucker <guillaume.tucker@plasticlogic.com>
  *
  */
 
@@ -72,17 +74,21 @@
 struct epson_i2c {
 	struct i2c_adapter i2c;
 	screen_t screen;
-	u8 busy;
-} epson_i2c;
+	uint8_t busy;
+};
 
-static int epson_i2c_write_bytes(struct i2c_adapter *i2c, u8 i2c_addr, u8 *data, u8 count, u8 flags);
-static int epson_i2c_read_bytes(struct i2c_adapter *i2c, u8 i2c_addr, u8 *data, u8 count, u8 flags);
+static int epson_i2c_read_bytes(struct i2c_adapter *i2c, uint8_t i2c_addr,
+				uint8_t *data, uint8_t count, uint8_t flags);
+static int epson_i2c_write_bytes(struct i2c_adapter *i2c, uint8_t i2c_addr,
+				 const uint8_t *data, uint8_t count,
+				 uint8_t flags);
 
+static struct epson_i2c epson_i2c;
 
 /*
  *   Initialization of the I2C Module
  */
-int epson_i2c_init(struct s1d135xx *epson, struct i2c_adapter **i2c)
+int epson_i2c_init(struct s1d135xx *epson, struct i2c_adapter *i2c)
 {
 	screen_t previous;
 
@@ -96,17 +102,17 @@ int epson_i2c_init(struct s1d135xx *epson, struct i2c_adapter **i2c)
 
 	epsonif_claim(0,epson->screen, &previous);
 
-	// reset the controller
+	/* reset the controller */
 	epson_reg_write(I2C_STAT_REG, I2C_STAT_RESET);
 	epson_wait_for_idle();
 	epson_reg_write(I2C_STAT_REG, I2C_STAT_SAMPLE_AT(3));
 
-	// set I2C clock divider (0..15)
+	/* set I2C clock divider (0..15) */
 	epson_reg_write(I2C_CLK_CONF_REG, 0x0007);
 
 	epsonif_release(0, previous);
 
-	*i2c = (struct i2c_adapter*)&epson_i2c;
+	i2c = &epson_i2c.i2c;
 
 	return 0;
 }
@@ -136,7 +142,9 @@ static int epson_i2c_command(int cmd, int flags)
 /*
  * Write bytes to specified device - optional start and stop
  */
-static int epson_i2c_write_bytes(struct i2c_adapter *i2c, u8 i2c_addr, u8 *data, u8 count, u8 flags)
+static int epson_i2c_write_bytes(struct i2c_adapter *i2c, uint8_t i2c_addr,
+				 const uint8_t *data, uint8_t count,
+				 uint8_t flags)
 {
 	screen_t previous;
 	int result = -EIO;
@@ -181,8 +189,8 @@ error:
 /*
  * Read bytes from specified device - optional start and stop
  */
-static int epson_i2c_read_bytes(struct i2c_adapter *i2c, u8 i2c_addr, u8 *data,
-				u8 count, u8 flags)
+static int epson_i2c_read_bytes(struct i2c_adapter *i2c, uint8_t i2c_addr, uint8_t *data,
+				uint8_t count, uint8_t flags)
 {
 	screen_t previous;
 	uint16_t stat;
@@ -211,7 +219,7 @@ static int epson_i2c_read_bytes(struct i2c_adapter *i2c, u8 i2c_addr, u8 *data,
 		if (epson_i2c_command(cmd, I2C_STAT_NAK) < 0)
 			goto error;
 		epson_reg_read(I2C_RD_REG, &stat);
-		*data++ = (u8)stat;
+		*data++ = (uint8_t)stat;
 	}
 
 no_data:

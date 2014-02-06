@@ -19,13 +19,17 @@
 /*
  * msp430-i2c.h -- MSP430 i2c interface driver
  *
- * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ * Authors:
+ *   Nick Terry <nick.terry@plasticlogic.com>
+ *   Guillaume Tucker <guillaume.tucker@plasticlogic.com>
  *
  */
 
-#ifndef MSP430_I2C_H_
-#define MSP430_I2C_H_
+#ifndef MSP430_I2C_H
+#define MSP430_I2C_H 1
 
-int msp430_i2c_init(u8 channel, struct i2c_adapter **i2c);
+struct i2c_adapter;
 
-#endif /* MSP430_I2C_H_ */
+extern int msp430_i2c_init(u8 channel, struct i2c_adapter *i2c);
+
+#endif /* MSP430_I2C_H */
