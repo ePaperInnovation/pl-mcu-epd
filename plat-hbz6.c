@@ -78,11 +78,15 @@ static const char SLIDES_PATH[] = "img/slides.txt";
 static const char SEP[] = ", ";
 
 static struct tps65185_info *pmic_info;
-static struct i2c_adapter *i2c;
+static struct i2c_adapter i2c;
 static struct s1d135xx *epson;
 static struct vcom_cal vcom_calibration;
-static struct i2c_eeprom *psu_eeprom;
-static struct i2c_eeprom *plwf_eeprom;
+static struct i2c_eeprom psu_eeprom = {
+	&i2c, EEPROM_24LC014, I2C_PSU_EEPROM_ADDR,
+};
+static struct i2c_eeprom plwf_eeprom = {
+	&i2c, EEPROM_24AA256, I2C_PLWF_EEPROM_ADDR,
+};
 static struct plwf_data plwf_data;
 
 static void check_temperature(struct s1d135xx *epson);
@@ -278,14 +282,12 @@ static int wf_from_eeprom()
 {
 	LOG("Loading display data from EEPROM");
 
-	eeprom_init(i2c, I2C_PLWF_EEPROM_ADDR, EEPROM_24AA256, &plwf_eeprom);
-
-	if (plwf_data_init(&plwf_data, plwf_eeprom)) {
+	if (plwf_data_init(&plwf_data, &plwf_eeprom)) {
 		LOG("Failed to initialise display data");
 		return -1;
 	}
 
-	if (plwf_load_wf(&plwf_data, plwf_eeprom, epson, S1D13541_WF_ADDR)) {
+	if (plwf_load_wf(&plwf_data, &plwf_eeprom, epson, S1D13541_WF_ADDR)) {
 		LOG("Failed to load waveform from EEPROM");
 		return -1;
 	}
@@ -389,11 +391,8 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	check(s1d13541_init_end(epson, prev_screen) == 0);
 #endif
 
-	/* intialise the psu EEPROM */
-	eeprom_init(i2c, I2C_PSU_EEPROM_ADDR, EEPROM_24LC014, &psu_eeprom);
-
 	/* read the psu calibration data and ready it for use */
-	if (psu_data_init(&psu_data, psu_eeprom)) {
+	if (psu_data_init(&psu_data, &psu_eeprom)) {
 #if 1
 		LOG("Using hard-coded default VCOM PSU values");
 		psu_data.version = PSU_DATA_VERSION;
@@ -413,7 +412,7 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	s1d13541_set_temperature_mode(epson, TEMP_MODE_INTERNAL);
 
 	/* initialise the PMIC and pass it the vcom calibration data */
-	tps65185_init(i2c, I2C_PMIC_ADDR, &pmic_info);
+	tps65185_init(&i2c, I2C_PMIC_ADDR, &pmic_info);
 	tps65185_configure(pmic_info, &vcom_calibration);
 	tps65185_set_vcom_voltage(pmic_info, vcom);
 
@@ -712,14 +711,16 @@ static void check_temperature(struct s1d135xx *epson)
 
 	switch (CONFIG_PLWF_MODE) {
 	case PLWF_EEPROM_SD:
-		if (plwf_load_wf(&plwf_data, plwf_eeprom, epson, S1D13541_WF_ADDR)) {
+		if (plwf_load_wf(&plwf_data, &plwf_eeprom, epson,
+				 S1D13541_WF_ADDR)) {
 			LOG("Failed to reload waveform from EEPROM, trying SD card");
 			if (s1d13541_send_waveform())
 				abort_msg("Failed to reload waveform from SD card");
 		}
 		break;
 	case PLWF_EEPROM_ONLY:
-		if (plwf_load_wf(&plwf_data, plwf_eeprom, epson, S1D13541_WF_ADDR))
+		if (plwf_load_wf(&plwf_data, &plwf_eeprom, epson,
+				 S1D13541_WF_ADDR))
 			abort_msg("Failed to reload waveform from EEPROM");
 		break;
 	case PLWF_SD_ONLY:
@@ -729,7 +730,8 @@ static void check_temperature(struct s1d135xx *epson)
 	case PLWF_SD_EEPROM:
 		if (s1d13541_send_waveform()) {
 			LOG("Failed to reload waveform from SD card, trying EEPROM");
-			if (plwf_load_wf(&plwf_data, plwf_eeprom, epson, S1D13541_WF_ADDR))
+			if (plwf_load_wf(&plwf_data, &plwf_eeprom, epson,
+					 S1D13541_WF_ADDR))
 				abort_msg("Failed to reload waveform from EEPROM");
 		}
 		break;

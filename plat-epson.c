@@ -74,11 +74,13 @@
 
 static struct tps65185_info *tps65185_pmic_info;
 static struct max17135_info *max17135_pmic_info;
-static struct i2c_adapter *i2c;
+static struct i2c_adapter i2c;
 static struct s1d135xx *epson;
 static struct vcom_cal vcom_calibration;
 static struct lm75_info *lm75_info;
-static struct i2c_eeprom *plwf_eeprom;
+static struct i2c_eeprom plwf_eeprom = {
+	&i2c, EEPROM_24AA256, I2C_PLWF_EEPROM_ADDR,
+};
 static struct plwf_data plwf_data;
 
 static struct psu_data psu_data;
@@ -99,12 +101,11 @@ static int wf_init_eeprom()
 {
 	LOG("Loading display data from EEPROM");
 
-	eeprom_init(i2c, I2C_PLWF_EEPROM_ADDR, EEPROM_24AA256, &plwf_eeprom);
-
-	if (plwf_data_init(&plwf_data, plwf_eeprom)) {
+	if (plwf_data_init(&plwf_data, &plwf_eeprom)) {
 		LOG("Failed to initialise display data");
 		return -1;
 	}
+
 	return 0;
 }
 
@@ -113,7 +114,7 @@ static int wf_from_eeprom()
 	int ret = 0;
 	LOG("Loading waveform from EEPROM");
 
-	if (plwf_load_wf(&plwf_data, plwf_eeprom, epson, S1D13541_WF_ADDR)) {
+	if (plwf_load_wf(&plwf_data, &plwf_eeprom, epson, S1D13541_WF_ADDR)) {
 		abort_msg("Failed to load waveform from EEPROM");
 		ret = -1;
 	}
@@ -124,12 +125,13 @@ static int wf_from_eeprom()
 int check_platform()
 {
 #if CONFIG_USE_PSU_EEPROM
-	struct i2c_eeprom *psu_eeprom;
+	struct i2c_eeprom psu_eeprom = {
+		&i2c, EEPROM_24LC014, 0x50,
+	};
 
 	msp430_i2c_init(0, &i2c);
-	eeprom_init(i2c, 0x50, EEPROM_24LC014, &psu_eeprom);
 
-	if (psu_data_init(&psu_data, psu_eeprom)) {
+	if (psu_data_init(&psu_data, &psu_eeprom)) {
 		LOG("Failed to initialise VCOM PSU data from EEPROM");
 		return EPDC_NONE;
 	}
@@ -342,12 +344,15 @@ int plat_epson_init()
 
 	switch (psu_data.hw_info.hv_pmic) {
 	case 1: /* Maxim MAX17135 */
-		max17135_init(i2c, I2C_MAX17135_PMIC_ADDR, &max17135_pmic_info);
-		max17135_configure(max17135_pmic_info, &vcom_calibration, MAX17135_SEQ_1);
+		max17135_init(&i2c, I2C_MAX17135_PMIC_ADDR,
+			      &max17135_pmic_info);
+		max17135_configure(max17135_pmic_info, &vcom_calibration,
+				   MAX17135_SEQ_1);
 		max17135_set_vcom_voltage(max17135_pmic_info, vcom);
 		break;
 	case 2: /* TI TPS65185 */
-		tps65185_init(i2c, I2C_TPS65185_PMIC_ADDR, &tps65185_pmic_info);
+		tps65185_init(&i2c, I2C_TPS65185_PMIC_ADDR,
+			      &tps65185_pmic_info);
 		tps65185_configure(tps65185_pmic_info, &vcom_calibration);
 		tps65185_set_vcom_voltage(tps65185_pmic_info, vcom);
 		break;
@@ -359,7 +364,7 @@ int plat_epson_init()
 	/* initialise the i2c temperature sensor */
 	switch (psu_data.hw_info.temp_sensor) {
 	case 1: /* LM75 */
-		lm75_init(i2c, I2C_TEMP_SENSOR, &lm75_info);
+		lm75_init(&i2c, I2C_TEMP_SENSOR, &lm75_info);
 		break;
 	case 0:
 	default:

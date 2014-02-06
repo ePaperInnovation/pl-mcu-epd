@@ -71,12 +71,11 @@
 
 static int show_image(const char *image, void *arg);
 
-static struct i2c_adapter *i2c;
+static struct i2c_adapter i2c;
 static struct max17135_info *pmic_info;
 static struct s1d135xx *epson;
 static struct lm75_info *lm75_info;
 static struct vcom_cal vcom_calibration;
-static struct i2c_eeprom *eeprom;
 static struct psu_data psu_data;
 
 /* Fallback VCOM calibration data if PSU EEPROM corrupt */
@@ -113,6 +112,9 @@ static int power_down(void)
 /* Initialise the platform */
 int plat_raven_init(void)
 {
+	struct i2c_eeprom eeprom = {
+		&i2c, EEPROM_24LC014, I2C_EEPROM_PSU_DATA,
+	};
 	screen_t previous;
 	int vcom;
 
@@ -139,16 +141,14 @@ int plat_raven_init(void)
 	/* initialise the i2c interface on the epson */
 	check(epson_i2c_init(epson, &i2c)==0);
 
-	/* intialise the psu EEPROM */
-	eeprom_init(i2c, I2C_EEPROM_PSU_DATA, EEPROM_24LC014, &eeprom);
-
 	/* read the calibration data and ready it for use */
-	if (psu_data_init(&psu_data, eeprom)) {
+	if (psu_data_init(&psu_data, &eeprom)) {
 		LOG("Failed to initialise VCOM PSU data from EEPROM");
 #if 1
 		LOG("Using hard-coded default values instead");
 		psu_data.version = PSU_DATA_VERSION;
-		memcpy(&psu_data.vcom_info, &psu_calibration, sizeof psu_data.vcom_info);
+		memcpy(&psu_data.vcom_info, &psu_calibration,
+		       sizeof psu_data.vcom_info);
 #else
 		return -1;
 #endif
@@ -163,12 +163,12 @@ int plat_raven_init(void)
 	s1d13524_set_temperature_mode(epson, TEMP_MODE_MANUAL);
 
 	/* intialise the PMIC and pass it the vcom calibration data */
-	max17135_init(i2c, I2C_PMIC_ADDR, &pmic_info);
+	max17135_init(&i2c, I2C_PMIC_ADDR, &pmic_info);
 	max17135_configure(pmic_info, &vcom_calibration, MAX17135_SEQ_1);
 	max17135_set_vcom_voltage(pmic_info, vcom);
 
 	/* initialise the i2c temperature sensor */
-	lm75_init(i2c, I2C_TEMP_SENSOR, &lm75_info);
+	lm75_init(&i2c, I2C_TEMP_SENSOR, &lm75_info);
 
 	plat_s1d13524_init_display(epson);
 	plat_s1d13524_slideshow(epson);
