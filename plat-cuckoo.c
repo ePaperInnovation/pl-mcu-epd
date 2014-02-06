@@ -17,12 +17,12 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
- * plat-cuckoo.c -- Platform file for the 524, Type-4 10.7" display electronics
+ * plat-cuckoo.c -- Platform file for the 524, Type4 10.7" display electronics
  *
  * Authors: Nick Terry <nick.terry@plasticlogic.com>
  *
  * Uses 524 controller - With Hynix SDRAM
- * Drives Type-4 display only
+ * Drives Type4 display only
  * Maxim 17135 PMIC - temperature sensor fitted
  * Epson Power pins control PSU power up/VCOM
  * Epson i2c bridge used to talk to PMIC/DAC
@@ -98,7 +98,7 @@ static int power_down(void)
 }
 
 /* Initialise the platform */
-int plat_cuckoo_init(void)
+int plat_cuckoo_init(struct platform *plat)
 {
 	int done = 0;
 	screen_t previous;
@@ -106,8 +106,8 @@ int plat_cuckoo_init(void)
 
 	printk("Cuckoo platform initialisation\n");
 
-	/* all file operations will be within the Type-4 subtree */
-	check(f_chdir("0:/Type-4") == 0);
+	/* all file operations will be within the Type4 subtree */
+	check(f_chdir("0:/Type4") == 0);
 
 	/* read the display vcom */
 	vcom = util_read_vcom();

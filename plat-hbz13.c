@@ -67,9 +67,11 @@
 
 #define	CONFIG_PSU_ONLY	0	// set to 1 to cycle power supply only (no Epson access)
 
+static struct platform *g_plat;
+static struct i2c_adapter g_epson_i2c;
+static struct i2c_adapter *g_i2c;
 static struct dac5820_info *dac_info;
 static struct max17135_info *pmic_info;
-static struct i2c_adapter i2c;
 static struct s1d135xx *epson;
 static struct vcom_cal vcom_calibration;
 
@@ -122,7 +124,8 @@ static int power_down(void)
 
 
 /* Initialise the platform */
-int plat_hbz13_init(const char *platform_path, int i2c_on_epson)
+int plat_hbz13_init(struct platform *plat, const char *platform_path,
+		    int i2c_on_epson)
 {
 	int done = 0;
 	int ret = 0;
@@ -132,7 +135,10 @@ int plat_hbz13_init(const char *platform_path, int i2c_on_epson)
 
 	printk("HB Z1.3 platform initialisation\n");
 
-	check(f_chdir(platform_path) == FR_OK);
+	g_plat = plat;
+
+	if (f_chdir(platform_path) != FR_OK)
+		abort_msg("Failed to find platform directory");
 
 	/* read the display vcom */
 	vcom = util_read_vcom();
@@ -166,13 +172,16 @@ int plat_hbz13_init(const char *platform_path, int i2c_on_epson)
 #endif
 
 	/* initialise the i2c interface as required */
-	if (i2c_on_epson)
-		check(epson_i2c_init(epson, &i2c) == 0);
-	else
-		check(msp430_i2c_init(0, &i2c) == 0);
+	if (i2c_on_epson) {
+		if (epson_i2c_init(epson, &g_epson_i2c))
+			return -1;
+		g_i2c = &g_epson_i2c;
+	} else {
+		g_i2c = &g_plat->host_i2c;
+	}
 
 	/* initialise the pmic */
-	max17135_init(&i2c, I2C_PMIC_ADDR, &pmic_info);
+	max17135_init(g_i2c, I2C_PMIC_ADDR, &pmic_info);
 	max17135_configure(pmic_info, NULL,  MAX17135_SEQ_0);
 	max17135_temp_enable(pmic_info);
 
@@ -180,7 +189,7 @@ int plat_hbz13_init(const char *platform_path, int i2c_on_epson)
 	vcom_init(&vcom_calibration, &psu_calibration, VCOM_VGSWING);
 
 	/* initialise the VCOM Dac and pass it the VCOM calibration data */
-	dac5820_init(&i2c, I2C_DAC_ADDR, &dac_info);
+	dac5820_init(g_i2c, I2C_DAC_ADDR, &dac_info);
 	dac5820_configure(dac_info, &vcom_calibration);
 	dac5820_set_voltage(dac_info, vcom);
 

@@ -17,7 +17,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
- * plat-cuckoo.h -- Platform file for the 524, Type-4 10.7" display electronics
+ * plat-cuckoo.h -- Platform file for the 524, Type4 10.7" display electronics
  *
  * Authors: Nick Terry <nick.terry@plasticlogic.com>
  *
@@ -26,6 +26,8 @@
 #ifndef PLAT_CUCKOO_H_
 #define PLAT_CUCKOO_H_
 
-int plat_cuckoo_init(void);
+struct platform;
+
+extern int plat_cuckoo_init(struct platform *plat);
 
 #endif /* PLAT_CUCKOO_H_ */

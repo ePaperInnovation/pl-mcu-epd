@@ -71,21 +71,19 @@
 
 /* I2C addresses */
 #define I2C_PMIC_ADDR        0x68
-#define I2C_PSU_EEPROM_ADDR  0x50
 #define I2C_PLWF_EEPROM_ADDR 0x54
 
 static const char SLIDES_PATH[] = "img/slides.txt";
 static const char SEP[] = ", ";
 
+static struct platform *g_plat;
+static struct i2c_adapter g_epson_i2c;
+static struct i2c_adapter *g_i2c;
 static struct tps65185_info *pmic_info;
-static struct i2c_adapter i2c;
 static struct s1d135xx *epson;
 static struct vcom_cal vcom_calibration;
-static struct i2c_eeprom psu_eeprom = {
-	&i2c, EEPROM_24LC014, I2C_PSU_EEPROM_ADDR,
-};
 static struct i2c_eeprom plwf_eeprom = {
-	&i2c, EEPROM_24AA256, I2C_PLWF_EEPROM_ADDR,
+	NULL, I2C_PLWF_EEPROM_ADDR, EEPROM_24AA256,
 };
 static struct plwf_data plwf_data;
 
@@ -296,7 +294,8 @@ static int wf_from_eeprom()
 }
 
 /* Initialise the Hummingbird Z[6|7].x platform */
-int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
+int plat_hbZn_init(struct platform *plat, const char *platform_path,
+		   int i2c_on_epson)
 {
 	struct psu_data psu_data;
 	int ret = 0;
@@ -306,7 +305,10 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 
 	LOG("HB Z6/7 platform initialisation");
 
-	check(f_chdir(platform_path) == FR_OK);
+	g_plat = plat;
+
+	if (f_chdir(platform_path) != FR_OK)
+		abort_msg("Failed to find platform directory");
 
 	/* initialise the Epson interface */
 	epsonif_init(0, 1);
@@ -334,10 +336,15 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 #endif
 
 	/* initialise the i2c interface as required */
-	if (i2c_on_epson)
-		check(epson_i2c_init(epson, &i2c) == 0);
-	else
-		check(msp430_i2c_init(0, &i2c) == 0);
+	if (i2c_on_epson) {
+		if (epson_i2c_init(epson, &g_epson_i2c))
+			return -1;
+		g_i2c = &g_epson_i2c;
+	} else {
+		g_i2c = &g_plat->host_i2c;
+	}
+
+	plwf_eeprom.i2c = g_i2c;
 
 #if !CONFIG_PSU_ONLY
 
@@ -392,11 +399,12 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 #endif
 
 	/* read the psu calibration data and ready it for use */
-	if (psu_data_init(&psu_data, &psu_eeprom)) {
+	if (psu_data_init(&psu_data, &g_plat->hw_eeprom)) {
 #if 1
 		LOG("Using hard-coded default VCOM PSU values");
 		psu_data.version = PSU_DATA_VERSION;
-		memcpy(&psu_data.vcom_info, &DEF_VCOM_PSU, sizeof psu_data.vcom_info);
+		memcpy(&psu_data.vcom_info, &DEF_VCOM_PSU,
+		       sizeof psu_data.vcom_info);
 #else
 		abort_msg("Failed to initialise VCOM PSU data from EEPROM");
 #endif
@@ -412,7 +420,7 @@ int plat_hbZn_init(const char *platform_path, int i2c_on_epson)
 	s1d13541_set_temperature_mode(epson, TEMP_MODE_INTERNAL);
 
 	/* initialise the PMIC and pass it the vcom calibration data */
-	tps65185_init(&i2c, I2C_PMIC_ADDR, &pmic_info);
+	tps65185_init(g_i2c, I2C_PMIC_ADDR, &pmic_info);
 	tps65185_configure(pmic_info, &vcom_calibration);
 	tps65185_set_vcom_voltage(pmic_info, vcom);
 

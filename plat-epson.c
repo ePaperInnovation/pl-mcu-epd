@@ -79,7 +79,7 @@ static struct s1d135xx *epson;
 static struct vcom_cal vcom_calibration;
 static struct lm75_info *lm75_info;
 static struct i2c_eeprom plwf_eeprom = {
-	&i2c, EEPROM_24AA256, I2C_PLWF_EEPROM_ADDR,
+	&i2c, I2C_PLWF_EEPROM_ADDR, EEPROM_24AA256,
 };
 static struct plwf_data plwf_data;
 
@@ -122,16 +122,10 @@ static int wf_from_eeprom()
 	return ret;
 }
 
-int check_platform()
+int check_platform(struct platform *plat)
 {
 #if CONFIG_USE_PSU_EEPROM
-	struct i2c_eeprom psu_eeprom = {
-		&i2c, EEPROM_24LC014, 0x50,
-	};
-
-	msp430_i2c_init(0, &i2c);
-
-	if (psu_data_init(&psu_data, &psu_eeprom)) {
+	if (psu_data_init(&psu_data, &plat->hw_eeprom)) {
 		LOG("Failed to initialise VCOM PSU data from EEPROM");
 		return EPDC_NONE;
 	}
@@ -142,7 +136,7 @@ int check_platform()
 #endif
 }
 
-int plat_epson_init()
+int plat_epson_init(struct platform *plat)
 {
 	int ret = 0;
 	screen_t prev_screen;
@@ -183,7 +177,7 @@ int plat_epson_init()
 		break;
 	case EPDC_S1D13524:
 		/* TODO: Proper display eeprom support for Raven */
-		check(f_chdir("0:/Type-11") == FR_OK);
+		check(f_chdir("0:/Type11") == FR_OK);
 		check(s1d13524_init(EPSON_CS_0, &epson)==0);
 		break;
 	case EPDC_S1D13541:

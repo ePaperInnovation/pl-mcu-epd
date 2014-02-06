@@ -26,9 +26,12 @@
 #ifndef PLAT_HBZ6_H_
 #define PLAT_HBZ6_H_
 
-int plat_hbZn_init(const char *platform_path, int i2c_on_epson);
-int plat_s1d13541_slideshow(struct s1d135xx *epson);
-int plat_s1d13541_init_display(struct s1d135xx *epson);
+struct platform;
+struct s1d135xx;
 
+extern int plat_hbZn_init(struct platform *plat, const char *platform_path,
+			  int i2c_on_epson);
+extern int plat_s1d13541_slideshow(struct s1d135xx *epson);
+extern int plat_s1d13541_init_display(struct s1d135xx *epson);
 
 #endif /* PLAT_HBZ6_H_ */

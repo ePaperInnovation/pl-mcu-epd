@@ -23,7 +23,7 @@
  *
  * Uses 524 controller - With Micron SD RAM
  * Uses MAXIM PMIC - no temperature sensor fitted
- * Drives Type-11 display only
+ * Drives Type11 display only
  * Epson Power pins control PSU power up/VCOM
  * Epson i2c bridge used to talk to PMIC/DAC
  * Has LM75 Temperature sensor
@@ -59,7 +59,6 @@
 
 /* i2c addresses of Maxim PMIC, PSU data EEPROM and temp sensor */
 #define I2C_PMIC_ADDR		0x48
-#define	I2C_EEPROM_PSU_DATA	0x50
 #define	I2C_TEMP_SENSOR		0x49
 
 /* 0 no temperature sensing
@@ -71,6 +70,7 @@
 
 static int show_image(const char *image, void *arg);
 
+static struct platform *g_plat;
 static struct i2c_adapter i2c;
 static struct max17135_info *pmic_info;
 static struct s1d135xx *epson;
@@ -110,18 +110,17 @@ static int power_down(void)
 }
 
 /* Initialise the platform */
-int plat_raven_init(void)
+int plat_raven_init(struct platform *plat)
 {
-	struct i2c_eeprom eeprom = {
-		&i2c, EEPROM_24LC014, I2C_EEPROM_PSU_DATA,
-	};
 	screen_t previous;
 	int vcom;
 
-	printk("Raven platform initialisation\n");
+	LOG("Raven platform initialisation\n");
 
-	/* all file operations will be within the Type-11 subtree */
-	check(f_chdir("0:/Type-11") == 0);
+	g_plat = plat;
+
+	/* all file operations will be within the Type11 subtree */
+	check(f_chdir("0:/Type11") == 0);
 
 	/* read the display vcom */
 	vcom = util_read_vcom();
@@ -142,7 +141,7 @@ int plat_raven_init(void)
 	check(epson_i2c_init(epson, &i2c)==0);
 
 	/* read the calibration data and ready it for use */
-	if (psu_data_init(&psu_data, &eeprom)) {
+	if (psu_data_init(&psu_data, &g_plat->hw_eeprom)) {
 		LOG("Failed to initialise VCOM PSU data from EEPROM");
 #if 1
 		LOG("Using hard-coded default values instead");

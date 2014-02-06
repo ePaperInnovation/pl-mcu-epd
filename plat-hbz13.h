@@ -26,6 +26,9 @@
 #ifndef PLAT_HBZ13_H_
 #define PLAT_HBZ13_H_
 
-int plat_hbz13_init(const char *platform_path, int i2c_on_epson);
+struct platform;
+
+extern int plat_hbz13_init(struct platform *plat,
+			   const char *platform_path, int i2c_on_epson);
 
 #endif /* PLAT_HBZ13_H_ */
