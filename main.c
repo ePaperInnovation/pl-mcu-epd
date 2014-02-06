@@ -27,6 +27,7 @@
 #include "types.h"
 #include "config.h"
 #include "FatFs/ff.h"
+#include "msp430-i2c.h"
 #include "platform.h"
 #include "plat-hbz13.h"
 #include "plat-cuckoo.h"
@@ -38,44 +39,51 @@
 #define LOG_TAG "main"
 #include "utils.h"
 
-// global file system information used by FatFs
-static FATFS Sd_Card;
-
 static const char VERSION[] = "v006";
-
-static int sdcard_init(void)
-{
-	f_chdrive(0);
-	return (f_mount(0,&Sd_Card) == FR_OK ? 0 : -EACCES);
-}
 
 int app_main(void)
 {
-	int platform_type = 0;
+	FATFS g_sdcard;
+	struct platform plat;
+	int platform_type;
+
 	LOG("Starting pl-mcu-epd %s", VERSION);
 
-	/* initialise the Ruddock2 motherboard */
-	ruddock2_init();
+	/* initialise common GPIOs */
+	if (ruddock2_init())
+		abort_msg("Failed to initialise GPIOs");
 
-	/* ready the SD card support */
-	check(sdcard_init() == 0);
+	/* initialise MSP430 I2C master 0 */
+	if (msp430_i2c_init(0, &plat.host_i2c))
+		abort_msg("Failed to initialise I2C master");
 
-	/* Determine platform from PSU eeprom contents */
-	platform_type = check_platform();
+	/* initialise SD-card */
+	f_chdrive(0);
+	if (f_mount(0, &g_sdcard) != FR_OK)
+		abort_msg("Failed to initialise SD card");
+
+	/* hardware info EEPROM */
+	plat.hw_eeprom.i2c = &plat.host_i2c;
+	plat.hw_eeprom.i2c_addr = I2C_PSU_EEPROM_ADDR;
+	plat.hw_eeprom.type = EEPROM_24LC014;
+
+	/* determine platform from PSU eeprom contents */
+	platform_type = check_platform(&plat);
 
 	if (platform_type == EPDC_S1D13524 || platform_type == EPDC_S1D13541) {
-		plat_epson_init();
-	}
-	else {
+		plat_epson_init(&plat);
+	} else {
 		/* initialise the desired platform */
 #if PLAT_CUCKOO
-		plat_cuckoo_init();
+		plat_cuckoo_init(&plat);
 #elif PLAT_Z13
-		plat_hbz13_init(CONFIG_DISPLAY_TYPE, CONFIG_I2C_ON_EPSON);
+		plat_hbz13_init(&plat, CONFIG_DISPLAY_TYPE,
+				CONFIG_I2C_ON_EPSON);
 #elif PLAT_Z6 || PLAT_Z7
-		plat_hbZn_init(CONFIG_DISPLAY_TYPE, CONFIG_I2C_ON_EPSON);
+		plat_hbZn_init(&plat, CONFIG_DISPLAY_TYPE,
+			       CONFIG_I2C_ON_EPSON);
 #elif PLAT_RAVEN
-		plat_raven_init();
+		plat_raven_init(&plat);
 #else
 #error No hardware platform/display type selected
 #endif
