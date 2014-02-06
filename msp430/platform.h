@@ -1,7 +1,7 @@
 /*
   Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2013 Plastic Logic Limited
+  Copyright (C) 2013, 2014 Plastic Logic Limited
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,9 +17,11 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
- * platform.h -- Include compiler/platform specific header files
+ * platform.h
  *
- * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ * Authors:
+ *   Nick Terry <nick.terry@plasticlogic.com>
+ *   Guillaume Tucker <guillaume.tucker@plasticlogic.com>
  *
  */
 
@@ -27,5 +29,16 @@
 #define PLATFORM_H_
 
 #include <msp430.h>
+#include "i2c.h"
+#include "i2c-eeprom.h"
+
+/* Common platform data */
+
+#define I2C_PSU_EEPROM_ADDR  0x50
+
+struct platform {
+	struct i2c_adapter host_i2c;
+	struct i2c_eeprom hw_eeprom;
+};
 
 #endif /* PLATFORM_H_ */
