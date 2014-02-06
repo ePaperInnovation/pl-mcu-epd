@@ -102,7 +102,7 @@ int plwf_data_init(struct plwf_data *data, struct i2c_eeprom *eeprom)
 	assert(data != NULL);
 	assert(eeprom != NULL);
 
-	if (eeprom_read(eeprom, 0, sizeof *data, data)) {
+	if (eeprom_read(eeprom, 0, sizeof *data, (uint8_t *)data)) {
 		LOG("Failed to read EEPROM");
 		return -1;
 	}
@@ -224,7 +224,7 @@ int plwf_load_wf(struct plwf_data *data, struct i2c_eeprom *eeprom,
 #endif
 
 	eeprom_read(eeprom, PLWF_WF_OFFS + data->info.waveform_lzss_length,
-		    sizeof crc, &crc);
+		    sizeof crc, (uint8_t *)&crc);
 	crc = be16toh(crc);
 
 	if (crc != rd_ctx.crc) {
