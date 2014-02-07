@@ -34,22 +34,6 @@
 #include "assert.h"
 #include "utils.h"
 
-u16 __bswap_16(u16 x)
-{
-	return _swap_bytes(x);
-}
-
-u32 __bswap_32(u32 x)
-{
-	param32 tmp;
-
-	tmp.data32 = x;
-	u16 tmp_msw = __bswap_16(tmp.msw);
-	tmp.msw = __bswap_16(tmp.lsw);
-	tmp.lsw = tmp_msw;
-	return tmp.data32;
-}
-
 void util_id_pins(short *gpio, int pin_count)
 {
 	int pin;

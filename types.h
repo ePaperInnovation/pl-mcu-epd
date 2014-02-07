@@ -28,11 +28,6 @@
 
 #define	CONFIG_NO_PRINTK	0
 
-// We have to be aware of endianess when communicating with the Epson controllers.
-// MSP430 is little endian, EPSON is big endian
-//
-#define CPU_LITTLE_ENDIAN	1
-
 /* borrow some type definitions from the Linux kernel
  * Note: C99 compilers support uint8_t etc so these might be more portable
  * also defined in stdint.h
@@ -71,20 +66,6 @@ typedef  s16 screen_t;		/* screen selector - a handle */
 }												\
 )
 
-typedef union {
-	short command;
-	short data;
-	u8 bytes[2];
-} endianess; /* Typo: endianness */
-
-typedef union {
-	u32 data32;
-	struct {
-		u16 msw;
-		u16 lsw;
-	};
-} param32;
-
 enum epdc_type {
 	EPDC_NONE = 0,
 	EPDC_S1D13524,
@@ -98,33 +79,12 @@ enum plwf_mode {
 	PLWF_SD_EEPROM
 };
 
-extern u16 __bswap_16(u16 x);
-extern u32 __bswap_32(u32 x);
-
 struct area {
 	int left;
 	int top;
 	int width;
 	int height;
 };
-
-#if CPU_LITTLE_ENDIAN
-#define swap_bytes(_x_)	_swap_bytes((_x_))
-
-#define htobe16(_x) __bswap_16(_x)
-#define htole16(_x) (_x)
-#define be16toh(_x) __bswap_16(_x)
-#define le16toh(_x) (_x)
-
-#define htobe32(_x) __bswap_32(_x)
-#define htole32(_x) (_x)
-#define be32toh(_x) __bswap_32(_x)
-#define le32toh(_x) (_x)
-
-#else
-#define	swap_bytes(_x_)	(_x_)
-#endif
-
 
 /* Linux error definitions */
 #ifndef _ASM_GENERIC_ERRNO_BASE_H
