@@ -23,7 +23,6 @@
  *
  */
 
-#include "platform.h"
 #include "types.h"
 #include "assert.h"
 #include "msp430-spi.h"

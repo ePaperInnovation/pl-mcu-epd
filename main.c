@@ -23,12 +23,13 @@
  *
  */
 
+#include <pl/platform.h>
+#include "i2c-eeprom.h"
 #include "assert.h"
 #include "types.h"
 #include "config.h"
 #include "FatFs/ff.h"
 #include "msp430-i2c.h"
-#include "platform.h"
 #include "plat-hbz13.h"
 #include "plat-cuckoo.h"
 #include "plat-hbz6.h"
@@ -43,7 +44,7 @@ static const char VERSION[] = "v006";
 
 int app_main(void)
 {
-	FATFS g_sdcard;
+	FATFS sdcard;
 	struct platform plat;
 	int platform_type;
 
@@ -60,7 +61,7 @@ int app_main(void)
 
 	/* initialise SD-card */
 	f_chdrive(0);
-	if (f_mount(0, &g_sdcard) != FR_OK)
+	if (f_mount(0, &sdcard) != FR_OK)
 		abort_msg("Failed to initialise SD card");
 
 #if CONFIG_HW_INFO_EEPROM
@@ -95,4 +96,8 @@ int app_main(void)
 	do {
 		udelay(1);
 	} while(1);
+
+#if 0 /* causes a compiler warning */
+	return 0;
+#endif
 }

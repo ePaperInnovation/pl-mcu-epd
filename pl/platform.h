@@ -17,7 +17,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
- * platform.h
+ * pl/platform.h
  *
  * Authors:
  *   Nick Terry <nick.terry@plasticlogic.com>
@@ -25,11 +25,10 @@
  *
  */
 
-#ifndef PLATFORM_H_
-#define PLATFORM_H_
+#ifndef PL_PLATFORM_H
+#define PL_PLATFORM_H 1
 
 #include <pl/i2c.h>
-#include <msp430.h>
 #include "i2c-eeprom.h"
 #include "config.h"
 
@@ -44,4 +43,4 @@ struct platform {
 #endif
 };
 
-#endif /* PLATFORM_H_ */
+#endif /* PL_PLATFORM_H */

@@ -24,9 +24,9 @@
  *
  */
 
+#include <pl/platform.h>
 #include <pl/i2c.h>
 #include <stdio.h>
-#include "platform.h"
 #include <string.h>
 #include "types.h"
 #include "assert.h"

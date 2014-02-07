@@ -32,10 +32,10 @@
  *
  */
 
+#include <pl/platform.h>
 #include <pl/i2c.h>
 #include <stdio.h>
 #include <string.h>
-#include "platform.h"
 #include "types.h"
 #include "assert.h"
 #include "msp430-gpio.h"

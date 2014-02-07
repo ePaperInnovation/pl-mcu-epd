@@ -23,7 +23,6 @@
  *
  */
 
-#include "platform.h"
 #include "types.h"
 #include "assert.h"
 #include "S1D135xx.h"

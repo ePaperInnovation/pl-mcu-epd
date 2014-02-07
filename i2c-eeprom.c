@@ -28,7 +28,6 @@
 #include <pl/i2c.h>
 #include <stdlib.h>
 #include "i2c-eeprom.h"
-#include "platform.h"
 #include "assert.h"
 #include "types.h" /* min() */
 

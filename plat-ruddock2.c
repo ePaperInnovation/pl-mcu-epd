@@ -23,7 +23,6 @@
  *
  */
 
-#include "platform.h"
 #include "types.h"
 #include "msp430-gpio.h"
 #include "plat-ruddock2.h"

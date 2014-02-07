@@ -25,7 +25,6 @@
 
 #include <pl/i2c.h>
 #include <stddef.h>
-#include "platform.h"
 #include "types.h"
 #include "assert.h"
 #include "vcom.h"

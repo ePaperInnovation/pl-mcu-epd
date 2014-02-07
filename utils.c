@@ -26,7 +26,6 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "platform.h"
 #include "types.h"
 #include "FatFs/ff.h"
 #include "msp430-gpio.h"

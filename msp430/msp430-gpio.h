@@ -26,6 +26,8 @@
 #ifndef MSP430_GPIO_H_
 #define MSP430_GPIO_H_
 
+#include <msp430.h>
+
 enum PinDefs {
 	PIN_GPIO = BIT0,			// pin is GPIO pin
 	PIN_SPECIAL = BIT1,			// pin is special purpose (eg SPI)
