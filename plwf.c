@@ -113,11 +113,9 @@ int plwf_data_init(struct plwf_data *data, struct i2c_eeprom *eeprom)
 	data->vermagic.version = be16toh(data->vermagic.version);
 	PLWF_STR_TERM(data->info.panel_id);
 	PLWF_STR_TERM(data->info.panel_type);
-	data->info.vcom = be32toh(data->info.vcom);
-	data->info.waveform_full_length =
-		be32toh(data->info.waveform_full_length);
-	data->info.waveform_lzss_length =
-		be32toh(data->info.waveform_lzss_length);
+	swap32(data->info.vcom);
+	swap32(data->info.waveform_full_length);
+	swap32(data->info.waveform_lzss_length);
 	PLWF_STR_TERM(data->info.waveform_id);
 	PLWF_STR_TERM(data->info.waveform_target);
 	data->info_crc = be16toh(data->info_crc);
