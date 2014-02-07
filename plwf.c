@@ -17,13 +17,14 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <pl/endian.h>
+#include <pl/i2c.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include "crc16.h"
 #include "types.h"
 #include "assert.h"
-#include "i2c.h"
 #include "i2c-eeprom.h"
 #include "vcom.h"
 #include "plwf.h"

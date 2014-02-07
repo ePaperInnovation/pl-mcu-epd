@@ -24,13 +24,13 @@
  *
  */
 
-#include "platform.h"
+#include <pl/i2c.h>
 #include <stdio.h>
+#include "platform.h"
 #include <string.h>
 #include "types.h"
 #include "assert.h"
 #include "msp430-gpio.h"
-#include "i2c.h"
 #include "vcom.h"
 #include "msp430-i2c.h"
 #include "FatFs/ff.h"
@@ -74,7 +74,7 @@
 
 static struct tps65185_info *tps65185_pmic_info;
 static struct max17135_info *max17135_pmic_info;
-static struct i2c_adapter i2c;
+static struct pl_i2c i2c;
 static struct s1d135xx *epson;
 static struct vcom_cal vcom_calibration;
 static struct lm75_info *lm75_info;

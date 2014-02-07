@@ -33,7 +33,7 @@ enum {
 	MAX17135_SEQ_1	// Type11, ST driver timing
 };
 
-int max17135_init(struct i2c_adapter *i2c, u8 i2c_addr, struct max17135_info **pmic);
+int max17135_init(struct pl_i2c *i2c, u8 i2c_addr, struct max17135_info **pmic);
 int max17135_configure(struct max17135_info *pmic, struct vcom_cal *cal, int power_sequence);
 int max17135_set_vcom_voltage(struct max17135_info *pmic, int mv);
 int max17135_set_vcom_register(struct max17135_info *pmic, int dac_value);

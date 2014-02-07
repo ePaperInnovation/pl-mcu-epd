@@ -29,8 +29,8 @@
 #define EPSON_I2C_H 1
 
 struct s1d135xx;
-struct i2c_adapter;
+struct pl_i2c;
 
-extern int epson_i2c_init(struct s1d135xx *epson, struct i2c_adapter *i2c);
+extern int epson_i2c_init(struct s1d135xx *epson, struct pl_i2c *i2c);
 
 #endif /* EPSON_I2C_H */

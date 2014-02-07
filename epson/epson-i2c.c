@@ -25,10 +25,10 @@
  *
  */
 
+#include <pl/i2c.h>
 #include <msp430.h>
 #include "types.h"
 #include "assert.h"
-#include "i2c.h"
 #include "S1D135xx.h"
 #include "epson-i2c.h"
 #include "epson-cmd.h"
@@ -72,31 +72,30 @@
 #define	I2C_STOP				(I2C_CMD_ACTION(I2C_DO_STOP))
 
 struct epson_i2c {
-	struct i2c_adapter i2c;
+	struct pl_i2c i2c;
 	screen_t screen;
 	uint8_t busy;
 };
 
-static int epson_i2c_read_bytes(struct i2c_adapter *i2c, uint8_t i2c_addr,
-				uint8_t *data, uint8_t count, uint8_t flags);
-static int epson_i2c_write_bytes(struct i2c_adapter *i2c, uint8_t i2c_addr,
-				 const uint8_t *data, uint8_t count,
-				 uint8_t flags);
+static int epson_i2c_read(struct pl_i2c *i2c, uint8_t i2c_addr,
+			  uint8_t *data, uint8_t count, uint8_t flags);
+static int epson_i2c_write(struct pl_i2c *i2c, uint8_t i2c_addr,
+			   const uint8_t *data, uint8_t count, uint8_t flags);
 
 static struct epson_i2c epson_i2c;
 
 /*
  *   Initialization of the I2C Module
  */
-int epson_i2c_init(struct s1d135xx *epson, struct i2c_adapter *i2c)
+int epson_i2c_init(struct s1d135xx *epson, struct pl_i2c *i2c)
 {
 	screen_t previous;
 
 	assert(epson);
 	assert(i2c);
 
-	epson_i2c.i2c.read_bytes = epson_i2c_read_bytes;
-	epson_i2c.i2c.write_bytes = epson_i2c_write_bytes;
+	epson_i2c.i2c.read = epson_i2c_read;
+	epson_i2c.i2c.write = epson_i2c_write;
 	epson_i2c.screen = epson->screen;
 	epson_i2c.busy = 0;
 
@@ -142,9 +141,8 @@ static int epson_i2c_command(int cmd, int flags)
 /*
  * Write bytes to specified device - optional start and stop
  */
-static int epson_i2c_write_bytes(struct i2c_adapter *i2c, uint8_t i2c_addr,
-				 const uint8_t *data, uint8_t count,
-				 uint8_t flags)
+static int epson_i2c_write(struct pl_i2c *i2c, uint8_t i2c_addr,
+			   const uint8_t *data, uint8_t count, uint8_t flags)
 {
 	screen_t previous;
 	int result = -EIO;
@@ -155,7 +153,7 @@ static int epson_i2c_write_bytes(struct i2c_adapter *i2c, uint8_t i2c_addr,
 	if (count == 0)
 		goto no_data;
 
-	if (!(flags & I2C_NO_START))
+	if (!(flags & PL_I2C_NO_START))
 	{
 		// send the i2c address of the slave
 		epson_reg_write(I2C_WD_REG, (i2c_addr << 1) | 0);
@@ -175,7 +173,7 @@ no_data:
 	result = 0;
 
 	// dont send stop if requested
-	if (!(flags & I2C_NO_STOP))
+	if (!(flags & PL_I2C_NO_STOP))
 	{
 error:
 		epson_i2c_command(I2C_STOP, 0);
@@ -189,8 +187,8 @@ error:
 /*
  * Read bytes from specified device - optional start and stop
  */
-static int epson_i2c_read_bytes(struct i2c_adapter *i2c, uint8_t i2c_addr, uint8_t *data,
-				uint8_t count, uint8_t flags)
+static int epson_i2c_read(struct pl_i2c *i2c, uint8_t i2c_addr, uint8_t *data,
+			  uint8_t count, uint8_t flags)
 {
 	screen_t previous;
 	uint16_t stat;
@@ -203,7 +201,7 @@ static int epson_i2c_read_bytes(struct i2c_adapter *i2c, uint8_t i2c_addr, uint8
 	if (count == 0)
 		goto no_data;
 
-	if (!(flags & I2C_NO_START))
+	if (!(flags & PL_I2C_NO_START))
 	{
 		// send the i2c address of the slave
 		epson_reg_write(I2C_WD_REG, (i2c_addr << 1) | 1);
@@ -226,7 +224,7 @@ no_data:
 	result = 0;
 
 	// dont send stop if requested
-	if (!(flags & I2C_NO_STOP))
+	if (!(flags & PL_I2C_NO_STOP))
 	{
 error:
 		epson_i2c_command(I2C_STOP, 0);

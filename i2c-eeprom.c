@@ -25,11 +25,11 @@
  *
  */
 
+#include <pl/i2c.h>
+#include <stdlib.h>
 #include "i2c-eeprom.h"
 #include "platform.h"
-#include <stdlib.h>
 #include "assert.h"
-#include "i2c.h"
 #include "types.h" /* min() */
 
 enum i2c_eeprom_flags {
@@ -51,11 +51,14 @@ int eeprom_read(struct i2c_eeprom *eeprom, uint16_t offset, uint16_t count,
 		uint8_t *data)
 {
 	const struct eeprom_data *device;
+	struct pl_i2c *i2c;
 	uint8_t addr[2];
 	int ret;
 
 	assert(eeprom != NULL);
 	assert(data != NULL);
+
+	i2c = eeprom->i2c;
 
 #if MCU_DEBUG
 	LOG("eeprom_read (i2c_addr=0x%02x, offset=0x%04X, count=0x%04X)",
@@ -71,11 +74,11 @@ int eeprom_read(struct i2c_eeprom *eeprom, uint16_t offset, uint16_t count,
 	addr[1] = offset & 0x00FF;
 
 	if (device->flags & EEPROM_16BIT_ADDRESS) {
-		ret = i2c_write_bytes(eeprom->i2c, eeprom->i2c_addr, addr, 2,
-				      I2C_NO_STOP);
+		ret = i2c->write(i2c, eeprom->i2c_addr, addr, 2,
+				 PL_I2C_NO_STOP);
 	} else {
-		ret = i2c_write_bytes(eeprom->i2c, eeprom->i2c_addr, &addr[1],
-				      1, I2C_NO_STOP);
+		ret = i2c->write(i2c, eeprom->i2c_addr, &addr[1], 1,
+				 PL_I2C_NO_STOP);
 	}
 
 	if (ret)
@@ -84,7 +87,7 @@ int eeprom_read(struct i2c_eeprom *eeprom, uint16_t offset, uint16_t count,
 	while (count) {
 		const uint8_t n = min(count, 255);
 
-		if (i2c_read_bytes(eeprom->i2c, eeprom->i2c_addr, data, n, 0))
+		if (i2c->read(i2c, eeprom->i2c_addr, data, n, 0))
 			return -1;
 
 		count -= n;
@@ -99,11 +102,14 @@ int eeprom_write(struct i2c_eeprom *eeprom, uint16_t offset, uint16_t count,
 		 const uint8_t *data)
 {
 	struct eeprom_data *device;
+	struct pl_i2c *i2c;
 	uint8_t addr[2];
 	int ret;
 
 	assert(eeprom != NULL);
 	assert(data != NULL);
+
+	i2c = eeprom->i2c;
 
 #if MCU_DEBUG
 	LOG("eeprom_write (i2c_addr=0x%02x, offset=0x%04X, count=0x%04X)",
@@ -123,18 +129,18 @@ int eeprom_write(struct i2c_eeprom *eeprom, uint16_t offset, uint16_t count,
 		addr[1] = (offset & 0x00FF);
 
 		if (device->flags & EEPROM_16BIT_ADDRESS) {
-			ret = i2c_write_bytes(eeprom->i2c, eeprom->i2c_addr,
-					      addr, 2, I2C_NO_STOP);
+			ret = i2c->write(i2c, eeprom->i2c_addr, addr, 2,
+					 PL_I2C_NO_STOP);
 		} else {
-			ret = i2c_write_bytes(eeprom->i2c, eeprom->i2c_addr,
-					      &addr[1], 1, I2C_NO_STOP);
+			ret = i2c->write(i2c, eeprom->i2c_addr, &addr[1], 1,
+					 PL_I2C_NO_STOP);
 		}
 
 		if (ret)
 			return -1;
 
-		if (i2c_write_bytes(eeprom->i2c, eeprom->i2c_addr,
-				    data, n, I2C_NO_START))
+		if (i2c->write(i2c, eeprom->i2c_addr, data, n,
+			       PL_I2C_NO_START))
 			return -1;
 
 		count -= n;

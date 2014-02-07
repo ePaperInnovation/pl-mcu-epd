@@ -30,7 +30,7 @@
 
 #include <stdint.h>
 
-struct i2c_adapter;
+struct pl_i2c;
 
 enum i2c_eeprom_type {
 	EEPROM_24LC014,
@@ -38,7 +38,7 @@ enum i2c_eeprom_type {
 };
 
 struct i2c_eeprom {
-	struct i2c_adapter *i2c;
+	struct pl_i2c *i2c;
 	uint8_t i2c_addr;
 	enum i2c_eeprom_type type;
 };

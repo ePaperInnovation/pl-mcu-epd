@@ -23,10 +23,11 @@
  *
  */
 
+#include <pl/endian.h>
+#include <pl/i2c.h>
 #include <stdint.h>
 #include "types.h"
 #include "assert.h"
-#include "i2c.h"
 #include "i2c-eeprom.h"
 #include "crc16.h"
 #include "vcom.h"

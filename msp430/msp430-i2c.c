@@ -25,12 +25,13 @@
  *
  */
 
+#include <pl/i2c.h>
 #include <msp430.h>
+#include <stdint.h>
 #include "types.h"
 #include "assert.h"
 #include "msp430-defs.h"
 #include "msp430-gpio.h"
-#include "i2c.h"
 
 #define CONFIG_PLAT_RUDDOCK2	1
 
@@ -61,19 +62,16 @@
  */
 #define SCL_CLOCK_DIV 50					// SCL clock divider
 
-struct i2c_adapter msp430_i2c;
-
-static int msp430_i2c_write_bytes(struct i2c_adapter *i2c, u8 i2c_addr,
-				  const u8 *data, u8 count, u8 flags);
-static int msp430_i2c_read_bytes(struct i2c_adapter *i2c, u8 i2c_addr,
-				 u8 *data, u8 count, u8 flags);
-
+static int msp430_i2c_write(struct pl_i2c *i2c, uint8_t i2c_addr,
+			    const uint8_t *data, uint8_t count, uint8_t flags);
+static int msp430_i2c_read(struct pl_i2c *i2c, uint8_t i2c_addr,
+			   uint8_t *data, uint8_t count, uint8_t flags);
 
 /*
  *   Initialization of the I2C Module.
  *   Which i2c interface is determined at compile time.
  */
-int msp430_i2c_init(u8 channel, struct i2c_adapter *i2c)
+int msp430_i2c_init(u8 channel, struct pl_i2c *i2c)
 {
 	// we only support one i2c channel on MSP430 */
 	assert(channel == 0);
@@ -98,8 +96,8 @@ int msp430_i2c_init(u8 channel, struct i2c_adapter *i2c)
 		assert ((UCxnSTAT & UCBBUSY) == 0);
 	}
 
-	i2c->read_bytes = msp430_i2c_read_bytes;
-	i2c->write_bytes = msp430_i2c_write_bytes;
+	i2c->read = msp430_i2c_read;
+	i2c->write = msp430_i2c_write;
 
 	return 0;
 }
@@ -108,8 +106,8 @@ int msp430_i2c_init(u8 channel, struct i2c_adapter *i2c)
  * Write bytes to specified device - optional start and stop
  * First byte has to be preloaded for start to complete
  */
-static int msp430_i2c_write_bytes(struct i2c_adapter *i2c, u8 i2c_addr,
-				  const u8 *data, u8 count, u8 flags)
+static int msp430_i2c_write(struct pl_i2c *i2c, uint8_t i2c_addr,
+			    const uint8_t *data, uint8_t count, uint8_t flags)
 {
 	int result = -EIO;
 	unsigned int gie = __get_SR_register() & GIE; //Store current GIE state
@@ -119,7 +117,7 @@ static int msp430_i2c_write_bytes(struct i2c_adapter *i2c, u8 i2c_addr,
 	if (count == 0)							// no data but may want to stop
 		goto no_data;
 
-	if (!(flags & I2C_NO_START))
+	if (!(flags & PL_I2C_NO_START))
 	{
 		UCxnI2CSA  = i2c_addr;        		// set Slave Address
 
@@ -150,7 +148,7 @@ no_data:
 	result = 0;
 
 	// suppress stop if requested
-	if (!(flags & I2C_NO_STOP))
+	if (!(flags & PL_I2C_NO_STOP))
 	{
 error:
 		UCxnCTL1 |= UCTXSTP;				// Transmit Stop
@@ -168,7 +166,8 @@ error:
  * issue the stop before we even get the byte. Suspect emptying the
  * rx data buffer triggers the next read operation.
  */
-static int msp430_i2c_read_bytes(struct i2c_adapter *i2c, u8 i2c_addr, u8 *data, u8 count, u8 flags)
+static int msp430_i2c_read(struct pl_i2c *i2c, uint8_t i2c_addr, uint8_t *data,
+			   uint8_t count, uint8_t flags)
 {
 	int result = -EIO;
 	int remaining = count;
@@ -178,12 +177,12 @@ static int msp430_i2c_read_bytes(struct i2c_adapter *i2c, u8 i2c_addr, u8 *data,
 
 	__disable_interrupt();              	// Make this operation atomic
 
-	send_stop = (!(flags & I2C_NO_STOP) && (count == 1));
+	send_stop = (!(flags & PL_I2C_NO_STOP) && (count == 1));
 
 	if (count == 0)
 		goto no_data;
 
-	if (!(flags & I2C_NO_START))
+	if (!(flags & PL_I2C_NO_START))
 	{
 		UCxnI2CSA  = i2c_addr;         		// set Slave Address
 
@@ -210,7 +209,7 @@ static int msp430_i2c_read_bytes(struct i2c_adapter *i2c, u8 i2c_addr, u8 *data,
 	while (remaining)
 	{
 		remaining--;
-		if (remaining == 0 && !(flags & I2C_NO_STOP)) {
+		if (remaining == 0 && !(flags & PL_I2C_NO_STOP)) {
 			UCxnCTL1 |= UCTXSTP;			// generate stop
 			while(UCxnCTL1 & UCTXSTP);      // Ensure stop condition got sent
 			stop_sent = 1;
@@ -223,7 +222,7 @@ no_data:
 	result = 0;
 
 	// suppress stop if requested or not already sent
-	if (!(flags & I2C_NO_STOP) && !stop_sent)
+	if (!(flags & PL_I2C_NO_STOP) && !stop_sent)
 	{
 error:
 		UCxnCTL1 |= UCTXSTP;				// Transmit Stop

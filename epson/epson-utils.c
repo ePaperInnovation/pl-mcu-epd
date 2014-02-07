@@ -26,6 +26,7 @@
  * This can lead to much swapping of bytes.
  */
 
+#include <pl/endian.h>
 #include <msp430.h>
 #include "types.h"
 #include "assert.h"
@@ -116,18 +117,19 @@ int epson_mode_run(struct s1d135xx *epson)
 /* Copy a byte stream to the controller as words.
  * Need to sort out swap requirements.
  */
-static void pack_4bpp(endianess *in, endianess *out, int in_count)
+static void pack_4bpp(const uint8_t *in, uint16_t *out, int in_count)
 {
-	while (in_count > 0) {
-		out->bytes[0] = (in[0].bytes[1] & 0xf0) | (in[0].bytes[0] >> 4);
-		out->bytes[1] = (in[1].bytes[1] & 0xf0) | (in[1].bytes[0] >> 4);
-		in += 2;
-		out++;
-		in_count -= 2;
+	assert(!(in_count % 2));
+
+	in_count /= 2;
+
+	while (in_count--) {
+		*out = (*in++ >> 4) | (*in++ & 0xf0);
+		*out++ |= ((*in++ & 0xf0) << 4) | ((*in++ & 0xf0) << 8);
 	}
 }
 
-static int read_file_data(FIL *file, endianess *data, size_t length,
+static int read_file_data(FIL *file, uint16_t *data, size_t length,
 			  size_t *count, int swap, int pack)
 {
 	if (f_read(file, data, length, count) != FR_OK)
@@ -143,7 +145,7 @@ static int read_file_data(FIL *file, endianess *data, size_t length,
 
 	if (pack) {
 		*count /= 2;
-		pack_4bpp(data, data, *count);
+		pack_4bpp((uint8_t *)data, data, *count);
 	}
 
 	if (swap) {
@@ -151,23 +153,23 @@ static int read_file_data(FIL *file, endianess *data, size_t length,
 		size_t i;
 
 		for (i = 0; i < n; ++i)
-			data[i].data = swap_bytes(data[i].data);
+			data[i] = _swap_bytes(data[i]);
 	}
 
 	return 0;
 }
 
-static void transfer_data(const endianess *data, size_t n)
+static void transfer_data(const uint16_t *data, size_t n)
 {
 	size_t i;
 
 	for (i = 0; i < n; ++i)
-		epson_bulk_transfer_word(data[i].data);
+		epson_bulk_transfer_word(data[i]);
 }
 
 static int transfer_file(FIL *f, int swap, int pack)
 {
-	endianess data[FILE_BUFFER_SIZE];
+	uint16_t data[FILE_BUFFER_SIZE];
 	size_t count;
 
 	do {
@@ -186,7 +188,7 @@ static int transfer_image(FIL *f, int swap, int pack,
 {
 	const size_t offset = left / 2;
 	const size_t length = area->width / 2;
-	endianess data[IMAGE_BUFFER_LENGTH / 2]; /* ToDo: make it dynamic */
+	uint16_t data[IMAGE_BUFFER_LENGTH / 2]; /* ToDo: make it dynamic */
 	size_t count;
 	int line;
 
@@ -309,7 +311,7 @@ void epson_WaveformStreamTransfer(uint8_t *buffer, size_t len)
 		word = buffer16[i];
 
 		if (swap)
-			buffer16[i] = swap_bytes(buffer16[i]);
+			buffer16[i] = _swap_bytes(buffer16[i]);
 
 		epson_bulk_transfer_word(word);
 	}

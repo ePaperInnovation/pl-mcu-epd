@@ -23,11 +23,11 @@
  *
  */
 
-#include "platform.h"
+#include <pl/i2c.h>
 #include <stddef.h>
+#include "platform.h"
 #include "types.h"
 #include "assert.h"
-#include "i2c.h"
 #include "vcom.h"
 
 /* VCOM DAC */
@@ -87,7 +87,7 @@ union dac5820_ext_payload {
 };
 
 struct dac5820_info {
-	struct i2c_adapter *i2c;
+	struct pl_i2c *i2c;
 	u8 i2c_addr;
 	struct vcom_cal *cal;
 	u8 dac_value;
@@ -96,7 +96,7 @@ struct dac5820_info {
 
 struct dac5820_info vcom_dac;
 
-int dac5820_init(struct i2c_adapter *i2c, u8 i2c_addr, struct dac5820_info **dac)
+int dac5820_init(struct pl_i2c *i2c, u8 i2c_addr, struct dac5820_info **dac)
 {
 	vcom_dac.i2c_addr = i2c_addr;
 	vcom_dac.i2c = i2c;
@@ -126,7 +126,8 @@ int dac5820_set_power(struct dac5820_info *dac, bool on)
 	payload.ext_byte.b = 0;
 	payload.ext_byte.pd = on ? DAC5820_PD_ON : DAC5820_PD_OFF_100K;
 
-	return i2c_write_bytes(dac->i2c, dac->i2c_addr, payload.bytes, sizeof payload, 0);
+	return dac->i2c->write(dac->i2c, dac->i2c_addr, payload.bytes,
+			       sizeof payload, 0);
 }
 
 void dac5820_set_voltage(struct dac5820_info *dac, int vcom_mv)
@@ -167,6 +168,7 @@ int dac5820_write(struct dac5820_info *dac)
 	payload.data_byte.data_low = dac->dac_value & 0xF;
 	payload.data_byte.reserved = 0;
 
-	return i2c_write_bytes(dac->i2c, dac->i2c_addr, payload.bytes, sizeof payload, 0);
+	return dac->i2c->write(dac->i2c, dac->i2c_addr, payload.bytes,
+			       sizeof payload, 0);
 }
 

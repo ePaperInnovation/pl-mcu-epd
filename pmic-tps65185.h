@@ -28,7 +28,7 @@
 
 struct tps65185_info;
 
-int tps65185_init(struct i2c_adapter *i2c, u8 i2c_addr, struct tps65185_info **pmic);
+int tps65185_init(struct pl_i2c *i2c, u8 i2c_addr, struct tps65185_info **pmic);
 int tps65185_configure(struct tps65185_info *pmic, struct vcom_cal *cal);
 int tps65185_set_vcom_voltage(struct tps65185_info *pmic, int mv);
 int tps65185_set_vcom_register(struct tps65185_info *pmic, int value);

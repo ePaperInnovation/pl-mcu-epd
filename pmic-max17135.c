@@ -23,10 +23,10 @@
  *
  */
 
+#include <pl/i2c.h>
 #include <stddef.h>
 #include "types.h"
 #include "assert.h"
-#include "i2c.h"
 #include "vcom.h"
 #include "pmic-max17135.h"
 
@@ -133,7 +133,7 @@ union max17135_temp_value {
 };
 
 struct max17135_info {
-	struct i2c_adapter *i2c;
+	struct pl_i2c *i2c;
 	u8 i2c_addr;
 	struct max17135_hvpmic hvpmic;
 	struct vcom_cal *cal;
@@ -141,7 +141,7 @@ struct max17135_info {
 
 static struct max17135_info pmic_info;
 
-int max17135_init(struct i2c_adapter *i2c, u8 i2c_addr, struct max17135_info **pmic)
+int max17135_init(struct pl_i2c *i2c, u8 i2c_addr, struct max17135_info **pmic)
 {
 	assert(i2c);
 	assert(pmic);
@@ -163,8 +163,8 @@ static int max17135_load_timings(struct max17135_info *pmic)
 	for (i = 0, reg = HVPMIC_REG_TIMING_1;
 	     i < HVPMIC_NB_TIMINGS;
 	     ++i, ++reg) {
-		if (i2c_reg_write_8(pmic->i2c, pmic->i2c_addr,
-				    reg, pmic->hvpmic.timings[i]))
+		if (pl_i2c_reg_write_8(pmic->i2c, pmic->i2c_addr,
+				       reg, pmic->hvpmic.timings[i]))
 			return -1;
 	}
 
@@ -213,12 +213,12 @@ int max17135_configure(struct max17135_info *pmic, struct vcom_cal *cal, int pow
 	       timings[0], timings[1], timings[2], timings[3],
 	       timings[4], timings[5], timings[6], timings[7]);
 
-	if (i2c_reg_read_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_PROD_REV,
-			   &pmic->hvpmic.prod_rev))
+	if (pl_i2c_reg_read_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_PROD_REV,
+			      &pmic->hvpmic.prod_rev))
 		return -1;
 
-	if (i2c_reg_read_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_PROD_ID,
-			   &pmic->hvpmic.prod_id))
+	if (pl_i2c_reg_read_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_PROD_ID,
+			      &pmic->hvpmic.prod_id))
 		return -1;
 
 	printk("MAX17135: HVPMIC rev 0x%02X, id 0x%02X\n",
@@ -234,8 +234,8 @@ int max17135_set_vcom_register(struct max17135_info *pmic, int dac_value)
 {
 	assert(pmic);
 
-	return i2c_reg_write_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_DVR,
-			       (uint8_t)dac_value);
+	return pl_i2c_reg_write_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_DVR,
+				  (uint8_t)dac_value);
 }
 
 int max17135_set_vcom_voltage(struct max17135_info *pmic, int mv)
@@ -251,8 +251,8 @@ int max17135_set_vcom_voltage(struct max17135_info *pmic, int mv)
 	else if (dac_value > HVPMIC_DAC_MAX)
 		dac_value = HVPMIC_DAC_MAX;
 
-	return i2c_reg_write_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_DVR,
-			       (uint8_t)dac_value);
+	return pl_i2c_reg_write_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_DVR,
+				  (uint8_t)dac_value);
 }
 
 int max17135_wait_pok(struct max17135_info *pmic)
@@ -268,8 +268,8 @@ int max17135_wait_pok(struct max17135_info *pmic)
 
 		mdelay(POLL_DELAY_MS);
 
-		if (i2c_reg_read_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_FAULT,
-				   &fault.byte)) {
+		if (pl_i2c_reg_read_8(pmic->i2c, pmic->i2c_addr,
+				      HVPMIC_REG_FAULT, &fault.byte)) {
 			printk("MAX17135: failed to read HVPMIC POK\n");
 			return -1;
 		}
@@ -311,8 +311,8 @@ int max17135_temp_enable(struct max17135_info *pmic)
 	config.byte = 0;
 	config.shutdown = 0;
 
-	return i2c_reg_write_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_CONF,
-			       config.byte);
+	return pl_i2c_reg_write_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_CONF,
+				  config.byte);
 }
 
 /* disable temperature sensing */
@@ -323,8 +323,8 @@ int max17135_temp_disable(struct max17135_info *pmic)
 	config.byte = 0;
 	config.shutdown = 1;
 
-	return i2c_reg_write_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_CONF,
-			       config.byte);
+	return pl_i2c_reg_write_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_CONF,
+				  config.byte);
 }
 
 /* read the temperature from the PMIC */
@@ -334,12 +334,12 @@ int max17135_temperature_measure(struct max17135_info *pmic, short *measured)
 	union max17135_temp_value temp;
 	int stat;
 
-	if (i2c_reg_read_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_TEMP_STAT,
-			   &status.byte))
+	if (pl_i2c_reg_read_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_TEMP_STAT,
+			      &status.byte))
 		goto error;
 
-	if (i2c_reg_read_16be(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_EXT_TEMP,
-			      &temp.word))
+	if (pl_i2c_reg_read_16be(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_EXT_TEMP,
+				 &temp.word))
 		goto error;
 
 	if (status.byte & (HVPMIC_TEMP_OPEN | HVPMIC_TEMP_SHORT)) {

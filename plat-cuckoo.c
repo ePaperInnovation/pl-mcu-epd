@@ -30,13 +30,13 @@
  *
  */
 
-#include "platform.h"
+#include <pl/i2c.h>
 #include <stdio.h>
+#include "platform.h"
 #include "types.h"
 #include "assert.h"
 #include "FatFs/ff.h"
 #include "msp430-gpio.h"
-#include "i2c.h"
 #include "vcom.h"
 #include "epson/epson-cmd.h"
 #include "epson/S1D13524.h"
@@ -56,7 +56,7 @@
 
 static int show_image(const char *image, void *arg);
 
-static struct i2c_adapter i2c;
+static struct pl_i2c i2c;
 static struct dac5820_info *dac_info;
 static struct max17135_info *pmic_info;
 static struct s1d135xx *epson;

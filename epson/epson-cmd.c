@@ -23,6 +23,7 @@
  *
  */
 
+#include <pl/endian.h>
 #include "assert.h"
 #include "types.h"
 #include "S1D135xx.h"
@@ -87,12 +88,10 @@ int epson_deselect_screen(int wait)
 
 static int sendCmd(uint16_t command)
 {
-	endianess x;
-
-	x.command = htobe16(command);
+	command = htobe16(command);
 
 	epsonif_set_command();
-	spi_write_bytes(x.bytes,2);
+	spi_write_bytes((uint8_t *)&command, 2);
 	epsonif_set_data();
 
 	return 0;
@@ -100,10 +99,8 @@ static int sendCmd(uint16_t command)
 
 static int sendParam(uint16_t param)
 {
-	endianess x;
-
-	x.data = htobe16(param);
-	spi_write_bytes(x.bytes,2);
+	param = htobe16(param);
+	spi_write_bytes((uint8_t *)&param, 2);
 
 	return 0;
 }
@@ -221,7 +218,7 @@ int epson_begin_bulk_transfer(uint16_t reg)
 }
 
 
-/* write word to the SPI interface. Data is assumed to be in cpu endianess
+/* write word to the SPI interface. Data is assumed to be in cpu endianness
  * format. BeginBulkTransfer() must have been called first
  */
 int epson_bulk_transfer_word(uint16_t data)
@@ -264,10 +261,9 @@ int epson_end_bulk_transfer()
 	return 0;
 }
 
-int epson_reg_read(uint16_t reg, uint16_t* value)
+int epson_reg_read(uint16_t reg, uint16_t *value)
 {
 	int ret;
-	endianess x;
 
 	epsonif_select_epson();
 
@@ -275,10 +271,10 @@ int epson_reg_read(uint16_t reg, uint16_t* value)
 	ret = sendParam(reg);
 #if !CONFIG_IF_PARALLEL
 	/* read 2 dummy bytes sent by Epson */
-	spi_read_bytes(x.bytes,2);	// read the two dummy bytes
+	spi_read_bytes((uint8_t *)value, 2);	// read the two dummy bytes
 #endif
-	spi_read_bytes(x.bytes,2); 	// read the register contents
-	*value = be16toh(x.data);
+	spi_read_bytes((uint8_t *)value, 2); 	// read the register contents
+	*value = be16toh(*value);
 
 	epsonif_deselect_epson();
 

@@ -32,13 +32,13 @@
  *
  */
 
-#include "platform.h"
+#include <pl/i2c.h>
 #include <stdio.h>
 #include <string.h>
+#include "platform.h"
 #include "types.h"
 #include "assert.h"
 #include "msp430-gpio.h"
-#include "i2c.h"
 #include "vcom.h"
 #include "msp430-i2c.h"
 #include "FatFs/ff.h"
@@ -77,8 +77,8 @@ static const char SLIDES_PATH[] = "img/slides.txt";
 static const char SEP[] = ", ";
 
 static struct platform *g_plat;
-static struct i2c_adapter g_epson_i2c;
-static struct i2c_adapter *g_i2c;
+static struct pl_i2c g_epson_i2c;
+static struct pl_i2c *g_i2c;
 static struct tps65185_info *pmic_info;
 static struct s1d135xx *epson;
 static struct vcom_cal vcom_calibration;

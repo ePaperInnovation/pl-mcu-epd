@@ -23,12 +23,12 @@
  *
  */
 
+#include <pl/i2c.h>
+#include <stdlib.h>
 #include "platform.h"
 #include "types.h"
 #include "assert.h"
-#include "i2c.h"
 #include "vcom.h"
-#include <stdlib.h>
 
 #define LOG_TAG "tps65185"
 #include "utils.h"
@@ -75,7 +75,7 @@ union tps65185_version {
 };
 
 struct tps65185_info {
-	struct i2c_adapter *i2c;
+	struct pl_i2c *i2c;
 	u8 i2c_addr;
 	struct vcom_cal *cal;
 };
@@ -104,80 +104,81 @@ static const struct pmic_data init_data[] = {
 
 #if DO_REG_DUMP
 /* Note: reading some registers will modify the status of the device */
-static void reg_dump(struct tps65185_info *pmic)
+static void reg_dump(struct tps65185_info *p)
 {
 	u8 data;
 	int reg;
 
 	printk("TPS65185: registers\n");
 	for (reg = HVPMIC_REG_TMST_VALUE; reg < HVPMIC_REG_MAX; reg++) {
-		if (!i2c_reg_read_8(pmic->i2c, pmic->i2c_addr, reg, &data))
+		if (!pl_i2c_reg_read_8(p->i2c, p->i2c_addr, reg, &data))
 			printk(" 0x%02X => 0x%02X\n", reg, data);
 	}
 }
 #endif
 
-int tps65185_init(struct i2c_adapter *i2c, u8 i2c_addr, struct tps65185_info **pmic)
+int tps65185_init(struct pl_i2c *i2c, u8 i2c_addr, struct tps65185_info **p)
 {
-	assert(i2c);
-	assert(pmic);
+	assert(i2c != NULL);
+	assert(p != NULL);
 
 	pmic_info.i2c_addr = i2c_addr;
 	pmic_info.i2c = i2c;
-	*pmic = &pmic_info;
+	*p = &pmic_info;
 
 	return 0;
 }
 
-int tps65185_configure(struct tps65185_info *pmic, struct vcom_cal *cal)
+int tps65185_configure(struct tps65185_info *p, struct vcom_cal *cal)
 {
 	int i;
 	int ret = 0;
 	union tps65185_version ver;
 
-	assert(pmic);
+	assert(p != NULL);
 
 	/* Cal may be NULL if not being used */
-	pmic->cal = cal;
+	p->cal = cal;
 
-	i2c_reg_read_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_REV_ID, &ver.byte);
-	printk("TPS65185: Version: %d.%d.%d\n", ver.major, ver.minor, ver.version);
+	pl_i2c_reg_read_8(p->i2c, p->i2c_addr, HVPMIC_REG_REV_ID, &ver.byte);
+	printk("TPS65185: Version: %d.%d.%d\n",
+	       ver.major, ver.minor, ver.version);
 
 	for (i = 0; (ret == 0) && (i < ARRAY_SIZE(init_data)); i++) {
-		ret = i2c_reg_write_8(pmic->i2c, pmic->i2c_addr,
-				      init_data[i].reg, init_data[i].data);
+		ret = pl_i2c_reg_write_8(p->i2c, p->i2c_addr,
+					 init_data[i].reg, init_data[i].data);
 	}
 
 	return ret;
 }
 
 /* program the internal VCOM Dac to give us the required voltage */
-int tps65185_set_vcom_register(struct tps65185_info *pmic, int value)
+int tps65185_set_vcom_register(struct tps65185_info *p, int value)
 {
 	const uint8_t v1 = value;
 	const uint8_t v2 = (value >> 8) & 0x01;
 
-	assert(pmic != NULL);
+	assert(p != NULL);
 
-	if (i2c_reg_write_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_VCOM1, v1))
+	if (pl_i2c_reg_write_8(p->i2c, p->i2c_addr, HVPMIC_REG_VCOM1, v1))
 		return -1;
 
-	if (i2c_reg_write_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_VCOM2, v2))
+	if (pl_i2c_reg_write_8(p->i2c, p->i2c_addr, HVPMIC_REG_VCOM2, v2))
 		return -1;
 
 	return 0;
 }
 
 /* program the internal VCOM Dac to give us the required voltage */
-int tps65185_set_vcom_voltage(struct tps65185_info *pmic, int mv)
+int tps65185_set_vcom_voltage(struct tps65185_info *p, int mv)
 {
 	int dac_value;
 	uint8_t v1;
 	uint8_t v2;
 
-	assert(pmic);
+	assert(p != NULL);
 
-	dac_value = vcom_calculate(pmic->cal, mv);
+	dac_value = vcom_calculate(p->cal, mv);
 
 	if (dac_value < HVPMIC_DAC_MIN)
 		dac_value = HVPMIC_DAC_MIN;
@@ -187,35 +188,36 @@ int tps65185_set_vcom_voltage(struct tps65185_info *pmic, int mv)
 	v1 = dac_value & 0x00FF;
 	v2 = ((dac_value >> 8) & 0x0001);
 
-	if (i2c_reg_write_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_VCOM1, v1))
+	if (pl_i2c_reg_write_8(p->i2c, p->i2c_addr, HVPMIC_REG_VCOM1, v1))
 		return -1;
 
-	if (i2c_reg_write_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_VCOM2, v2))
+	if (pl_i2c_reg_write_8(p->i2c, p->i2c_addr, HVPMIC_REG_VCOM2, v2))
 		return -1;
 
 	return 0;
 }
 
 /* use i2c to determine when power up has completed */
-int tps65185_wait_pok(struct tps65185_info *pmic)
+int tps65185_wait_pok(struct tps65185_info *p)
 {
 	u8 pgstat;
 	u8 int1, int2;
 
-	assert(pmic != NULL);
+	assert(p != NULL);
 
-	if (i2c_reg_read_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_PG_STAT,
+	if (pl_i2c_reg_read_8(p->i2c, p->i2c_addr, HVPMIC_REG_PG_STAT,
 			   &pgstat))
 		return -1;
 
-	if (i2c_reg_read_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_INT1, &int1))
+	if (pl_i2c_reg_read_8(p->i2c, p->i2c_addr, HVPMIC_REG_INT1, &int1))
 		return -1;
 
-	if (i2c_reg_read_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_INT2, &int2))
+	if (pl_i2c_reg_read_8(p->i2c, p->i2c_addr, HVPMIC_REG_INT2, &int2))
 		return -1;
 
 	if (int1 || int2)
-		printk("TPS65185: PGSTAT: 0x%02X, INT1: 0x%02X, INT2: 0x%02X\n", pgstat, int1, int2);
+		printk("TPS65185: PGSTAT: 0x%02X, INT1: 0x%02X, INT2: 0x%02X\n",
+		       pgstat, int1, int2);
 
 #if DO_REG_DUMP
 	reg_dump(pmic);
@@ -227,36 +229,36 @@ int tps65185_wait_pok(struct tps65185_info *pmic)
 }
 
 /* use the i2c interface to power up the PMIC */
-int tps65185_enable(struct tps65185_info *pmic)
+int tps65185_enable(struct tps65185_info *p)
 {
 	return -EPERM;
 }
 
 /* use the i2c interface to power down the PMIC */
-int tps65185_disable(struct tps65185_info *pmic)
+int tps65185_disable(struct tps65185_info *p)
 {
 	return -EPERM;
 }
 
-int tps65185_temperature_measure(struct tps65185_info *pmic, short *measured)
+int tps65185_temperature_measure(struct tps65185_info *p, short *measured)
 {
 	s8 temp;
 	u8 progress;
 
 	/* Trigger conversion */
-	if (i2c_reg_write_8(pmic->i2c, pmic->i2c_addr,HVPMIC_REG_TMST1, 0x80))
+	if (pl_i2c_reg_write_8(p->i2c, p->i2c_addr,HVPMIC_REG_TMST1, 0x80))
 		return -1;
 
 	/* wait for it to complete */
 	do {
-		if (i2c_reg_read_8(pmic->i2c, pmic->i2c_addr,
-				   HVPMIC_REG_TMST1, &progress))
+		if (pl_i2c_reg_read_8(p->i2c, p->i2c_addr, HVPMIC_REG_TMST1,
+				      &progress))
 			return -1;
 	} while ((progress & 0x20));
 
 	/* read the temperature */
-	if (i2c_reg_read_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_TMST_VALUE,
-			   (uint8_t *)&temp)) {
+	if (pl_i2c_reg_read_8(p->i2c, p->i2c_addr, HVPMIC_REG_TMST_VALUE,
+			      (uint8_t *)&temp)) {
 		temp = HVPMIC_TEMP_DEFAULT;
 		LOG("Warning: using default temperature %d", temp);
 	}
@@ -267,4 +269,3 @@ int tps65185_temperature_measure(struct tps65185_info *pmic, short *measured)
 
 	return 0;
 }
-

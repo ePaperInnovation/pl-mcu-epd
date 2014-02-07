@@ -23,23 +23,23 @@
  *
  */
 
+#include <pl/i2c.h>
 #include "types.h"
 #include "assert.h"
-#include "i2c.h"
 
 #define	LM75_TEMP_DEFAULT	20
 
 /* used to describe external i2c sensor to epson controller.
  * include i2c adapter so epson can check its the same one */
 struct i2c_temp_sensor_info {
-	struct i2c_adapter *i2c;
+	struct pl_i2c *i2c;
 	u8 i2c_addr;
 	u8 reg;
 };
 
 /* Lm75 i2c temperature sensor */
 struct lm75_info {
-	struct i2c_adapter *i2c;
+	struct pl_i2c *i2c;
 	u8 i2c_addr;
 	struct i2c_temp_sensor_info sensor;
 } lm75_data;
@@ -52,7 +52,7 @@ union lm75_temp_value {
 	uint16_t word;
 };
 
-int lm75_init(struct i2c_adapter *i2c, u8 i2c_addr, struct lm75_info **lm75)
+int lm75_init(struct pl_i2c *i2c, u8 i2c_addr, struct lm75_info **lm75)
 {
 	assert(i2c);
 	assert(lm75);
@@ -82,8 +82,8 @@ int lm75_temperature_measure(struct lm75_info *lm75, short *measured)
 	union lm75_temp_value temp;
 	int ret;
 
-	ret = i2c_reg_read_16be(lm75->i2c, lm75->i2c_addr, lm75->sensor.reg,
-				&temp.word);
+	ret = pl_i2c_reg_read_16be(lm75->i2c, lm75->i2c_addr, lm75->sensor.reg,
+				   &temp.word);
 
 	if (ret) {
 		*measured = LM75_TEMP_DEFAULT;

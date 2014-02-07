@@ -26,7 +26,7 @@
 struct lm75_info;
 struct i2c_temp_sensor_info;
 
-int lm75_init(struct i2c_adapter *i2c, u8 i2c_addr, struct lm75_info **lm75);
+int lm75_init(struct pl_i2c *i2c, u8 i2c_addr, struct lm75_info **lm75);
 int lm75_temperature_measure(struct lm75_info *lm75, short *measured);
 
 int lm75_export_temp_sensor(struct lm75_info *lm75, struct i2c_temp_sensor_info **sensor);

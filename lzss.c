@@ -19,15 +19,10 @@
 
 #include <stdlib.h>
 #include <string.h>
-
 #include <stdint.h>
 #include <stddef.h>
 #include "types.h"
 #include "assert.h"
-#include "i2c.h"
-#include "i2c-eeprom.h"
-#include "vcom.h"
-#include "plwf.h"
 #include "lzss.h"
 
 /* If match length <= P then output one character */

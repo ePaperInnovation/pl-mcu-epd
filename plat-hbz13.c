@@ -34,12 +34,12 @@
  *
  */
 
-#include "platform.h"
+#include <pl/i2c.h>
 #include <stdio.h>
+#include "platform.h"
 #include "types.h"
 #include "assert.h"
 #include "msp430-gpio.h"
-#include "i2c.h"
 #include "msp430-i2c.h"
 #include "FatFs/ff.h"
 #include "vcom.h"
@@ -68,8 +68,8 @@
 #define	CONFIG_PSU_ONLY	0	// set to 1 to cycle power supply only (no Epson access)
 
 static struct platform *g_plat;
-static struct i2c_adapter g_epson_i2c;
-static struct i2c_adapter *g_i2c;
+static struct pl_i2c g_epson_i2c;
+static struct pl_i2c *g_i2c;
 static struct dac5820_info *dac_info;
 static struct max17135_info *pmic_info;
 static struct s1d135xx *epson;
