@@ -30,20 +30,23 @@
 #include <stdint.h>
 #include "config.h"
 
-#define _swap_4bytes(_x) ({						   \
-	const uint16_t *_y = (uint16_t *)&(_x);				   \
-	const uint16_t _z[2] = { _swap_bytes(_y[1]), _swap_bytes(_y[0]) }; \
-	*((const uint32_t*)_z); })
+/** Swap the 4 bytes of a uint32_t in place */
+#define swap32(_x) do {							\
+	uint8_t *_b = (uint8_t *)&(_x);					\
+	uint8_t _c;							\
+	_c = _b[0];							\
+	_b[0] = _b[3];							\
+	_b[3] = _c;							\
+	_c = _b[1];							\
+	_b[1] = _b[2];							\
+	_b[2] = _c;							\
+ } while (0)
 
 #if CONFIG_LITTLE_ENDIAN
 #define htobe16(_x) _swap_bytes(_x)
 #define htole16(_x) (_x)
 #define be16toh(_x) _swap_bytes(_x)
 #define le16toh(_x) (_x)
-#define htobe32(_x) _swap_4bytes(_x)
-#define htole32(_x) (_x)
-#define be32toh(_x) _swap_4bytes(_x)
-#define le32toh(_x) (_x)
 #else
 # error "BIG ENDIAN NOT SUPPORTED, only tested on MSP430 little-endian 16-bit"
 #endif
