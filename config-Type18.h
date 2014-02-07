@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Plastic Logic Limited
+ * Copyright (C) 2013, 2014 Plastic Logic Limited
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,34 +19,58 @@
 #ifndef INCLUDE_CONFIG_H
 #define INCLUDE_CONFIG_H 1
 
-#include "types.h"
-
 /*
  * This file contains global configuration values for the Plastic Logic
  * hardware as well as some various build-time software options.
  */
 
-/* Select one of the platforms below for 10.7" (Type4 or Type11) displays and
- * the S1D13524 Epson controller. */
-#define PLAT_CUCKOO             0       /**< Cuckoo board (Type4) */
-#define PLAT_RAVEN              0       /**< Raven board (Type11) */
+/** Set to 1 to use the VCOM and hardware info stored in board EEPROM **/
+#define CONFIG_HW_INFO_EEPROM   1
 
-/* These platforms can drive a range of small displays as defined below using
- * the S1D13541 Epson controller. */
-#define	PLAT_Z13                0      /**< Hummingbird Z1.3 */
-#define PLAT_Z6                 1      /**< Hummingbird Z6.x */
-#define PLAT_Z7                 0      /**< Hummingbird Z7.x */
+/** Set to 1 to use default VCOM calibration settings if HW info EEPROM data
+ * cannot be used (either not programmed, or hardware fault, or
+ * CONFIG_HW_INFO_EEPROM is not defined).  If set to 0, the system will not be
+ * able to work without valid EEPROM data.  */
+#define CONFIG_HW_INFO_DEFAULT  1
 
-/* Select one of the following small display types when using the S1D13541
- * controller.  These strings effectively map to the directory path on the SD
- * card to collect the correct data. */
-#define	DISPLAY_TYPE16          "0:/Type16" /**< 4.7" 320x240 */
-#define	DISPLAY_TYPE18          "0:/Type18" /**< 4.0" 400x240 */
-#define	DISPLAY_TYPE19          "0:/Type19" /**< 4.9" 720x120 */
-#define CONFIG_DISPLAY_TYPE     DISPLAY_TYPE18
+/** Set to 1 to enable automatic platform detection, which typically uses
+ * CONFIG_HW_INFO_EEPROM */
+#define CONFIG_PLAT_AUTO        1
 
-/** Use the I2C master bus from the Epson controller (either -524 or -541) */
+/** Set one of the following to 1 to manually select te platform.  This will be
+ * used if CONFIG_PLAT_AUTO is not defined, or if no platform can be discovered
+ * at runtime.  */
+#define CONFIG_PLAT_CUCKOO      0       /**< Cuckoo board (Type4) */
+#define CONFIG_PLAT_RAVEN       0       /**< Raven board (Type11) */
+#define	CONFIG_PLAT_Z13         0       /**< Hummingbird Z1.3 */
+#define CONFIG_PLAT_Z6          1       /**< Hummingbird Z6.x */
+#define CONFIG_PLAT_Z7          0       /**< Hummingbird Z7.x */
+
+/** Each display has a type and some associated data such as a VCOM voltage and
+ * waveform library.  This can either be stored in the display EEPROM or on the
+ * SD card.  The display type may also be manually specified with
+ * CONFIG_DISPLAY_TYPE.
+ *
+ * Set one of the following values to 1 in order to choose where the data
+ * should be read from: */
+#define CONFIG_DISP_DATA_EEPROM_ONLY  0 /**< Only use display EEPROM */
+#define CONFIG_DISP_DATA_SD_ONLY      0 /**< Only use SD card */
+#define CONFIG_DISP_DATA_EEPROM_SD    1 /**< Try EEPROM first, then SD card */
+#define CONFIG_DISP_DATA_SD_EEPROM    0 /**< Try SD card first, then EEPROM */
+
+/** Set this to manually specify the display type when it could not be detected
+ * at run-time.  This is especially useful for displays without an EEPROM such
+ * as Type19.  */
+#define CONFIG_DISPLAY_TYPE     "Type18"
+
+/** Use the I2C master bus from the Epson controller (either -524 or -541).
+ * Otherwise, use the host I2C master.  */
 #define	CONFIG_I2C_ON_EPSON     0
+
+/** Set to 1 to use the power state transition demo rather than the slideshow */
+#define CONFIG_DEMO_POWERMODES  0
+
+#endif /* INCLUDE_CONFIG_H */
 
 /** Load the display data from either the display EEPROM or SD card
  * Available options:
@@ -54,12 +78,4 @@
  *  	PLWF_EEPROM_ONLY - Try EEPROM only
  *  	PLWF_SD_ONLY - Try SD card only
  *  	PLWF_SD_EEPROM - Try SD card first, then EEPROM */
-#define CONFIG_PLWF_MODE	PLWF_EEPROM_SD
-
-/** Set to 1 to use the power state transition demo rather than the slideshow */
-#define CONFIG_DEMO_POWERMODES  0
-
-/** Set to 1 to use the VCOM and hardware info stored on the PMIC eeprom **/
-#define CONFIG_USE_PSU_EEPROM   0
-
-#endif /* INCLUDE_CONFIG_H */
+/*#define CONFIG_PLWF_MODE	PLWF_EEPROM_SD*/
