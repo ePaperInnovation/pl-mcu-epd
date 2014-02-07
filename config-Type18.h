@@ -24,6 +24,9 @@
  * hardware as well as some various build-time software options.
  */
 
+/** Set to 1 if this CPU is little-endian */
+#define CONFIG_LITTLE_ENDIAN 1
+
 /** Set to 1 to use the VCOM and hardware info stored in board EEPROM **/
 #define CONFIG_HW_INFO_EEPROM   1
 
