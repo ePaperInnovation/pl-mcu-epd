@@ -45,7 +45,7 @@ struct i2c_eeprom {
 
 extern int eeprom_read(struct i2c_eeprom *eeprom, uint16_t offset,
 		       uint16_t count, uint8_t *data);
-#ifdef CONFIG_EEPROM_WRITE
+#if CONFIG_EEPROM_WRITE
 extern int eeprom_write(struct i2c_eeprom *eeprom, uint16_t offset,
 			uint16_t count, const uint8_t *data);
 #endif

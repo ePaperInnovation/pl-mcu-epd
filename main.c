@@ -47,6 +47,7 @@ int app_main(void)
 	struct platform plat;
 	int platform_type;
 
+	LOG("------------------------");
 	LOG("Starting pl-mcu-epd %s", VERSION);
 
 	/* initialise common GPIOs */
@@ -62,30 +63,31 @@ int app_main(void)
 	if (f_mount(0, &g_sdcard) != FR_OK)
 		abort_msg("Failed to initialise SD card");
 
+#if CONFIG_HW_INFO_EEPROM
 	/* hardware info EEPROM */
 	plat.hw_eeprom.i2c = &plat.host_i2c;
 	plat.hw_eeprom.i2c_addr = I2C_PSU_EEPROM_ADDR;
 	plat.hw_eeprom.type = EEPROM_24LC014;
+#endif
 
+#if CONFIG_PLAT_AUTO
 	/* determine platform from PSU eeprom contents */
 	platform_type = check_platform(&plat);
 
 	if (platform_type == EPDC_S1D13524 || platform_type == EPDC_S1D13541) {
 		plat_epson_init(&plat);
 	} else {
-		/* initialise the desired platform */
-#if PLAT_CUCKOO
+#endif
+#if CONFIG_PLAT_CUCKOO
 		plat_cuckoo_init(&plat);
-#elif PLAT_Z13
+#elif CONFIG_PLAT_Z13
 		plat_hbz13_init(&plat, CONFIG_DISPLAY_TYPE,
 				CONFIG_I2C_ON_EPSON);
-#elif PLAT_Z6 || PLAT_Z7
+#elif CONFIG_PLAT_Z6 || CONFIG_PLAT_Z7
 		plat_hbZn_init(&plat, CONFIG_DISPLAY_TYPE,
 			       CONFIG_I2C_ON_EPSON);
-#elif PLAT_RAVEN
+#elif CONFIG_PLAT_RAVEN
 		plat_raven_init(&plat);
-#else
-#error No hardware platform/display type selected
 #endif
 	}
 

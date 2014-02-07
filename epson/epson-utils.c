@@ -259,7 +259,7 @@ int epson_loadEpsonWaveform(char *path, uint32_t address)
 	uint32_t file_size;
 	int result;
 
-	LOG("Load Waveform From SD Card\n");
+	LOG("Load Waveform From SD Card");
 
 	if (f_open(&File, path, FA_READ) != FR_OK)
 		return -1;

@@ -31,6 +31,7 @@
 #include <msp430.h>
 #include "i2c.h"
 #include "i2c-eeprom.h"
+#include "config.h"
 
 /* Common platform data */
 
@@ -38,7 +39,9 @@
 
 struct platform {
 	struct i2c_adapter host_i2c;
+#if CONFIG_HW_INFO_EEPROM
 	struct i2c_eeprom hw_eeprom;
+#endif
 };
 
 #endif /* PLATFORM_H_ */

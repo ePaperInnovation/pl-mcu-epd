@@ -94,7 +94,7 @@ int eeprom_read(struct i2c_eeprom *eeprom, uint16_t offset, uint16_t count,
 	return 0;
 }
 
-#ifdef CONFIG_EEPROM_WRITE
+#if CONFIG_EEPROM_WRITE
 int eeprom_write(struct i2c_eeprom *eeprom, uint16_t offset, uint16_t count,
 		 const uint8_t *data)
 {

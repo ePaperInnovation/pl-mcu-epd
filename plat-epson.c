@@ -124,7 +124,7 @@ static int wf_from_eeprom()
 
 int check_platform(struct platform *plat)
 {
-#if CONFIG_USE_PSU_EEPROM
+#if CONFIG_HW_INFO_EEPROM
 	if (psu_data_init(&psu_data, &plat->hw_eeprom)) {
 		LOG("Failed to initialise VCOM PSU data from EEPROM");
 		return EPDC_NONE;
@@ -144,12 +144,9 @@ int plat_epson_init(struct platform *plat)
 	char * platform_path = "0:/";
 	char full_path[10];
 
-	switch (CONFIG_PLWF_MODE) {
-	case PLWF_SD_ONLY:
-	case PLWF_SD_EEPROM:
-		check(f_chdir(CONFIG_DISPLAY_TYPE) == FR_OK);
-		break;
-	}
+#if CONFIG_DISP_DATA_SD_EEPROM
+	check(f_chdir(CONFIG_DISPLAY_TYPE) == FR_OK);
+#endif
 
 	/* initialise the Epson interface */
 	epsonif_init(0, 1);
@@ -207,44 +204,40 @@ int plat_epson_init(struct platform *plat)
 	}
 
 	/* Determine which display is connected, check appropriate path exists
-	 * on the SD card in order to load the Epson initialistaion binary */
-	switch (CONFIG_PLWF_MODE) {
-	case PLWF_EEPROM_SD: /* Try EEPROM first, then SD card */
-		if (wf_init_eeprom()) {
-			LOG("Failed to load display data from EEPROM");
-			check(f_chdir(CONFIG_DISPLAY_TYPE) == FR_OK);
-		}
-		else {
-			sprintf(full_path, "%s%s", platform_path, plwf_data.info.panel_type);
-			check(f_chdir(full_path) == FR_OK);
-		}
-		break;
-	case PLWF_EEPROM_ONLY: /* EEPROM only */
+	 * on the SD card in order to load the Epson initialistaion binary. */
+
+#if CONFIG_DISP_DATA_EEPROM_ONLY
 		if (wf_init_eeprom())
 			abort_msg("Failed to load display data from EEPROM");
 		else {
 			sprintf(full_path, "%s%s", platform_path, plwf_data.info.panel_type);
 			check(f_chdir(full_path) == FR_OK);
 		}
-		break;
-	case PLWF_SD_ONLY: /* SD card only */
+#elif CONFIG_DISP_DATA_SD_ONLY
 		LOG("Loading display data from SD card");
 		check(f_chdir(CONFIG_DISPLAY_TYPE) == FR_OK);
-		break;
-	case PLWF_SD_EEPROM: /* Try SD card first, then EEPROM */
-		LOG("Loading display data from SD card");
-		if (f_chdir(CONFIG_DISPLAY_TYPE) != FR_OK) {
-			LOG("Failed to load waveform from SD card");
-			if (wf_init_eeprom())
-				abort_msg("Failed to load display data from EEPROM");
-			sprintf(full_path, "%s%s", platform_path, plwf_data.info.panel_type);
-			check(f_chdir(full_path) == FR_OK);
-		}
-		break;
-	default:
-		LOG("No valid PLWF mode set");
-		break;
+#elif CONFIG_DISP_DATA_EEPROM_SD
+	if (wf_init_eeprom()) {
+		LOG("Failed to load display data from EEPROM");
+		check(f_chdir(CONFIG_DISPLAY_TYPE) == FR_OK);
+	} else {
+		sprintf(full_path, "%s%s", platform_path,
+			plwf_data.info.panel_type);
+		check(f_chdir(full_path) == FR_OK);
 	}
+#elif CONFIG_DISP_DATA_SD_EEPROM
+	LOG("Loading display data from SD card");
+	if (f_chdir(CONFIG_DISPLAY_TYPE) != FR_OK) {
+		LOG("Failed to load waveform from SD card");
+		if (wf_init_eeprom())
+			abort_msg("Failed to load display data from EEPROM");
+		sprintf(full_path, "%s%s", platform_path,
+			plwf_data.info.panel_type);
+		check(f_chdir(full_path) == FR_OK);
+	}
+#else
+#error "No valid display data mode set"
+#endif
 
 	if (psu_data.hw_info.epdc_ref == EPDC_S1D13541) {
 #if !CONFIG_PSU_ONLY
@@ -256,52 +249,42 @@ int plat_epson_init(struct platform *plat)
 		check(s1d13541_init_pwrstate(epson) == 0);
 		check(s1d13541_init_keycode(epson) == 0);
 
-		switch (CONFIG_PLWF_MODE) {
-		case PLWF_EEPROM_SD: /* Try EEPROM first, then SD card */
-			if (wf_from_eeprom()) {
-				LOG("Failed to load waveform from EEPROM");
-				LOG("Loading waveform from SD card");
-				if (s1d13541_send_waveform())
-					abort_msg("Failed to load waveform from SD card");
-				/* read the display vcom */
-				vcom = util_read_vcom();
-				assert(vcom > 0);
-			}
-			else {
-				vcom = plwf_data.info.vcom;
-			}
-			break;
-		case PLWF_EEPROM_ONLY: /* EEPROM only */
-			if (wf_from_eeprom())
-				abort_msg("Failed to load waveform from EEPROM");
-			vcom = plwf_data.info.vcom;
-			break;
-		case PLWF_SD_ONLY: /* SD card only */
+#if CONFIG_DISP_DATA_EEPROM_ONLY
+		if (wf_from_eeprom())
+			abort_msg("Failed to load waveform from EEPROM");
+		vcom = plwf_data.info.vcom;
+#elif CONFIG_DISP_DATA_SD_ONLY
+		LOG("Loading waveform from SD card");
+		if (s1d13541_send_waveform())
+			abort_msg("Failed to load waveform from SD card");
+		/* read the display vcom */
+		vcom = util_read_vcom();
+		assert(vcom > 0);
+#elif CONFIG_DISP_DATA_EEPROM_SD
+		if (wf_from_eeprom()) {
+			LOG("Failed to load waveform from EEPROM");
 			LOG("Loading waveform from SD card");
 			if (s1d13541_send_waveform())
 				abort_msg("Failed to load waveform from SD card");
 			/* read the display vcom */
 			vcom = util_read_vcom();
 			assert(vcom > 0);
-			break;
-		case PLWF_SD_EEPROM: /* Try SD card first, then EEPROM */
-			LOG("Loading waveform from SD card");
-			if (s1d13541_send_waveform()) {
-				LOG("Failed to load waveform from SD card");
-				if (wf_from_eeprom())
-					abort_msg("Failed to load waveform from EEPROM");
-				vcom = plwf_data.info.vcom;
-			}
-			else {
-				/* read the display vcom */
-				vcom = util_read_vcom();
-				assert(vcom > 0);
-			}
-			break;
-		default:
-			LOG("No valid PLWF mode set");
-			break;
+		} else {
+			vcom = plwf_data.info.vcom;
 		}
+#elif CONFIG_DISP_DATA_SD_EEPROM
+		LOG("Loading waveform from SD card");
+		if (s1d13541_send_waveform()) {
+			LOG("Failed to load waveform from SD card");
+			if (wf_from_eeprom())
+				abort_msg("Failed to load waveform from EEPROM");
+			vcom = plwf_data.info.vcom;
+		} else {
+			/* read the display vcom */
+			vcom = util_read_vcom();
+			assert(vcom > 0);
+		}
+#endif
 
 		check(s1d13541_init_gateclr(epson) == 0);
 		check(s1d13541_init_end(epson, prev_screen) == 0);
