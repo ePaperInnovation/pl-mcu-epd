@@ -30,8 +30,7 @@
 #define LOG_TAG "vcom"
 #include "utils.h"
 
-void vcom_init(struct vcom_cal *v, const struct vcom_info *c,
-	       int32_t vgswing_ideal)
+void vcom_init(struct vcom_cal *v, const struct pl_hw_vcom_info *c)
 {
 	assert(v != NULL);
 	assert(c != NULL);
@@ -41,7 +40,7 @@ void vcom_init(struct vcom_cal *v, const struct vcom_info *c,
 	v->dac_offset = c->dac_y1 -
 		DIV_ROUND_CLOSEST((c->dac_x1 * v->dac_dy),  v->dac_dx);
 	v->swing = c->vgpos_mv - c->vgneg_mv;
-	v->swing_ideal = vgswing_ideal;
+	v->swing_ideal = c->swing_ideal;
 	v->dac_step_mv = DIV_ROUND_CLOSEST(v->dac_dy, v->dac_dx);
 }
 
