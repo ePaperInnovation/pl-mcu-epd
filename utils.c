@@ -144,8 +144,8 @@ int parser_read_file_line(FIL *f, char *buffer, int max_length)
  * Debug utilies
  */
 
-/* Defined in main-msp430.c */
-extern void assert_test(int expr, const char *abort_msg);
+/* Defined in main.c */
+extern void abort_now(const char *abort_msg);
 
 void do_abort_msg(const char *file, unsigned line,
 		  enum abort_error error, const char *message)
@@ -155,7 +155,7 @@ void do_abort_msg(const char *file, unsigned line,
 	};
 
 	fprintf(stderr, "%s, line %u: %s\n", file, line, message);
-	assert_test(0, error_str[error]);
+	abort_now(error_str[error]);
 }
 
 void dump_hex(const void *data, uint16_t len)

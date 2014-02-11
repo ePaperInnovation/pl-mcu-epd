@@ -47,34 +47,15 @@
 
 #define	ASSERT_LED              MSP430_GPIO(7,7)
 
+/* Version of pl-mcu-epd */
 static const char VERSION[] = "v006";
 
-static struct pl_gpio *g_gpio = NULL;
-
-/* Our own version of the assert test that will give us an indication
- * it has gone off.
- */
-void assert_test(int expr, const char *abort_msg)
-{
-	if (!expr) {
-		if (abort_msg)
-			fprintf(stderr, "%s", abort_msg);
-
-		while (1) {
-			if (g_gpio != NULL)
-				g_gpio->set(ASSERT_LED, 1);
-			mdelay(500);
-			if (g_gpio != NULL)
-				g_gpio->set(ASSERT_LED, 0);
-			mdelay(500);
-		}
-	}
-}
+/* Platform instance, to be passed to other modules */
+static struct platform g_plat;
 
 int app_main(void)
 {
 	FATFS sdcard;
-	struct platform plat;
 #if CONFIG_HW_INFO_EEPROM
 	struct pl_hw_info pl_hw_info;
 #endif
@@ -84,67 +65,83 @@ int app_main(void)
 	LOG("Starting pl-mcu-epd %s", VERSION);
 
 	/* initialise GPIO interface */
-	if (msp430_gpio_init(&plat.gpio))
+	if (msp430_gpio_init(&g_plat.gpio))
 		abort_msg("Failed to initialise GPIO interface");
-	g_gpio = &plat.gpio;
 
 	/* initialise common GPIOs */
-	if (ruddock2_init(&plat.gpio))
+	if (ruddock2_init(&g_plat.gpio))
 		abort_msg("Failed to initialise GPIOs");
 
 	/* initialise UART */
-	if (uart_init(&plat.gpio, BR_115200, 'N', 8, 1))
+	if (uart_init(&g_plat.gpio, BR_115200, 'N', 8, 1))
 		abort_msg("Failed to initialise UART");
 
 	/* initialise MSP430 I2C master 0 */
-	if (msp430_i2c_init(&plat.gpio, 0, &plat.host_i2c))
+	if (msp430_i2c_init(&g_plat.gpio, 0, &g_plat.host_i2c))
 		abort_msg("Failed to initialise I2C master");
 
 	/* initialise SD-card */
-	SDCard_plat = &plat;
+	SDCard_plat = &g_plat;
 	f_chdrive(0);
 	if (f_mount(0, &sdcard) != FR_OK)
 		abort_msg("Failed to initialise SD card");
 
 #if CONFIG_HW_INFO_EEPROM
 	/* hardware info EEPROM */
-	plat.hw_eeprom.i2c = &plat.host_i2c;
-	plat.hw_eeprom.i2c_addr = I2C_PSU_EEPROM_ADDR;
-	plat.hw_eeprom.type = EEPROM_24LC014;
+	g_plat.hw_eeprom.i2c = &g_plat.host_i2c;
+	g_plat.hw_eeprom.i2c_addr = I2C_PSU_EEPROM_ADDR;
+	g_plat.hw_eeprom.type = EEPROM_24LC014;
 
 #if 0 /* this currently fails, the Epson needs to be reset first */
-	if (pl_hw_info_init(&pl_hw_info, &plat.hw_eeprom))
+	if (pl_hw_info_init(&pl_hw_info, &g_plat.hw_eeprom))
 		abort_msg("Failed to read hardware info EEPROM");
 #endif
 #endif
 
 #if CONFIG_PLAT_AUTO
 	/* determine platform from PSU eeprom contents */
-	platform_type = check_platform(&plat);
+	platform_type = check_platform(&g_plat);
 
 	if (platform_type == EPDC_S1D13524 || platform_type == EPDC_S1D13541) {
-		plat_epson_init(&plat);
+		plat_epson_init(&g_plat);
 	} else {
 #endif
 #if CONFIG_PLAT_CUCKOO
-		plat_cuckoo_init(&plat);
+		plat_cuckoo_init(&g_plat);
 #elif CONFIG_PLAT_Z13
-		plat_hbz13_init(&plat, CONFIG_DISPLAY_TYPE,
+		plat_hbz13_init(&g_plat, CONFIG_DISPLAY_TYPE,
 				CONFIG_I2C_ON_EPSON);
 #elif CONFIG_PLAT_Z6 || CONFIG_PLAT_Z7
-		plat_hbZn_init(&plat, CONFIG_DISPLAY_TYPE,
+		plat_hbZn_init(&g_plat, CONFIG_DISPLAY_TYPE,
 			       CONFIG_I2C_ON_EPSON);
 #elif CONFIG_PLAT_RAVEN
-		plat_raven_init(&plat);
+		plat_raven_init(&g_plat);
 #endif
 	}
 
 	/* Do not return from app_main */
-	do {
+	for (;;) {
+		/* ToDo: go to sleep */
 		udelay(1);
-	} while(1);
+	}
 
 #if 0 /* causes a compiler warning */
 	return 0;
 #endif
+}
+
+/* When something fatal has happened, this is called which prints a message on
+ * stderr and flashes the ASSERT LED.
+ */
+void abort_now(const char *abort_msg)
+{
+	if (abort_msg != NULL)
+		fprintf(stderr, "%s", abort_msg);
+
+	for (;;) {
+		g_plat.gpio.set(ASSERT_LED, 1);
+		mdelay(500);
+		g_plat.gpio.set(ASSERT_LED, 0);
+		mdelay(500);
+	}
 }
