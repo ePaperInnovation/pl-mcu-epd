@@ -33,27 +33,6 @@
 #include "assert.h"
 #include "utils.h"
 
-void util_id_pins(short *gpio, int pin_count)
-{
-	int pin;
-	int clk;
-
-	for (pin = 0; pin < pin_count; pin++)
-	{
-		gpio_request(gpio[pin], PIN_GPIO | PIN_OUTPUT | PIN_INIT_LOW);
-	}
-
-	while (1) {
-		for (pin = 0; pin < pin_count; pin++)
-		{
-			for (clk = 0; clk <= pin; clk++) {
-				gpio_set_value_hi(gpio[pin]);
-				gpio_set_value_lo(gpio[pin]);
-			}
-		}
-	}
-}
-
 /* ----------------------------------------------------------------------------
  * Lightweight string parser
  */
