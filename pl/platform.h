@@ -28,6 +28,7 @@
 #ifndef PL_PLATFORM_H
 #define PL_PLATFORM_H 1
 
+#include <pl/gpio.h>
 #include <pl/i2c.h>
 #include "i2c-eeprom.h"
 #include "config.h"
@@ -37,6 +38,7 @@
 #define I2C_PSU_EEPROM_ADDR  0x50
 
 struct platform {
+	struct pl_gpio gpio;
 	struct pl_i2c host_i2c;
 #if CONFIG_HW_INFO_EEPROM
 	struct i2c_eeprom hw_eeprom;
