@@ -24,12 +24,17 @@
  */
 
 #include <pl/platform.h>
+#include <pl/hwinfo.h>
+#include <stdio.h>
 #include "i2c-eeprom.h"
 #include "assert.h"
 #include "types.h"
 #include "config.h"
 #include "FatFs/ff.h"
 #include "msp430-i2c.h"
+#include "msp430-gpio.h"
+#include "msp430-sdcard.h"
+#include "msp430-uart.h"
 #include "plat-hbz13.h"
 #include "plat-cuckoo.h"
 #include "plat-hbz6.h"
@@ -40,26 +45,63 @@
 #define LOG_TAG "main"
 #include "utils.h"
 
+#define	ASSERT_LED              MSP430_GPIO(7,7)
+
 static const char VERSION[] = "v006";
+
+static struct pl_gpio *g_gpio = NULL;
+
+/* Our own version of the assert test that will give us an indication
+ * it has gone off.
+ */
+void assert_test(int expr, const char *abort_msg)
+{
+	if (!expr) {
+		if (abort_msg)
+			fprintf(stderr, "%s", abort_msg);
+
+		while (1) {
+			if (g_gpio != NULL)
+				g_gpio->set(ASSERT_LED, 1);
+			mdelay(500);
+			if (g_gpio != NULL)
+				g_gpio->set(ASSERT_LED, 0);
+			mdelay(500);
+		}
+	}
+}
 
 int app_main(void)
 {
 	FATFS sdcard;
 	struct platform plat;
+#if CONFIG_HW_INFO_EEPROM
+	struct pl_hw_info pl_hw_info;
+#endif
 	int platform_type;
 
 	LOG("------------------------");
 	LOG("Starting pl-mcu-epd %s", VERSION);
 
+	/* initialise GPIO interface */
+	if (msp430_gpio_init(&plat.gpio))
+		abort_msg("Failed to initialise GPIO interface");
+	g_gpio = &plat.gpio;
+
 	/* initialise common GPIOs */
-	if (ruddock2_init())
+	if (ruddock2_init(&plat.gpio))
 		abort_msg("Failed to initialise GPIOs");
 
+	/* initialise UART */
+	if (uart_init(&plat.gpio, BR_115200, 'N', 8, 1))
+		abort_msg("Failed to initialise UART");
+
 	/* initialise MSP430 I2C master 0 */
-	if (msp430_i2c_init(0, &plat.host_i2c))
+	if (msp430_i2c_init(&plat.gpio, 0, &plat.host_i2c))
 		abort_msg("Failed to initialise I2C master");
 
 	/* initialise SD-card */
+	SDCard_plat = &plat;
 	f_chdrive(0);
 	if (f_mount(0, &sdcard) != FR_OK)
 		abort_msg("Failed to initialise SD card");
@@ -69,6 +111,11 @@ int app_main(void)
 	plat.hw_eeprom.i2c = &plat.host_i2c;
 	plat.hw_eeprom.i2c_addr = I2C_PSU_EEPROM_ADDR;
 	plat.hw_eeprom.type = EEPROM_24LC014;
+
+#if 0 /* this currently fails, the Epson needs to be reset first */
+	if (pl_hw_info_init(&pl_hw_info, &plat.hw_eeprom))
+		abort_msg("Failed to read hardware info EEPROM");
+#endif
 #endif
 
 #if CONFIG_PLAT_AUTO
