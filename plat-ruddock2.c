@@ -1,7 +1,7 @@
 /*
   Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2013 Plastic Logic Limited
+  Copyright (C) 2013, 2014 Plastic Logic Limited
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -19,165 +19,181 @@
 /*
  * plat-ruddock2.c -- initialisation code/drivers for Ruddock2 mainboard
  *
- * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ * Authors:
+ *   Nick Terry <nick.terry@plasticlogic.com>
+ *   Guillaume Tucker <guillaume.tucker@plasticlogic.com>
  *
  */
 
-#include "types.h"
+#include <pl/platform.h>
+#include <pl/gpio.h>
+#include <stdint.h>
+#include "types.h" /* ARRAY_SIZE */
 #include "msp430-gpio.h"
 #include "plat-ruddock2.h"
 
 /* Ruddock2 board EEPROM address */
-#define	I2C_ID_EEPROM	0x52
+#define	I2C_ID_EEPROM 0x52
 
 /* Navigation buttons */
-#define	SW1			GPIO(2,0)
-#define	SW2			GPIO(2,1)
-#define	SW3			GPIO(2,2)
-#define	SW4			GPIO(2,3)
-#define	SW5			GPIO(2,4)
+#define	SW1         MSP430_GPIO(2,0)
+#define	SW2         MSP430_GPIO(2,1)
+#define	SW3         MSP430_GPIO(2,2)
+#define	SW4         MSP430_GPIO(2,3)
+#define	SW5         MSP430_GPIO(2,4)
 
-/* User leds */
-#define	LED1		GPIO(8,0)
-#define	LED2		GPIO(8,1)
-#define	LED3		GPIO(8,2)
-#define	LED4		GPIO(8,3)
+/* User LEDs */
+#define	LED1        MSP430_GPIO(8,0)
+#define	LED2        MSP430_GPIO(8,1)
+#define	LED3        MSP430_GPIO(8,2)
+#define	LED4        MSP430_GPIO(8,3)
+
+/* System LEDs */
+#define	ASSERT_LED  MSP430_GPIO(7,7)
 
 /* User selection switches */
-#define	SEL1		GPIO(8,4)
-#define	SEL2		GPIO(8,5)
-#define	SEL3		GPIO(8,6)
-#define	SEL4		GPIO(8,7)
+#define	SEL1        MSP430_GPIO(8,4)
+#define	SEL2        MSP430_GPIO(8,5)
+#define	SEL3        MSP430_GPIO(8,6)
+#define	SEL4        MSP430_GPIO(8,7)
 
 /* Parallel interface */
-#define	HDB0		GPIO(4,0)
-#define	HDB1		GPIO(4,1)
-#define	HDB2		GPIO(4,2)
-#define	HDB3		GPIO(4,3)
-#define	HDB4		GPIO(4,4)
-#define	HDB5		GPIO(4,5)
-#define	HDB6		GPIO(4,6)
-#define	HDB7		GPIO(4,7)
-
-#define	HDB8		GPIO(6,0)
-#define	HDB9		GPIO(6,1)
-#define	HDB10		GPIO(6,2)
-#define	HDB11		GPIO(6,3)
-#define	HDB12		GPIO(6,4)
-#define	HDB13		GPIO(6,5)
-#define	HDB14		GPIO(6,6)
-#define	HDB15		GPIO(6,7)
+#define	HDB0        MSP430_GPIO(4,0)
+#define	HDB1        MSP430_GPIO(4,1)
+#define	HDB2        MSP430_GPIO(4,2)
+#define	HDB3        MSP430_GPIO(4,3)
+#define	HDB4        MSP430_GPIO(4,4)
+#define	HDB5        MSP430_GPIO(4,5)
+#define	HDB6        MSP430_GPIO(4,6)
+#define	HDB7        MSP430_GPIO(4,7)
+#define	HDB8        MSP430_GPIO(6,0)
+#define	HDB9        MSP430_GPIO(6,1)
+#define	HDB10       MSP430_GPIO(6,2)
+#define	HDB11       MSP430_GPIO(6,3)
+#define	HDB12       MSP430_GPIO(6,4)
+#define	HDB13       MSP430_GPIO(6,5)
+#define	HDB14       MSP430_GPIO(6,6)
+#define	HDB15       MSP430_GPIO(6,7)
 
 /* TFT interface extensions */
-#define	TFT_HSYNC	GPIO(7,2)
-#define	TFT_VSYNC	GPIO(7,3)
-#define	TFT_DE		GPIO(7,4)
-#define	TFT_CLK		GPIO(7,5)
+#define	TFT_HSYNC   MSP430_GPIO(7,2)
+#define	TFT_VSYNC   MSP430_GPIO(7,3)
+#define	TFT_DE      MSP430_GPIO(7,4)
+#define	TFT_CLK     MSP430_GPIO(7,5)
 
 /* General bits */
-#define	RESET		GPIO(5,0)
-#define	SHUTDOWN 	GPIO(5,1)
+#define	RESET       MSP430_GPIO(5,0)
+#define	SHUTDOWN    MSP430_GPIO(5,1)
 
-#define	PMIC_FLT	GPIO(2,5)
-#define	HIRQ		GPIO(2,6)
+/* HV-PMIC things */
+#define	PMIC_FLT    MSP430_GPIO(2,5)
+#define	HIRQ        MSP430_GPIO(2,6)
 
-static int led_state = 0;
+static uint8_t led_state = 0;
 
-static int parallel_interface[] = {
-	HDB0, HDB1, HDB2, HDB3,	HDB4, HDB5,	HDB6, HDB7,
-	HDB8, HDB9,	HDB10,HDB11,HDB12,HDB13,HDB14,HDB15,
-	TFT_HSYNC, TFT_VSYNC, TFT_DE, TFT_CLK
-};
-
-static void ruddock2_leds_update(int leds)
+static void ruddock2_leds_update(struct pl_gpio *gpio, uint8_t leds)
 {
-	gpio_set_value(LED1, (leds & RUDDOCK2_LED1));
-	gpio_set_value(LED2, (leds & RUDDOCK2_LED2));
-	gpio_set_value(LED3, (leds & RUDDOCK2_LED3));
-	gpio_set_value(LED4, (leds & RUDDOCK2_LED4));
+	gpio->set(LED1, (leds & RUDDOCK2_LED1));
+	gpio->set(LED2, (leds & RUDDOCK2_LED2));
+	gpio->set(LED3, (leds & RUDDOCK2_LED3));
+	gpio->set(LED4, (leds & RUDDOCK2_LED4));
 }
 
-int ruddock2_init(void)
+int ruddock2_init(struct pl_gpio *gpio)
 {
-	int gpio;
+	static const struct pl_gpio_config gpios[] = {
+		/* Navigation buttons */
+		{ SW1, PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
+		{ SW2, PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
+		{ SW3, PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
+		{ SW4, PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
+		{ SW5, PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
 
-	/* Navigation buttons */
-	gpio_request(SW1, PIN_GPIO | PIN_INPUT | PIN_INTERRUPT | PIN_FALLING_EDGE);
-	gpio_request(SW2, PIN_GPIO | PIN_INPUT | PIN_INTERRUPT | PIN_FALLING_EDGE);
-	gpio_request(SW3, PIN_GPIO | PIN_INPUT | PIN_INTERRUPT | PIN_FALLING_EDGE);
-	gpio_request(SW4, PIN_GPIO | PIN_INPUT | PIN_INTERRUPT | PIN_FALLING_EDGE);
-	gpio_request(SW5, PIN_GPIO | PIN_INPUT | PIN_INTERRUPT | PIN_FALLING_EDGE);
+		/* User leds */
+		{ LED1, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+		{ LED2, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+		{ LED3, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+		{ LED4, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
 
-	/* User leds */
-	gpio_request(LED1, PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH);
-	gpio_request(LED2, PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH);
-	gpio_request(LED3, PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH);
-	gpio_request(LED4, PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH);
+		/* Assertion LED */
+		{ ASSERT_LED, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
 
-	/* User selection switches */
-	gpio_request(SEL1, PIN_GPIO | PIN_INPUT | PIN_PULL_UP);
-	gpio_request(SEL2, PIN_GPIO | PIN_INPUT | PIN_PULL_UP);
-	gpio_request(SEL3, PIN_GPIO | PIN_INPUT | PIN_PULL_UP);
-	gpio_request(SEL4, PIN_GPIO | PIN_INPUT | PIN_PULL_UP);
+		/* User selection switches */
+		{ SEL1, PL_GPIO_INPUT | PL_GPIO_PU },
+		{ SEL2, PL_GPIO_INPUT | PL_GPIO_PU },
+		{ SEL3, PL_GPIO_INPUT | PL_GPIO_PU },
+		{ SEL4, PL_GPIO_INPUT | PL_GPIO_PU },
 
-	/* Input pins that will move to new owner */
-	gpio_request(PMIC_FLT, PIN_GPIO | PIN_INPUT | PIN_PULL_UP);
-	gpio_request(HIRQ,     PIN_GPIO | PIN_INPUT | PIN_PULL_UP);
+		/* Input pins that will move to new owner */
+		{ PMIC_FLT, PL_GPIO_INPUT | PL_GPIO_PU },
+		{ HIRQ, PL_GPIO_INPUT | PL_GPIO_PU },
+		{ SHUTDOWN, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+	};
+	static const uint16_t parallel_interface[] = {
+		HDB0, HDB1, HDB2, HDB3,	HDB4, HDB5, HDB6, HDB7,
+		HDB8, HDB9, HDB10, HDB11, HDB12, HDB13, HDB14, HDB15,
+		TFT_HSYNC, TFT_VSYNC, TFT_DE, TFT_CLK,
+	};
+	unsigned i;
 
-	gpio_request(SHUTDOWN, 	PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH);
+	if (pl_gpio_config_list(gpio, gpios, ARRAY_SIZE(gpios)))
+		return -1;
 
 	/* parallel interface signals, define as low outputs for now */
-	for (gpio = 0; gpio < ARRAY_SIZE(parallel_interface); gpio++)
-	{
-		gpio_request(parallel_interface[gpio], PIN_GPIO | PIN_OUTPUT | PIN_INIT_LOW);
+	for (i = 0; i < ARRAY_SIZE(parallel_interface); ++i) {
+		if (gpio->config(parallel_interface[i],
+				 PL_GPIO_OUTPUT | PL_GPIO_INIT_L))
+			return -1;
 	}
 
-	ruddock2_leds_update(led_state);
-
-#if 0
-	/* Test program. Tests LEDS, navigation and selection switches */
-	{
-		extern u8 port2_int_summary;
-		u8 bit;
-		u8 last_sel = ~ruddock2_selswitch_read();
-		u8 last_int_summary = ~port2_int_summary;
-		int test1 = 0;
-		int test2 = 0;
-		while (1)
-		{
-			u8 sel = ruddock2_selswitch_read();
-			if (sel != last_sel)
-			{
-				printk("Sel: 0x%02X\n", sel);
-				last_sel = sel;
-				if (sel == 0x0F) {
-					test1 = 1;
-				}
-			}
-			for (bit = 0x08; bit; bit >>= 1)
-			{
-				if (port2_int_summary != last_int_summary)
-				{
-					printk("Int: 0x%02X\n", port2_int_summary);
-					last_int_summary = port2_int_summary;
-					if (port2_int_summary == 0x1F) {
-						test2 = 1;
-					}
-				}
-				ruddock2_leds_update(bit);
-				mdelay(500);
-			}
-			if (test1 && test2) {
-				printk("IO tests done\n");
-				break;
-			}
-		}
-	}
-#endif
+	ruddock2_leds_update(gpio, led_state);
 
 	return 0;
 }
 
+#if 0
+static void test(void)
+{
+	/* Test program. Tests LEDS, navigation and selection switches */
+	extern u8 port2_int_summary;
+	u8 bit;
+	u8 last_sel = ~ruddock2_selswitch_read();
+	u8 last_int_summary = ~port2_int_summary;
+	int test1 = 0;
+	int test2 = 0;
+	while (1)
+	{
+		u8 sel = ruddock2_selswitch_read();
+		if (sel != last_sel)
+		{
+			printk("Sel: 0x%02X\n", sel);
+			last_sel = sel;
+			if (sel == 0x0F) {
+				test1 = 1;
+			}
+		}
+		for (bit = 0x08; bit; bit >>= 1)
+		{
+			if (port2_int_summary != last_int_summary)
+			{
+				printk("Int: 0x%02X\n", port2_int_summary);
+				last_int_summary = port2_int_summary;
+				if (port2_int_summary == 0x1F) {
+					test2 = 1;
+				}
+			}
+			ruddock2_leds_update(bit);
+			mdelay(500);
+		}
+		if (test1 && test2) {
+			printk("IO tests done\n");
+			break;
+		}
+	}
+}
+#endif
+
+#if 0 /* not used anywhere */
 int ruddock2_selswitch_read(void)
 {
 	int settings = 0;
@@ -199,3 +215,4 @@ void ruddock2_led_set(int led, int state)
 
 	ruddock2_leds_update(led_state);
 }
+#endif

@@ -46,7 +46,7 @@
 #include "epson/epson-utils.h"
 #include "slideshow.h"
 
-#define	EPSON_CS_0		GPIO(3,6)
+#define	EPSON_CS_0              MSP430_GPIO(3,6)
 
 /* i2c addresses for MAXIM PMIC and DAC */
 #define I2C_DAC_ADDR	0x39
@@ -63,15 +63,15 @@ static struct s1d135xx *epson;
 static struct vcom_cal vcom_calibration;
 
 /* No PSU calibration data so always use defaults */
-static struct vcom_info psu_calibration = {
+static struct pl_hw_vcom_info def_vcom_info = {
 	.dac_x1 = 63,
 	.dac_y1 = 4586,
 	.dac_x2 = 189,
 	.dac_y2 = 9800,
 	.vgpos_mv = 27770,
 	.vgneg_mv = -41520,
+	.swing_ideal = 70000,
 };
-#define VCOM_VGSWING 70000
 
 static int power_up(void)
 {
@@ -115,10 +115,10 @@ int plat_cuckoo_init(struct platform *plat)
 
 	/* initialise the Epson interface */
 	/* Note slower clock speed because of long cables in wiring harness. */
-	epsonif_init(0, 2);
+	epsonif_init(&plat->gpio, 0, 2);
 
 	/* define gpio's required for operation */
-	check(gpio_request(EPSON_CS_0,	PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH) == 0);
+	check(!plat->gpio.config(EPSON_CS_0, PL_GPIO_OUTPUT | PL_GPIO_INIT_H));
 
 	/* initialise the Epson controller */
 	check(s1d13524_init(EPSON_CS_0, &epson)==0);
@@ -127,7 +127,7 @@ int plat_cuckoo_init(struct platform *plat)
 	check(epson_i2c_init(epson, &i2c)==0);
 
 	/* initialise the vcom calibration data */
-	vcom_init(&vcom_calibration, &psu_calibration, VCOM_VGSWING);
+	vcom_init(&vcom_calibration, &def_vcom_info);
 
 	/* intialise the PMIC */
 	max17135_init(&i2c, I2C_PMIC_ADDR, &pmic_info);

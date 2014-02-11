@@ -33,12 +33,15 @@
  */
 
 #include <pl/platform.h>
+#include <pl/gpio.h>
 #include <pl/i2c.h>
+#include <pl/hwinfo.h>
 #include <stdio.h>
 #include <string.h>
 #include "types.h"
 #include "assert.h"
 #include "msp430-gpio.h"
+#include "msp430-spi.h"
 #include "vcom.h"
 #include "msp430-i2c.h"
 #include "FatFs/ff.h"
@@ -49,7 +52,6 @@
 #include "epson/epson-if.h"
 #include "slideshow.h"
 #include "i2c-eeprom.h"
-#include "psu-data.h"
 #include "config.h"
 #include "plat-hbz6.h"
 
@@ -58,12 +60,12 @@
 
 #define CONFIG_PLAT_RUDDOCK2	1
 #if CONFIG_PLAT_RUDDOCK2
-#define B_HWSW_CTRL	GPIO(1,2)
-#define B_POK		GPIO(1,0)
-#define B_PMIC_EN	GPIO(1,1)
-#define EPSON_CS_0	GPIO(3,6)
-#define EPSON_CLK_EN 	GPIO(1,6)
-#define EPSON_3V3_EN 	GPIO(1,7)
+#define B_HWSW_CTRL     MSP430_GPIO(1,2)
+#define B_POK           MSP430_GPIO(1,0)
+#define B_PMIC_EN       MSP430_GPIO(1,1)
+#define EPSON_CS_0      MSP430_GPIO(3,6)
+#define EPSON_CLK_EN    MSP430_GPIO(1,6)
+#define EPSON_3V3_EN    MSP430_GPIO(1,7)
 #endif
 
 /* 1 to cycle power supplies only, no display update (testing only) */
@@ -93,29 +95,28 @@ static int run_std_slideshow(struct s1d135xx *epson);
 
 #if CONFIG_HW_INFO_DEFAULT
 /* Fallback VCOM calibration data if EEPROM fails */
-static const struct vcom_info DEF_VCOM_PSU = {
+static const struct pl_hw_vcom_info def_vcom_info = {
 	.dac_x1 = 127,
 	.dac_y1 = 4172,
 	.dac_x2 = 381,
 	.dac_y2 = 12490,
 	.vgpos_mv = 25080,
 	.vgneg_mv = -32300,
+	.swing_ideal = 56886,
 };
 #endif
-
-#define VCOM_VGSWING 56886
 
 /* Board specific power up control */
 static int power_up(void)
 {
-	gpio_set_value(B_HWSW_CTRL, false);
-	gpio_set_value(B_PMIC_EN, true);
+	g_plat->gpio.set(B_HWSW_CTRL, false);
+	g_plat->gpio.set(B_PMIC_EN, true);
 
 	do {
 		mdelay(1);
-	} while (!gpio_get_value(B_POK));
+	} while (!g_plat->gpio.get(B_POK));
 
-	gpio_set_value(B_HWSW_CTRL, true);
+	g_plat->gpio.set(B_HWSW_CTRL, true);
 
 	return 0;
 }
@@ -123,8 +124,8 @@ static int power_up(void)
 /* Board specific power down control */
 static int power_down(void)
 {
-	gpio_set_value(B_HWSW_CTRL, false);
-	gpio_set_value(B_PMIC_EN, false);
+	g_plat->gpio.set(B_HWSW_CTRL, false);
+	g_plat->gpio.set(B_PMIC_EN, false);
 
 	return 0;
 }
@@ -136,9 +137,9 @@ static int pwrstate_off_mode(void)
 {
 	s1d13541_pwrstate_sleep(epson);
 	/* Turn off epson clock and 3v3 */
-	gpio_set_value(EPSON_CLK_EN, false);
-	gpio_set_value(EPSON_3V3_EN, false);
-	gpio_set_value(EPSON_CS_0, false);
+	g_plat->gpio.set(EPSON_CLK_EN, false);
+	g_plat->gpio.set(EPSON_3V3_EN, false);
+	g_plat->gpio.set(EPSON_CS_0, false);
 	return 0;
 }
 
@@ -147,7 +148,7 @@ static int pwrstate_sleep_mode(void)
 {
 	s1d13541_pwrstate_sleep(epson);
 	/* Turn off epson clock */
-	gpio_set_value(EPSON_CLK_EN, false);
+	g_plat->gpio.set(EPSON_CLK_EN, false);
 
 	return 0;
 }
@@ -156,7 +157,7 @@ static int pwrstate_sleep_mode(void)
 static int pwrstate_standby_mode(void)
 {
 	/* Enable epson 3v3 clock */
-	gpio_set_value(EPSON_CLK_EN, true);
+	g_plat->gpio.set(EPSON_CLK_EN, true);
 	s1d13541_pwrstate_standby(epson);
 
 	return 0;
@@ -166,7 +167,7 @@ static int pwrstate_standby_mode(void)
 static int pwrstate_run_mode(void)
 {
 	/* Enable epson clock */
-	gpio_set_value(EPSON_CLK_EN, true);
+	g_plat->gpio.set(EPSON_CLK_EN, true);
 	s1d13541_pwrstate_run(epson);
 
 	return 0;
@@ -175,9 +176,9 @@ static int pwrstate_run_mode(void)
 static int pwrstate_poweron_mode(void)
 {
 	/* Re-enable power, clock and chip select */
-	gpio_set_value(EPSON_3V3_EN, true);
-	gpio_set_value(EPSON_CLK_EN, true);
-	gpio_set_value(EPSON_CS_0, true);
+	g_plat->gpio.set(EPSON_3V3_EN, true);
+	g_plat->gpio.set(EPSON_CLK_EN, true);
+	g_plat->gpio.set(EPSON_CS_0, true);
 
 	/* Need to re-init epson chip */
 	check(s1d13541_init_prodcode(epson) == 0);
@@ -292,7 +293,15 @@ static int wf_from_eeprom()
 int plat_hbZn_init(struct platform *plat, const char *platform_path,
 		   int i2c_on_epson)
 {
-	struct psu_data psu_data;
+	static const struct pl_gpio_config gpios[] = {
+		{ B_HWSW_CTRL,  PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
+		{ B_PMIC_EN,    PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
+		{ B_POK,        PL_GPIO_INPUT                   },
+		{ EPSON_CS_0,   PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+		{ EPSON_3V3_EN, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+		{ EPSON_CLK_EN, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+	};
+	struct pl_hw_info pl_hw_info;
 	int ret = 0;
 	short previous;
 	int vcom;
@@ -306,19 +315,12 @@ int plat_hbZn_init(struct platform *plat, const char *platform_path,
 		abort_msg("Failed to find platform directory");
 
 	/* initialise the Epson interface */
-	epsonif_init(0, 1);
+	epsonif_init(&plat->gpio, 0, 1);
 
 	s1d135xx_set_wfid_table(EPDC_S1D13541);
 
 	/* define gpio's required for operation */
-	ret |= gpio_request(B_HWSW_CTRL,PIN_GPIO | PIN_OUTPUT | PIN_INIT_LOW);
-	ret |= gpio_request(B_PMIC_EN,	PIN_GPIO | PIN_OUTPUT | PIN_INIT_LOW);
-	ret |= gpio_request(B_POK, 	  	PIN_GPIO | PIN_INPUT);
-	ret |= gpio_request(EPSON_CS_0,	PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH);
-	ret |= gpio_request(EPSON_3V3_EN, PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH);
-	ret |= gpio_request(EPSON_CLK_EN, PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH);
-
-	if (ret)
+	if (pl_gpio_config_list(&plat->gpio, gpios, ARRAY_SIZE(gpios)))
 		return -1;
 
 #if !CONFIG_PSU_ONLY
@@ -384,20 +386,25 @@ int plat_hbZn_init(struct platform *plat, const char *platform_path,
 	check(s1d13541_init_end(epson, prev_screen) == 0);
 #endif
 
+#if CONFIG_HW_INFO_EEPROM
 	/* read the psu calibration data and ready it for use */
-	if (psu_data_init(&psu_data, &g_plat->hw_eeprom)) {
+	if (pl_hw_info_init(&pl_hw_info, &g_plat->hw_eeprom)) {
 #if CONFIG_HW_INFO_DEFAULT
 		LOG("WARNING: Using hard-coded default VCOM PSU values");
-		psu_data.version = PSU_DATA_VERSION;
-		memcpy(&psu_data.vcom_info, &DEF_VCOM_PSU,
-		       sizeof psu_data.vcom_info);
+		pl_hw_info.version = PL_HW_INFO_VERSION;
+		memcpy(&pl_hw_info.vcom, &def_vcom_info,
+		       sizeof pl_hw_info.vcom);
 #else
 		abort_msg("Failed to initialise VCOM PSU data from EEPROM");
 #endif
 	}
+#else /* !CONFIG_HW_INFO_EEPROM */
+	pl_hw_info.version = PL_HW_INFO_VERSION;
+	memcpy(&pl_hw_info.vcom, &def_vcom_info, sizeof pl_hw_info.vcom);
+#endif
 
 	/* initialise the VCOM */
-	vcom_init(&vcom_calibration, &psu_data.vcom_info, VCOM_VGSWING);
+	vcom_init(&vcom_calibration, &pl_hw_info.vcom);
 
 	/* select the controller for future operations */
 	s1d135xx_select(epson, &previous);

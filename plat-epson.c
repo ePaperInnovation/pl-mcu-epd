@@ -26,6 +26,7 @@
 
 #include <pl/platform.h>
 #include <pl/i2c.h>
+#include <pl/hwinfo.h>
 #include <stdio.h>
 #include <string.h>
 #include "types.h"
@@ -46,7 +47,6 @@
 #include "temp-lm75.h"
 #include "slideshow.h"
 #include "i2c-eeprom.h"
-#include "psu-data.h"
 #include "config.h"
 
 #define LOG_TAG "platform"
@@ -54,12 +54,12 @@
 
 #define CONFIG_PLAT_RUDDOCK2	1
 #if CONFIG_PLAT_RUDDOCK2
-#define B_HWSW_CTRL	GPIO(1,2)
-#define B_POK		GPIO(1,0)
-#define B_PMIC_EN	GPIO(1,1)
-#define EPSON_CS_0	GPIO(3,6)
-#define EPSON_CLK_EN 	GPIO(1,6)
-#define EPSON_3V3_EN 	GPIO(1,7)
+#define B_HWSW_CTRL             MSP430_GPIO(1,2)
+#define B_POK                   MSP430_GPIO(1,0)
+#define B_PMIC_EN               MSP430_GPIO(1,1)
+#define EPSON_CS_0              MSP430_GPIO(3,6)
+#define EPSON_CLK_EN            MSP430_GPIO(1,6)
+#define EPSON_3V3_EN            MSP430_GPIO(1,7)
 #endif
 
 /* 1 to cycle power supplies only, no display update (testing only) */
@@ -83,19 +83,20 @@ static struct i2c_eeprom plwf_eeprom = {
 };
 static struct plwf_data plwf_data;
 
-static struct psu_data psu_data;
+static struct pl_hw_info pl_hw_info;
 
+#if CONFIG_HW_INFO_DEFAULT
 /* Fallback VCOM calibration data if PSU EEPROM corrupt */
-static const struct vcom_info DEF_VCOM_PSU = {
+static const struct pl_hw_vcom_info def_vcom_info = {
 	.dac_x1 = 127,
 	.dac_y1 = 4172,
 	.dac_x2 = 381,
 	.dac_y2 = 12490,
 	.vgpos_mv = 25080,
 	.vgneg_mv = -32300,
+	.swing_ideal = 56886,
 };
-
-#define VCOM_VGSWING 56886
+#endif
 
 static int wf_init_eeprom()
 {
@@ -125,12 +126,12 @@ static int wf_from_eeprom()
 int check_platform(struct platform *plat)
 {
 #if CONFIG_HW_INFO_EEPROM
-	if (psu_data_init(&psu_data, &plat->hw_eeprom)) {
+	if (pl_hw_info_init(&pl_hw_info, &plat->hw_eeprom)) {
 		LOG("Failed to initialise VCOM PSU data from EEPROM");
 		return EPDC_NONE;
 	}
 
-	return psu_data.hw_info.epdc_ref;
+	return pl_hw_info.board.epdc_ref;
 #else
 	return EPDC_NONE;
 #endif
@@ -149,27 +150,30 @@ int plat_epson_init(struct platform *plat)
 #endif
 
 	/* initialise the Epson interface */
-	epsonif_init(0, 1);
+	epsonif_init(&plat->gpio, 0, 1);
 
 	/* Set the waveform id table for the current controller */
-	s1d135xx_set_wfid_table(psu_data.hw_info.epdc_ref);
+	s1d135xx_set_wfid_table(pl_hw_info.board.epdc_ref);
 
 	/* define GPIOs required for operation */
-	ret |= gpio_request(EPSON_CS_0,	PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH);
-
-	if (psu_data.hw_info.epdc_ref == EPDC_S1D13541) {
-		ret |= gpio_request(B_HWSW_CTRL,PIN_GPIO | PIN_OUTPUT | PIN_INIT_LOW);
-		ret |= gpio_request(B_PMIC_EN,	PIN_GPIO | PIN_OUTPUT | PIN_INIT_LOW);
-		ret |= gpio_request(B_POK, 	  	PIN_GPIO | PIN_INPUT);
-		ret |= gpio_request(EPSON_3V3_EN, PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH);
-		ret |= gpio_request(EPSON_CLK_EN, PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH);
-	}
-
-	if (ret)
+	if (plat->gpio.config(EPSON_CS_0, PL_GPIO_OUTPUT | PL_GPIO_INIT_H))
 		return -1;
 
+	if (pl_hw_info.board.epdc_ref == EPDC_S1D13541) {
+		static const struct pl_gpio_config gpios[] = {
+			{ B_HWSW_CTRL,  PL_GPIO_OUTPUT |  PL_GPIO_INIT_L },
+			{ B_PMIC_EN,    PL_GPIO_OUTPUT |  PL_GPIO_INIT_L },
+			{ B_POK,        PL_GPIO_INPUT                    },
+			{ EPSON_3V3_EN, PL_GPIO_OUTPUT |  PL_GPIO_INIT_H },
+			{ EPSON_CLK_EN, PL_GPIO_OUTPUT |  PL_GPIO_INIT_H },
+		};
+
+		if (pl_gpio_config_list(&plat->gpio, gpios, ARRAY_SIZE(gpios)))
+			return -1;
+	}
+
 	/* initialise the Epson controller */
-	switch (psu_data.hw_info.epdc_ref) {
+	switch (pl_hw_info.board.epdc_ref) {
 	case EPDC_NONE:
 		break;
 	case EPDC_S1D13524:
@@ -187,7 +191,7 @@ int plat_epson_init(struct platform *plat)
 		break;
 	}
 
-	switch(psu_data.hw_info.i2c_mode) {
+	switch(pl_hw_info.board.i2c_mode) {
 	case 1: /* MSP430 */
 		/* No action taken, i2c already initialised for msp430 */
 		break;
@@ -239,7 +243,7 @@ int plat_epson_init(struct platform *plat)
 #error "No valid display data mode set"
 #endif
 
-	if (psu_data.hw_info.epdc_ref == EPDC_S1D13541) {
+	if (pl_hw_info.board.epdc_ref == EPDC_S1D13541) {
 #if !CONFIG_PSU_ONLY
 		check(s1d13541_early_init_end(epson, prev_screen) == 0);
 		check(s1d13541_init_start(EPSON_CS_0, &prev_screen, epson) == 0);
@@ -292,26 +296,27 @@ int plat_epson_init(struct platform *plat)
 	}
 
 	/* read the psu calibration data and ready it for use */
-	if (&psu_data == NULL) {
-#if 1
-		LOG("Using hard-coded default VCOM PSU values");
-		psu_data.version = PSU_DATA_VERSION;
-		memcpy(&psu_data.vcom_info, &DEF_VCOM_PSU, sizeof psu_data.vcom_info);
+	if (&pl_hw_info == NULL) {
+#if CONFIG_HW_INFO_DEFAULT
+		LOG("WARNING: Using hard-coded default VCOM PSU values");
+		pl_hw_info.version = PL_HW_INFO_VERSION;
+		memcpy(&pl_hw_info.vcom, &def_vcom_info,
+		       sizeof pl_hw_info.vcom);
 #else
 		abort_msg("Failed to initialise VCOM PSU data from EEPROM");
 #endif
 	}
 
 	/* initialise the VCOM */
-	vcom_init(&vcom_calibration, &psu_data.vcom_info, psu_data.hw_info.swing_ideal);
+	vcom_init(&vcom_calibration, &pl_hw_info.vcom);
 
 	/* select the controller for future operations */
 	s1d135xx_select(epson, &prev_screen);
 
-	if (psu_data.hw_info.epdc_ref == EPDC_S1D13524) {
+	if (pl_hw_info.board.epdc_ref == EPDC_S1D13524) {
 		s1d13524_set_temperature_mode(epson, TEMP_MODE_MANUAL);
 	}
-	else if (psu_data.hw_info.epdc_ref == EPDC_S1D13541) {
+	else if (pl_hw_info.board.epdc_ref == EPDC_S1D13541) {
 		s1d13541_set_temperature_mode(epson, TEMP_MODE_INTERNAL);
 	}
 	else {
@@ -319,7 +324,7 @@ int plat_epson_init(struct platform *plat)
 		ret = -1;
 	}
 
-	switch (psu_data.hw_info.hv_pmic) {
+	switch (pl_hw_info.board.hv_pmic) {
 	case 1: /* Maxim MAX17135 */
 		max17135_init(&i2c, I2C_MAX17135_PMIC_ADDR,
 			      &max17135_pmic_info);
@@ -339,7 +344,7 @@ int plat_epson_init(struct platform *plat)
 	}
 
 	/* initialise the i2c temperature sensor */
-	switch (psu_data.hw_info.temp_sensor) {
+	switch (pl_hw_info.board.temp_sensor) {
 	case 1: /* LM75 */
 		lm75_init(&i2c, I2C_TEMP_SENSOR, &lm75_info);
 		break;
@@ -348,11 +353,11 @@ int plat_epson_init(struct platform *plat)
 		break;
 	}
 
-	if (psu_data.hw_info.epdc_ref == EPDC_S1D13524) {
+	if (pl_hw_info.board.epdc_ref == EPDC_S1D13524) {
 		plat_s1d13524_init_display(epson);
 		plat_s1d13524_slideshow(epson);
 	}
-	else if (psu_data.hw_info.epdc_ref == EPDC_S1D13541) {
+	else if (pl_hw_info.board.epdc_ref == EPDC_S1D13541) {
 		plat_s1d13541_init_display(epson);
 		plat_s1d13541_slideshow(epson);
 	}

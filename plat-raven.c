@@ -34,7 +34,9 @@
  */
 
 #include <pl/platform.h>
+#include <pl/gpio.h>
 #include <pl/i2c.h>
+#include <pl/hwinfo.h>
 #include <stdio.h>
 #include "types.h"
 #include "assert.h"
@@ -42,7 +44,6 @@
 #include "msp430-gpio.h"
 #include "vcom.h"
 #include "i2c-eeprom.h"
-#include "psu-data.h"
 #include "epson/epson-cmd.h"
 #include "epson/S1D13524.h"
 #include "epson/epson-i2c.h"
@@ -55,7 +56,7 @@
 
 #define LOG_TAG "raven"
 
-#define	EPSON_CS_0		GPIO(3,6)
+#define	EPSON_CS_0              MSP430_GPIO(3,6)
 
 /* i2c addresses of Maxim PMIC, PSU data EEPROM and temp sensor */
 #define I2C_PMIC_ADDR		0x48
@@ -70,24 +71,23 @@
 
 static int show_image(const char *image, void *arg);
 
-static struct platform *g_plat;
 static struct pl_i2c i2c;
 static struct max17135_info *pmic_info;
 static struct s1d135xx *epson;
 static struct lm75_info *lm75_info;
 static struct vcom_cal vcom_calibration;
-static struct psu_data psu_data;
+static struct pl_hw_info pl_hw_info;
 
 /* Fallback VCOM calibration data if PSU EEPROM corrupt */
-static struct vcom_info psu_calibration = {
+static struct pl_hw_vcom_info def_vcom_info = {
 	.dac_x1 = 63,
 	.dac_y1 = 4586,
 	.dac_x2 = 189,
 	.dac_y2 = 9800,
 	.vgpos_mv = 27770,
 	.vgneg_mv = -41520,
+	.swing_ideal = 70000,
 };
-#define VCOM_VGSWING 70000
 
 static int power_up(void)
 {
@@ -117,8 +117,6 @@ int plat_raven_init(struct platform *plat)
 
 	LOG("Raven platform initialisation\n");
 
-	g_plat = plat;
-
 	/* all file operations will be within the Type11 subtree */
 	check(f_chdir("0:/Type11") == 0);
 
@@ -127,12 +125,13 @@ int plat_raven_init(struct platform *plat)
 	assert(vcom > 0);
 
 	/* initialise the Epson interface */
-	epsonif_init(0, 1);
+	epsonif_init(&plat->gpio, 0, 1);
 
 	s1d135xx_set_wfid_table(EPDC_S1D13524);
 
-	/* define gpio's required for operation */
-	check(gpio_request(EPSON_CS_0,	PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH) == 0);
+	/* define GPIOs required for operation */
+	if (plat->gpio.config(EPSON_CS_0, PL_GPIO_OUTPUT | PL_GPIO_INIT_H))
+		return -1;
 
 	/* initialise the Epson controller */
 	check(s1d13524_init(EPSON_CS_0, &epson)==0);
@@ -140,20 +139,24 @@ int plat_raven_init(struct platform *plat)
 	/* initialise the i2c interface on the epson */
 	check(epson_i2c_init(epson, &i2c)==0);
 
-	/* read the calibration data and ready it for use */
-	if (psu_data_init(&psu_data, &g_plat->hw_eeprom)) {
-		LOG("Failed to initialise VCOM PSU data from EEPROM");
-#if 1
-		LOG("Using hard-coded default values instead");
-		psu_data.version = PSU_DATA_VERSION;
-		memcpy(&psu_data.vcom_info, &psu_calibration,
-		       sizeof psu_data.vcom_info);
+#if CONFIG_HW_INFO_EEPROM
+	/* read the psu calibration data and ready it for use */
+	if (pl_hw_info_init(&pl_hw_info, &plat->hw_eeprom)) {
+#if CONFIG_HW_INFO_DEFAULT
+		LOG("WARNING: Using hard-coded default VCOM PSU values");
+		pl_hw_info.version = PL_HW_INFO_VERSION;
+		memcpy(&pl_hw_info.vcom, &def_vcom_info,
+		       sizeof pl_hw_info.vcom);
 #else
-		return -1;
+		abort_msg("Failed to initialise VCOM PSU data from EEPROM");
 #endif
 	}
+#else /* !CONFIG_HW_INFO_EEPROM */
+	pl_hw_info.version = PL_HW_INFO_VERSION;
+	memcpy(&pl_hw_info.vcom, &def_vcom_info, sizeof pl_hw_info.vcom);
+#endif
 
-	vcom_init(&vcom_calibration, &psu_data.vcom_info, VCOM_VGSWING);
+	vcom_init(&vcom_calibration, &pl_hw_info.vcom);
 
 	/* select the controller for future operations */
 	s1d135xx_select(epson, &previous);

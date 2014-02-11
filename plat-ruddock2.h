@@ -1,7 +1,7 @@
 /*
   Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2013 Plastic Logic Limited
+  Copyright (C) 2013, 2014 Plastic Logic Limited
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -19,12 +19,14 @@
 /*
  * plat-ruddock2.h -- initialisation code/drivers for Ruddock2 mainboard
  *
- * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ * Authors:
+ *   Nick Terry <nick.terry@plasticlogic.com>
+ *   Guillaume Tucker <guillaume.tucker@plasticlogic.com>
  *
  */
 
-#ifndef PLAT_RUDDOCK2_H_
-#define PLAT_RUDDOCK2_H_
+#ifndef PLAT_RUDDOCK2_H
+#define PLAT_RUDDOCK2_H 1
 
 #define RUDDOCK2_SEL1	0x01
 #define RUDDOCK2_SEL2	0x02
@@ -36,8 +38,13 @@
 #define	RUDDOCK2_LED3	0x04
 #define	RUDDOCK2_LED4	0x08
 
-int ruddock2_init(void);
-int ruddock2_selswitch_read(void);
-void ruddock2_led_set(int led, int state);
+struct pl_gpio;
 
-#endif /* PLAT_RUDDOCK2_H_ */
+extern int ruddock2_init(struct pl_gpio *gpio);
+
+#if 0 /* not used anywhere */
+extern int ruddock2_selswitch_read(void);
+extern void ruddock2_led_set(int led, int state);
+#endif
+
+#endif /* PLAT_RUDDOCK2_H */

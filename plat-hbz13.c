@@ -35,6 +35,7 @@
  */
 
 #include <pl/platform.h>
+#include <pl/gpio.h>
 #include <pl/i2c.h>
 #include <stdio.h>
 #include "types.h"
@@ -53,10 +54,10 @@
 
 #define CONFIG_PLAT_RUDDOCK2	1
 #if CONFIG_PLAT_RUDDOCK2
-#define B_HWSW_CTRL	GPIO(1,2)
-#define B_POK		GPIO(1,0)
-#define B_PMIC_EN	GPIO(1,1)
-#define	EPSON_CS_0	GPIO(3,6)
+#define B_HWSW_CTRL             MSP430_GPIO(1,2)
+#define B_POK                   MSP430_GPIO(1,0)
+#define B_PMIC_EN               MSP430_GPIO(1,1)
+#define	EPSON_CS_0              MSP430_GPIO(3,6)
 
 #else
 #endif
@@ -78,15 +79,15 @@ static struct vcom_cal vcom_calibration;
 static int show_image(const char *image, void *arg);
 
 /* No PSU calibration data so always use defaults */
-static struct vcom_info psu_calibration = {
+static struct pl_hw_vcom_info def_vcom_info = {
 	.dac_x1 = 63,
 	.dac_y1 = 4586,
 	.dac_x2 = 189,
 	.dac_y2 = 9800,
 	.vgpos_mv = 27770,
 	.vgneg_mv = -41520,
+	.swing_ideal = 700000,
 };
-#define VCOM_VGSWING 70000
 
 static short measured;
 static u8 needs_update;
@@ -95,17 +96,17 @@ static u8 needs_update;
 static int power_up(void)
 {
 	printk("Powering up\n");
-	gpio_set_value(B_HWSW_CTRL, false);
-	gpio_set_value(B_PMIC_EN, true);
+	g_plat->gpio.set(B_HWSW_CTRL, false);
+	g_plat->gpio.set(B_PMIC_EN, true);
 
 	do {
 		mdelay(1);
-	} while (gpio_get_value(B_POK) == 0);
+	} while (!g_plat->gpio.get(B_POK));
 
 	dac5820_write(dac_info);
 	dac5820_set_power(dac_info, true);
 
-	gpio_set_value(B_HWSW_CTRL, true);
+	g_plat->gpio.set(B_HWSW_CTRL, true);
 
 	return 0;
 }
@@ -113,9 +114,9 @@ static int power_up(void)
 /* Board specific power down control */
 static int power_down(void)
 {
-	gpio_set_value(B_HWSW_CTRL, false);
+	g_plat->gpio.set(B_HWSW_CTRL, false);
 	dac5820_set_power(dac_info, false);
-	gpio_set_value(B_PMIC_EN, false);
+	g_plat->gpio.set(B_PMIC_EN, false);
 
 	printk("Powered down\n");
 
@@ -127,8 +128,13 @@ static int power_down(void)
 int plat_hbz13_init(struct platform *plat, const char *platform_path,
 		    int i2c_on_epson)
 {
+	static const struct pl_gpio_config gpios[] = {
+		{ B_HWSW_CTRL, PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
+		{ B_PMIC_EN,   PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
+		{ B_POK,       PL_GPIO_INPUT                   },
+		{ EPSON_CS_0,  PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+	};
 	int done = 0;
-	int ret = 0;
 	short previous;
 	int vcom;
 	screen_t prev_screen;
@@ -145,16 +151,11 @@ int plat_hbz13_init(struct platform *plat, const char *platform_path,
 	assert(vcom > 0);
 
 	/* initialise the Epson interface */
-	epsonif_init(0, 1);
+	epsonif_init(&plat->gpio, 0, 1);
 
 	/* define gpio's required for operation */
-	ret |= gpio_request(B_HWSW_CTRL,PIN_GPIO | PIN_OUTPUT | PIN_INIT_LOW);
-	ret |= gpio_request(B_PMIC_EN,	PIN_GPIO | PIN_OUTPUT | PIN_INIT_LOW);
-	ret |= gpio_request(B_POK, 	  	PIN_GPIO | PIN_INPUT);
-	ret |= gpio_request(EPSON_CS_0,	PIN_GPIO | PIN_OUTPUT | PIN_INIT_HIGH);
-
-	if (ret)
-		return -EBUSY;
+	if (pl_gpio_config_list(&plat->gpio, gpios, ARRAY_SIZE(gpios)))
+		return -1;
 
 #if !CONFIG_PSU_ONLY
 	/* initialise the Epson controller */
@@ -186,7 +187,7 @@ int plat_hbz13_init(struct platform *plat, const char *platform_path,
 	max17135_temp_enable(pmic_info);
 
 	/* initialise the vcom calibration data */
-	vcom_init(&vcom_calibration, &psu_calibration, VCOM_VGSWING);
+	vcom_init(&vcom_calibration, &def_vcom_info);
 
 	/* initialise the VCOM Dac and pass it the VCOM calibration data */
 	dac5820_init(g_i2c, I2C_DAC_ADDR, &dac_info);
