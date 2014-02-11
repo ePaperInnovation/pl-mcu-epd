@@ -37,7 +37,7 @@
 */
 
 /** Pin configuration flags */
-enum {
+enum pl_gpio_flags {
 	/* For inputs */
 	PL_GPIO_INPUT = 1 << 0,
 	PL_GPIO_PU = 1 << 1,
@@ -59,25 +59,50 @@ enum {
 
 /** Interface to be populated by concrete implementations */
 struct pl_gpio {
+	/** Configure a GPIO
+	    @param[in] gpio GPIO number
+	    @param[in] flags flags bitmask using pl_gpio_flags
+	    @return -1 if error, 0 otherwise
+	 */
 	int (*config)(unsigned gpio, uint16_t flags);
+
+	/** Get the value of a GPIO
+	    @param[in] gpio GPIO number
+	    @return 1 if the GPIO state is high, 0 if low
+	 */
 	int (*get)(unsigned gpio);
+
+	/** Set the value of a GPIO
+	    @param[in] gpio GPIO number
+	    @param[in] value value to set the GPIO state
+	 */
 	void (*set)(unsigned gpio, int value);
 };
 
 /** GPIO configuration information */
 struct pl_gpio_config {
-	unsigned gpio;
-	uint16_t flags;
+	unsigned gpio;                  /**< GPIO number */
+	uint16_t flags;                 /**< flags bitmask */
 };
 
-/** Initialise a list of GPIOs */
+/** Initialise a list of GPIOs
+    @param[in] gpio gpio instance
+    @param[in] config array of pl_gpio_config structures
+    @param[in] n length of the config array
+    @return -1 if error, 0 otherwise
+*/
 extern int pl_gpio_config_list(struct pl_gpio *gpio,
 			       const struct pl_gpio_config *config, size_t n);
 
-/** Log a human-readable version of the flags */
+/** Log a human-readable version of the flags
+    @param[in] flags flags bitmask
+*/
 extern void pl_gpio_log_flags(uint16_t flags);
 
-/** Check the flags are a valid combination */
+/** Check flags are a valid combination
+    @param[in] flags flags bitmask
+    @return -1 if flags are not valid, 0 otherwise
+*/
 extern int pl_gpio_check_flags(uint16_t flags);
 
 #endif /* PL_GPIO_H */
