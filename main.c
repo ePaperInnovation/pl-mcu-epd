@@ -24,6 +24,7 @@
  */
 
 #include <pl/platform.h>
+#include <pl/gpio.h>
 #include <pl/hwinfo.h>
 #include <stdio.h>
 #include "i2c-eeprom.h"
@@ -45,13 +46,64 @@
 #define LOG_TAG "main"
 #include "utils.h"
 
-#define	ASSERT_LED              MSP430_GPIO(7,7)
+/* Navigation buttons */
+#define	SW1         MSP430_GPIO(2,0)
+#define	SW2         MSP430_GPIO(2,1)
+#define	SW3         MSP430_GPIO(2,2)
+#define	SW4         MSP430_GPIO(2,3)
+#define	SW5         MSP430_GPIO(2,4)
+
+/* User LEDs */
+#define	LED1        MSP430_GPIO(8,0)
+#define	LED2        MSP430_GPIO(8,1)
+#define	LED3        MSP430_GPIO(8,2)
+#define	LED4        MSP430_GPIO(8,3)
+
+/* System LEDs */
+#define	ASSERT_LED  MSP430_GPIO(7,7)
+
+/* User selection switches */
+#define	SEL1        MSP430_GPIO(8,4)
+#define	SEL2        MSP430_GPIO(8,5)
+#define	SEL3        MSP430_GPIO(8,6)
+#define	SEL4        MSP430_GPIO(8,7)
 
 /* Version of pl-mcu-epd */
 static const char VERSION[] = "v006";
 
 /* Platform instance, to be passed to other modules */
 static struct platform g_plat;
+
+/* System GPIOs */
+static const struct pl_gpio_config g_gpios[] = {
+	/* User selection switches */
+	{ SEL1, PL_GPIO_INPUT | PL_GPIO_PU },
+	{ SEL2, PL_GPIO_INPUT | PL_GPIO_PU },
+	{ SEL3, PL_GPIO_INPUT | PL_GPIO_PU },
+	{ SEL4, PL_GPIO_INPUT | PL_GPIO_PU },
+
+	/* Navigation buttons */
+	{ SW1, PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
+	{ SW2, PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
+	{ SW3, PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
+	{ SW4, PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
+	{ SW5, PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
+
+	/* User LEDs */
+	{ LED1, PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
+	{ LED2, PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
+	{ LED3, PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
+	{ LED4, PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
+
+	/* System LEDs */
+	{ ASSERT_LED, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+};
+static const struct pl_system_gpio g_sys_gpio = {
+	{ SEL1, SEL2, SEL3, SEL4 },
+	{ SW1, SW2, SW3, SW4, SW5 },
+	{ LED1, LED2, LED3, LED4 },
+	ASSERT_LED,
+};
 
 int app_main(void)
 {
@@ -64,13 +116,15 @@ int app_main(void)
 	LOG("------------------------");
 	LOG("Starting pl-mcu-epd %s", VERSION);
 
+	g_plat.sys_gpio = &g_sys_gpio;
+
 	/* initialise GPIO interface */
 	if (msp430_gpio_init(&g_plat.gpio))
 		abort_msg("Failed to initialise GPIO interface");
 
-	/* initialise common GPIOs */
-	if (ruddock2_init(&g_plat.gpio))
-		abort_msg("Failed to initialise GPIOs");
+	/* initialise system GPIOs */
+	if (pl_gpio_config_list(&g_plat.gpio, g_gpios, ARRAY_SIZE(g_gpios)))
+		abort_msg("Failed to initialise system GPIOs");
 
 	/* initialise UART */
 	if (uart_init(&g_plat.gpio, BR_115200, 'N', 8, 1))
@@ -139,9 +193,9 @@ void abort_now(const char *abort_msg)
 		fprintf(stderr, "%s", abort_msg);
 
 	for (;;) {
-		g_plat.gpio.set(ASSERT_LED, 1);
+		g_plat.gpio.set(g_plat.sys_gpio->assert_led, 1);
 		mdelay(500);
-		g_plat.gpio.set(ASSERT_LED, 0);
+		g_plat.gpio.set(g_plat.sys_gpio->assert_led, 0);
 		mdelay(500);
 	}
 }

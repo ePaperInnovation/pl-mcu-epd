@@ -35,28 +35,6 @@
 /* Ruddock2 board EEPROM address */
 #define	I2C_ID_EEPROM 0x52
 
-/* Navigation buttons */
-#define	SW1         MSP430_GPIO(2,0)
-#define	SW2         MSP430_GPIO(2,1)
-#define	SW3         MSP430_GPIO(2,2)
-#define	SW4         MSP430_GPIO(2,3)
-#define	SW5         MSP430_GPIO(2,4)
-
-/* User LEDs */
-#define	LED1        MSP430_GPIO(8,0)
-#define	LED2        MSP430_GPIO(8,1)
-#define	LED3        MSP430_GPIO(8,2)
-#define	LED4        MSP430_GPIO(8,3)
-
-/* System LEDs */
-#define	ASSERT_LED  MSP430_GPIO(7,7)
-
-/* User selection switches */
-#define	SEL1        MSP430_GPIO(8,4)
-#define	SEL2        MSP430_GPIO(8,5)
-#define	SEL3        MSP430_GPIO(8,6)
-#define	SEL4        MSP430_GPIO(8,7)
-
 /* Parallel interface */
 #define	HDB0        MSP430_GPIO(4,0)
 #define	HDB1        MSP430_GPIO(4,1)
@@ -85,12 +63,15 @@
 #define	RESET       MSP430_GPIO(5,0)
 #define	SHUTDOWN    MSP430_GPIO(5,1)
 
+#if 0
 /* HV-PMIC things */
 #define	PMIC_FLT    MSP430_GPIO(2,5)
 #define	HIRQ        MSP430_GPIO(2,6)
+#endif
 
 static uint8_t led_state = 0;
 
+#if 0
 static void ruddock2_leds_update(struct pl_gpio *gpio, uint8_t leds)
 {
 	gpio->set(LED1, (leds & RUDDOCK2_LED1));
@@ -98,46 +79,24 @@ static void ruddock2_leds_update(struct pl_gpio *gpio, uint8_t leds)
 	gpio->set(LED3, (leds & RUDDOCK2_LED3));
 	gpio->set(LED4, (leds & RUDDOCK2_LED4));
 }
+#endif
 
 int ruddock2_init(struct pl_gpio *gpio)
 {
-	static const struct pl_gpio_config gpios[] = {
-		/* Navigation buttons */
-		{ SW1, PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
-		{ SW2, PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
-		{ SW3, PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
-		{ SW4, PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
-		{ SW5, PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
+#if 0
+	{ HIRQ,     PL_GPIO_INPUT | PL_GPIO_PU      },
 
-		/* User leds */
-		{ LED1, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
-		{ LED2, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
-		{ LED3, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
-		{ LED4, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+	/* Input pins that will move to new owner */
+	{ PMIC_FLT, PL_GPIO_INPUT | PL_GPIO_PU      },
+	{ SHUTDOWN, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+#endif
 
-		/* Assertion LED */
-		{ ASSERT_LED, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
-
-		/* User selection switches */
-		{ SEL1, PL_GPIO_INPUT | PL_GPIO_PU },
-		{ SEL2, PL_GPIO_INPUT | PL_GPIO_PU },
-		{ SEL3, PL_GPIO_INPUT | PL_GPIO_PU },
-		{ SEL4, PL_GPIO_INPUT | PL_GPIO_PU },
-
-		/* Input pins that will move to new owner */
-		{ PMIC_FLT, PL_GPIO_INPUT | PL_GPIO_PU },
-		{ HIRQ, PL_GPIO_INPUT | PL_GPIO_PU },
-		{ SHUTDOWN, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
-	};
 	static const uint16_t parallel_interface[] = {
 		HDB0, HDB1, HDB2, HDB3,	HDB4, HDB5, HDB6, HDB7,
 		HDB8, HDB9, HDB10, HDB11, HDB12, HDB13, HDB14, HDB15,
 		TFT_HSYNC, TFT_VSYNC, TFT_DE, TFT_CLK,
 	};
 	unsigned i;
-
-	if (pl_gpio_config_list(gpio, gpios, ARRAY_SIZE(gpios)))
-		return -1;
 
 	/* parallel interface signals, define as low outputs for now */
 	for (i = 0; i < ARRAY_SIZE(parallel_interface); ++i) {
@@ -146,7 +105,9 @@ int ruddock2_init(struct pl_gpio *gpio)
 			return -1;
 	}
 
+#if 0
 	ruddock2_leds_update(gpio, led_state);
+#endif
 
 	return 0;
 }
