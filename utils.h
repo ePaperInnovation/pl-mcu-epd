@@ -26,7 +26,7 @@
 
 #ifdef LOG_TAG
 #define LOG(msg, ...) \
-	do { printf("%-8s: "msg"\n", LOG_TAG, ##__VA_ARGS__); } while (0)
+	do { printf("%-16s: "msg"\n", LOG_TAG, ##__VA_ARGS__); } while (0)
 #else
 #define LOG(msg, ...)
 #endif
