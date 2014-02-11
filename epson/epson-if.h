@@ -26,24 +26,23 @@
 #ifndef EPSON_IF_H_
 #define EPSON_IF_H_
 
-void epsonif_init(int spi_channel, u16 divisor);
+struct pl_gpio;
 
-int epsonif_claim(int spi_channel, screen_t screen_id, screen_t *previous);
-int epsonif_release(int spi_channel, screen_t previous);
+extern int epsonif_init(struct pl_gpio *gpio, int spi_channel, u16 divisor);
 
-void epsonif_close(void);
-int  epsonif_select_epson(void);
-int  epsonif_deselect_epson(void);
-void epsonif_set_command(void);
-void epsonif_set_data(void);
-void epsonif_assert_reset(void);
-void epsonif_negate_reset(void);
+extern int epsonif_claim(int spi_channel, screen_t screen_id,
+			 screen_t *previous);
+extern int epsonif_release(int spi_channel, screen_t previous);
 
-void epsonif_init_hdc(void);
-void epsonif_init_hrdy(void);
-void epsonif_init_reset(void);
-int  epsonif_read_hrdy(void);
+extern void epsonif_close(void);
+extern void epsonif_select_epson(void);
+extern void epsonif_deselect_epson(void);
+extern void epsonif_set_command(void);
+extern void epsonif_set_data(void);
+extern void epsonif_assert_reset(void);
+extern void epsonif_negate_reset(void);
 
-
+extern int epsonif_init_reset(void);
+extern int epsonif_read_hrdy(void);
 
 #endif /* EPSON_IF_H_ */

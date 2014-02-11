@@ -47,6 +47,9 @@
 #define PRE_WAIT(_x_)	((_x_) | PRE_WAIT_READY)
 #define POST_WAIT(_x_)	((_x_) | POST_WAIT_READY)
 
+struct pl_gpio;
+extern struct pl_gpio *epson_cmd_gpio;
+
 extern void epson_init_comm(void);
 extern void epson_close_comm(void);
 extern int epson_cmd_p0(uint16_t command);
