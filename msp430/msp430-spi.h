@@ -28,8 +28,10 @@
 
 #include <stddef.h>
 
+struct pl_gpio;
+
 // function prototypes
-int spi_init(u8 spi_channel, u16 divisor);
+extern int spi_init(struct pl_gpio *gpio, u8 spi_channel, u16 divisor);
 void spi_read_bytes(u8 *buff, size_t size);
 void spi_write_bytes(u8 *buff, size_t size);
 

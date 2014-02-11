@@ -23,6 +23,7 @@
  *
  */
 
+#include <pl/gpio.h>
 #include <msp430.h>
 #include "types.h"
 #include "assert.h"
@@ -34,17 +35,17 @@
 #define	CONFIG_IF_PARALLEL		0
 
 #if CONFIG_IF_PARALLEL
-#define	READ_STROBE		GPIO(3,4)
-#define	WRITE_STROBE	GPIO(3,0)
+#define	READ_STROBE             MSP430_GPIO(3,4)
+#define	WRITE_STROBE            MSP430_GPIO(3,0)
 #endif
 
 #if CONFIG_PLAT_RUDDOCK2
 #define USCI_UNIT	A
 #define USCI_CHAN	0
 // Pin definitions for this unit
-#define	SPI_SIMO		GPIO(3,4)
-#define	SPI_SOMI		GPIO(3,5)
-#define	SPI_CLK			GPIO(3,0)
+#define	SPI_SIMO                MSP430_GPIO(3,4)
+#define	SPI_SOMI                MSP430_GPIO(3,5)
+#define	SPI_CLK                 MSP430_GPIO(3,0)
 
 #endif
 
@@ -52,23 +53,27 @@
 /* We only support a single SPI bus and that bus is defined at compile
  * time.
  */
-int spi_init(u8 spi_channel, u16 divisor)
+int spi_init(struct pl_gpio *gpio, u8 spi_channel, u16 divisor)
 {
+	static const struct pl_gpio_config gpios[] = {
+#if CONFIG_IF_PARALLEL
+	{ READ_STROBE,   PL_GPIO_OUTPUT |  PL_GPIO_INIT_H },
+	{ WRITE_STROBE,  PL_GPIO_OUTPUT |  PL_GPIO_INIT_H },
+#else
+	{ SPI_SIMO,      PL_GPIO_SPECIAL | PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
+	{ SPI_SOMI,      PL_GPIO_SPECIAL | PL_GPIO_INPUT                   },
+	{ SPI_CLK,       PL_GPIO_SPECIAL | PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
+#endif
+	};
+
 	if (spi_channel != 0)
-		return -EACCES;
+		return -1;
 
 	UCxnCTL1 |= UCSWRST;					// Put state machine in reset
 
-	// Define chip select pins for multiple controllers
+	if (pl_gpio_config_list(gpio, gpios, ARRAY_SIZE(gpios)))
+		return -1;
 
-#if CONFIG_IF_PARALLEL
-	gpio_request(READ_STROBE,	PIN_GPIO    | PIN_OUTPUT | PIN_INIT_HIGH);
-	gpio_request(WRITE_STROBE, 	PIN_GPIO    | PIN_OUTPUT | PIN_INIT_HIGH);
-#else
-	gpio_request(SPI_SIMO,	PIN_SPECIAL | PIN_OUTPUT);
-	gpio_request(SPI_SOMI, 	PIN_SPECIAL | PIN_INPUT);
-	gpio_request(SPI_CLK, 	PIN_SPECIAL | PIN_OUTPUT);
-#endif
 #if !CONFIG_IF_PARALLEL
 	// SPI setting, MSb first, 8bit, Master Mode, 3 pin SPI, Synch Mode
 	UCxnCTL0 |= (UCMST | UCSYNC | UCMSB | UCCKPH);

@@ -33,10 +33,12 @@
 #define	BR_115200	5
 #define	BR_230400	6
 
+struct pl_gpio;
+
 extern int uart_getc(void);
 extern int uart_putc(int _c);
 extern int uart_puts(const char *_ptr);
-extern int uart_init(int baud_rate_id, char parity, int data_bits, int stop_bits);
-
+extern int uart_init(struct pl_gpio *gpio, int baud_rate_id, char parity,
+		     int data_bits, int stop_bits);
 
 #endif /* MSP430_UART_H_ */

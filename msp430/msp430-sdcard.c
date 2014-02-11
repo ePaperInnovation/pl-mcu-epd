@@ -23,9 +23,12 @@
  *
  */
 
+#include <pl/platform.h>
+#include <pl/gpio.h>
 #include "msp430.h"
 #include "msp430-defs.h"
 #include "types.h"
+#include "assert.h"
 #include "msp430-gpio.h"
 #include "msp430-sdcard.h"
 
@@ -35,28 +38,37 @@
 #define USCI_UNIT	B
 #define USCI_CHAN	0
 // Pins from MSP430 connected to the SD Card
-#define	SD_CS			GPIO(5,5)
-#define	SD_SIMO			GPIO(3,1)
-#define	SD_SOMI			GPIO(3,2)
-#define	SD_CLK			GPIO(3,3)
+#define	SD_CS                   MSP430_GPIO(5,5)
+#define	SD_SIMO                 MSP430_GPIO(3,1)
+#define	SD_SOMI                 MSP430_GPIO(3,2)
+#define	SD_CLK                  MSP430_GPIO(3,3)
 
 #else
 
 #endif
+
+struct platform *SDCard_plat = NULL;
 
 void SDCard_uDelay(u16 usecs)
 {
 	udelay(usecs);
 }
 
-void SDCard_init (void)
+void SDCard_init(void)
 {
+	static const struct pl_gpio_config gpios[] = {
+		{ SD_CS,   PL_GPIO_OUTPUT  | PL_GPIO_INIT_H                  },
+		{ SD_SIMO, PL_GPIO_SPECIAL | PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
+		{ SD_SOMI, PL_GPIO_SPECIAL | PL_GPIO_INPUT                   },
+		{ SD_CLK,  PL_GPIO_SPECIAL | PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
+	};
+
+	assert(SDCard_plat != NULL);
+
 	UCxnCTL1 |= UCSWRST;                      	// Put state machine in reset
 
-	gpio_request(SD_CS, 	PIN_GPIO    | PIN_OUTPUT | PIN_INIT_HIGH);
-	gpio_request(SD_SIMO,	PIN_SPECIAL | PIN_OUTPUT);
-	gpio_request(SD_SOMI, 	PIN_SPECIAL | PIN_INPUT);
-	gpio_request(SD_CLK, 	PIN_SPECIAL | PIN_OUTPUT);
+	if (pl_gpio_config_list(&SDCard_plat->gpio, gpios, ARRAY_SIZE(gpios)))
+		return;
 
 	// SPI Master, LSb first, 3pin SPI, Sync mode
 	UCxnCTL0 |= (UCMST | UCSYNC | UCCKPL | UCMSB);
@@ -119,11 +131,11 @@ void SDCard_sendFrame (u8 *pBuffer, u16 size)
 
 void SDCard_setCSHigh (void)
 {
-	gpio_set_value_hi(SD_CS);
+	SDCard_plat->gpio.set(SD_CS, 1);
 }
 
 void SDCard_setCSLow (void)
 {
-	gpio_set_value_lo(SD_CS);
+	SDCard_plat->gpio.set(SD_CS, 0);
 }
 

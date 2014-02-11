@@ -24,13 +24,8 @@
  */
 
 #include <msp430.h>
-#include <stdio.h>
-#include "types.h"
+#include "types.h" /* mdelay */
 #include "hal_pmm.h"
-#include "msp430-gpio.h"
-#include "msp430-uart.h"
-
-#define	ASSERT_LED		GPIO(7,7)
 
 extern int app_main(void);
 
@@ -81,35 +76,10 @@ static void board_init(void)
 	mdelay(500);
 }
 
-/* Our own version of the assert test that will give us an indication
- * it has gone off.
- */
-void assert_test(int expr, const char *abort_msg)
-{
-	if (!expr) {
-		if (abort_msg) {
-			fprintf(stderr, "%s", abort_msg);
-		}
-		while (1) {
-			gpio_set_value(ASSERT_LED, true);
-			mdelay(500);
-			gpio_set_value(ASSERT_LED, false);
-			mdelay(500);
-		}
-	}
-}
-
 int main(void)
 {
-	// intialise the board to get a stable execution environment
 	board_init();
-
-	gpio_init();				// gpio interface initialised
-
 	__bis_SR_register(GIE);
-
-	gpio_request(ASSERT_LED, PIN_GPIO | PIN_OUTPUT | PIN_INIT_LOW);
-	uart_init(BR_115200, 'N', 8, 1);
 
 	return app_main();
 }

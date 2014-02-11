@@ -25,6 +25,7 @@
  *
  */
 
+#include <pl/gpio.h>
 #include <pl/i2c.h>
 #include <msp430.h>
 #include <stdint.h>
@@ -39,8 +40,8 @@
 #define USCI_UNIT	B
 #define USCI_CHAN	1
 // Pin definitions for this unit
-#define	I2C_SCL		GPIO(5,4)
-#define I2C_SDA		GPIO(3,7)
+#define	I2C_SCL         MSP430_GPIO(5,4)
+#define I2C_SDA         MSP430_GPIO(3,7)
 
 #else
 
@@ -71,13 +72,18 @@ static int msp430_i2c_read(struct pl_i2c *i2c, uint8_t i2c_addr,
  *   Initialization of the I2C Module.
  *   Which i2c interface is determined at compile time.
  */
-int msp430_i2c_init(u8 channel, struct pl_i2c *i2c)
+int msp430_i2c_init(struct pl_gpio *gpio, u8 channel, struct pl_i2c *i2c)
 {
-	// we only support one i2c channel on MSP430 */
+	static const struct pl_gpio_config gpios[] = {
+		{ I2C_SCL, PL_GPIO_SPECIAL },
+		{ I2C_SDA, PL_GPIO_SPECIAL },
+	};
+
+	/* we only support one i2c channel on MSP430 */
 	assert(channel == 0);
 
-	gpio_request(I2C_SCL, PIN_SPECIAL);
-	gpio_request(I2C_SDA, PIN_SPECIAL);
+	if (pl_gpio_config_list(gpio, gpios, ARRAY_SIZE(gpios)))
+		return -1;
 
 	// Recommended initialisation steps of I2C module as shown in User Guide:
 	UCxnCTL1 |= UCSWRST;                    // Enable SW reset
@@ -91,9 +97,13 @@ int msp430_i2c_init(u8 channel, struct pl_i2c *i2c)
 
 	// if bus not free generate a manual clock pulse.
 	if (UCxnSTAT & UCBBUSY)	{
-		gpio_request(I2C_SCL, PIN_GPIO | PIN_OUTPUT | PIN_INIT_LOW | PIN_REDEFINE);
-		gpio_request(I2C_SCL, PIN_SPECIAL | PIN_REDEFINE);
-		assert ((UCxnSTAT & UCBBUSY) == 0);
+		if (gpio->config(I2C_SCL, PL_GPIO_OUTPUT | PL_GPIO_INIT_L))
+			return -1;
+
+		if (gpio->config(I2C_SCL, PL_GPIO_SPECIAL))
+			return -1;
+
+		assert(!(UCxnSTAT & UCBBUSY));
 	}
 
 	i2c->read = msp430_i2c_read;

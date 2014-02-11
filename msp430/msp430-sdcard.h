@@ -29,6 +29,9 @@
 #include <stdint.h>
 #include "types.h"
 
+struct platform;
+extern struct platform *SDCard_plat;
+
 extern void SDCard_init (void);
 extern void SDCard_fastMode (void);
 extern void SDCard_readFrame (u8 *pBuffer, u16 size);

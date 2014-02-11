@@ -23,6 +23,7 @@
  *
  */
 
+#include <pl/gpio.h>
 #include "msp430.h"
 #include "msp430-defs.h"
 #include "types.h"
@@ -35,8 +36,8 @@ typedef void FILE;
 #define USCI_UNIT	A
 #define	USCI_CHAN	1
 // Pin definitions for this unit.
-#define	UART_TX	GPIO(5,6)
-#define	UART_RX	GPIO(5,7)
+#define	UART_TX                 MSP430_GPIO(5,6)
+#define	UART_RX                 MSP430_GPIO(5,7)
 
 // set to 1 to have stdout, stderr sent to serial port
 #define CONFIG_UART_PRINTF		0
@@ -90,10 +91,16 @@ int uart_puts(const char *s)
 	return i;
 }
 
-int uart_init(int baud_rate_id, char parity, int data_bits, int stop_bits)
+int uart_init(struct pl_gpio *gpio, int baud_rate_id, char parity,
+	      int data_bits, int stop_bits)
 {
-	gpio_request(UART_TX, PIN_SPECIAL | PIN_OUTPUT);
-	gpio_request(UART_RX, PIN_SPECIAL | PIN_INPUT);
+	static const struct pl_gpio_config gpios[] = {
+		{ UART_TX, PL_GPIO_SPECIAL | PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
+		{ UART_RX, PL_GPIO_SPECIAL | PL_GPIO_INPUT                   },
+	};
+
+	if (pl_gpio_config_list(gpio, gpios, ARRAY_SIZE(gpios)))
+		return -1;
 
 	// hold unit in reset while configuring
 	UCxnCTL1 |= UCSWRST;
