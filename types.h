@@ -66,12 +66,6 @@ typedef  s16 screen_t;		/* screen selector - a handle */
 }												\
 )
 
-enum epdc_type {
-	EPDC_NONE = 0,
-	EPDC_S1D13524,
-	EPDC_S1D13541
-};
-
 enum plwf_mode {
 	PLWF_EEPROM_SD = 0,
 	PLWF_EEPROM_ONLY,
