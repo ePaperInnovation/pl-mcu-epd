@@ -100,17 +100,17 @@ pterm_command_help(u8 argcnt, union arg *args)
 {
     u8 i;
 
-    uart_puts("help: command listing (name followed by arg string)\n");
+    msp430_uart_puts("help: command listing (name followed by arg string)\n");
 
     for (i = 0; term_command[i].command; ++ i)
     {
-    	uart_puts(term_command[i].command);
-    	uart_puts("\t");
+        msp430_uart_puts(term_command[i].command);
+        msp430_uart_puts("\t");
         if (term_command[i].args)
         {
-        	uart_puts(term_command[i].args);
+            msp430_uart_puts(term_command[i].args);
         }
-        uart_puts("\n");
+        msp430_uart_puts("\n");
     }
     return 0;
 }
@@ -148,7 +148,7 @@ term_process_line(Command *cmd_table)
             {
                 r = cmd_table[term_last_cmd].func(term_last_arg, term_args);
 
-                if (uart_getc() >= 0)
+                if (msp430_uart_getc() >= 0)
                 {
                     break;
                 }
@@ -251,12 +251,12 @@ term_got_line(void)
 
     if (outputPrompt)
     {
-        uart_puts("> ");
+        msp430_uart_puts("> ");
         outputPrompt = false;
         nextChar = 0;
     }
 
-    if ( (c = uart_getc()) >= 0)
+    if ( (c = msp430_uart_getc()) >= 0)
     {
         switch (c)
         {
@@ -264,13 +264,13 @@ term_got_line(void)
             case '\b':
                 if (nextChar > 0)
                 {
-                	uart_puts("\b \b");
+                    msp430_uart_puts("\b \b");
                     nextChar--;
                 }
                 break;
             case '\r':
             case '\n':
-            	uart_putc('\n');
+                msp430_uart_putc('\n');
                 term_line[nextChar] = '\0';
                 outputPrompt = true;
                 return true;
@@ -279,7 +279,7 @@ term_got_line(void)
                 if (nextChar < (sizeof(term_line) - 2))
                 {
                     term_line[nextChar++] = (char)c;
-                    uart_putc((char)c);
+                    msp430_uart_putc((char)c);
                 }
                 break;
         }
