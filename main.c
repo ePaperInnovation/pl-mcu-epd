@@ -74,7 +74,8 @@ static const char VERSION[] = "v006";
 /* Platform instance, to be passed to other modules */
 static struct platform g_plat;
 
-/* System GPIOs */
+/* --- System GPIOs --- */
+
 static const struct pl_gpio_config g_gpios[] = {
 	/* User selection switches */
 	{ SEL1, PL_GPIO_INPUT | PL_GPIO_PU },
@@ -98,6 +99,7 @@ static const struct pl_gpio_config g_gpios[] = {
 	/* System LEDs */
 	{ ASSERT_LED, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
 };
+
 static const struct pl_system_gpio g_sys_gpio = {
 	{ SEL1, SEL2, SEL3, SEL4 },
 	{ SW1, SW2, SW3, SW4, SW5 },
@@ -105,18 +107,134 @@ static const struct pl_system_gpio g_sys_gpio = {
 	ASSERT_LED,
 };
 
-int app_main(void)
+/* --- HV-PMIC GPIOs --- */
+
+#define HVSW_CTRL         MSP430_GPIO(1,2) /* VCOM switch enable */
+#define PMIC_EN           MSP430_GPIO(1,1) /* HV-PMIC enable */
+#define PMIC_POK          MSP430_GPIO(1,0) /* HV-PMIC power OK */
+
+static const struct pl_gpio_config g_hvpmic_gpios[] = {
+	{ HVSW_CTRL,  PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
+	{ PMIC_EN,    PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
+	{ PMIC_POK,   PL_GPIO_INPUT                   },
+};
+
+static const struct pl_hvpmic_gpio g_hv_gpio = {
+	HVSW_CTRL, PMIC_EN, PMIC_POK,
+};
+
+/* --- Epson GPIOs --- */
+
+/* Optional pins used in Epson SPI interface */
+/* HRDY indicates controller is ready */
+#define SPI_HRDY_USED     0 /* HRDY pin is used */
+/* HDC required by the 524 controller, optional on others */
+#define SPI_HDC_USED      1 /* HDC pin is used */
+
+/* Basic signals to enable Epson clock and PSU */
+#define EPSON_3V3_EN      MSP430_GPIO(1,7)
+#define EPSON_CLK_EN      MSP430_GPIO(1,6)
+
+/* Interface control signals */
+#define	EPSON_HIRQ        MSP430_GPIO(2,6)
+#define	EPSON_HDC         MSP430_GPIO(1,3)
+#define	EPSON_HRDY        MSP430_GPIO(2,7)
+#define EPSON_RESET       MSP430_GPIO(5,0)
+#define EPSON_CS_0        MSP430_GPIO(3,6)
+
+/* Parallel interface */
+#define	EPSON_HDB0        MSP430_GPIO(4,0)
+#define	EPSON_HDB1        MSP430_GPIO(4,1)
+#define	EPSON_HDB2        MSP430_GPIO(4,2)
+#define	EPSON_HDB3        MSP430_GPIO(4,3)
+#define	EPSON_HDB4        MSP430_GPIO(4,4)
+#define	EPSON_HDB5        MSP430_GPIO(4,5)
+#define	EPSON_HDB6        MSP430_GPIO(4,6)
+#define	EPSON_HDB7        MSP430_GPIO(4,7)
+#define	EPSON_HDB8        MSP430_GPIO(6,0)
+#define	EPSON_HDB9        MSP430_GPIO(6,1)
+#define	EPSON_HDB10       MSP430_GPIO(6,2)
+#define	EPSON_HDB11       MSP430_GPIO(6,3)
+#define	EPSON_HDB12       MSP430_GPIO(6,4)
+#define	EPSON_HDB13       MSP430_GPIO(6,5)
+#define	EPSON_HDB14       MSP430_GPIO(6,6)
+#define	EPSON_HDB15       MSP430_GPIO(6,7)
+
+/* TFT interface extensions */
+#define	EPSON_TFT_HSYNC   MSP430_GPIO(7,2)
+#define	EPSON_TFT_VSYNC   MSP430_GPIO(7,3)
+#define	EPSON_TFT_DE      MSP430_GPIO(7,4)
+#define	EPSON_TFT_CLK     MSP430_GPIO(7,5)
+
+static const struct pl_gpio_config g_epson_gpios[] = {
+	{ EPSON_3V3_EN,  PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+	{ EPSON_CLK_EN,  PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+	{ EPSON_HIRQ,    PL_GPIO_INPUT  | PL_GPIO_PU     },
+	{ EPSON_HRDY,    PL_GPIO_INPUT                   },
+	{ EPSON_HDC,     PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
+	{ EPSON_RESET,   PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+	{ EPSON_CS_0,    PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+};
+
+static const uint16_t g_epson_parallel[] = {
+	EPSON_HDB0, EPSON_HDB1, EPSON_HDB2, EPSON_HDB3, EPSON_HDB4, EPSON_HDB5,
+	EPSON_HDB6, EPSON_HDB7, EPSON_HDB8, EPSON_HDB9, EPSON_HDB10,
+	EPSON_HDB11, EPSON_HDB12, EPSON_HDB13, EPSON_HDB14, EPSON_HDB15,
+	EPSON_TFT_HSYNC, EPSON_TFT_VSYNC, EPSON_TFT_DE, EPSON_TFT_CLK,
+};
+
+static const struct epson_gpio_config g_epson_gpio_config = {
+	EPSON_RESET, EPSON_CS_0, EPSON_HIRQ,
+#if SPI_HRDY_USED
+	EPSON_HRDY,
+#else
+	PL_GPIO_NONE,
+#endif
+#if SPI_HDC_USED
+	EPSON_HDC,
+#else
+	PL_GPIO_NONE,
+#endif
+};
+
+/* --- hardware info --- */
+
+#if CONFIG_HW_INFO_EEPROM
+static struct pl_hw_info g_pl_hw_info;
+#elif CONFIG_HW_INFO_DEFAULT
+static const struct pl_hw_info g_pl_hw_info = {
+	/* version */
+	PL_HW_INFO_VERSION,
+	/* vcom */
+	{ 127, 4172, 381, 12490, 25080, -32300, 56886 },
+	/* board */
+#if CONFIG_PLAT_Z6
+	{ "HB", 6, 3, 0, HV_PMIC_TPS65185, 0, 0, 0, I2C_MODE_HOST,
+	  TEMP_SENSOR_LM75, 0, EPDC_S1D13541, 1, 1 },
+#elif CONFIG_PLAT_Z7
+	{ "HB", 7, 2, 0, HV_PMIC_TPS65185, 0, 0, 0, I2C_MODE_HOST,
+	  TEMP_SENSOR_LM75, 0, EPDC_S1D13541, 1, 1 },
+#else
+# error "Sorry, no default hardware data for this platform yet."
+#endif
+	/* crc */
+	0xFFFF,
+};
+#endif
+
+/* --- main --- */
+
+void app_main(void)
 {
 	FATFS sdcard;
-#if CONFIG_HW_INFO_EEPROM
-	struct pl_hw_info pl_hw_info;
-#endif
 	int platform_type;
+	unsigned i;
 
 	LOG("------------------------");
 	LOG("Starting pl-mcu-epd %s", VERSION);
 
 	g_plat.sys_gpio = &g_sys_gpio;
+	g_plat.hv_gpio = &g_hv_gpio;
 
 	/* initialise GPIO interface */
 	if (msp430_gpio_init(&g_plat.gpio))
@@ -125,6 +243,24 @@ int app_main(void)
 	/* initialise system GPIOs */
 	if (pl_gpio_config_list(&g_plat.gpio, g_gpios, ARRAY_SIZE(g_gpios)))
 		abort_msg("Failed to initialise system GPIOs");
+
+	/* initialize HV-PMIC GPIOs */
+	if (pl_gpio_config_list(&g_plat.gpio, g_hvpmic_gpios,
+				ARRAY_SIZE(g_hvpmic_gpios)))
+		abort_msg("Failed to initialise HV-PMIC GPIOs");
+
+	/* initialise Epson GPIOs */
+	if (pl_gpio_config_list(&g_plat.gpio, g_epson_gpios,
+				ARRAY_SIZE(g_epson_gpios)))
+		abort_msg("Failed to initialise Epson GPIOs");
+
+	/* initialise Epson parallel interface GPIOs */
+	for (i = 0; i < ARRAY_SIZE(g_epson_parallel); ++i) {
+		if (g_plat.gpio.config(g_epson_parallel[i],
+				       PL_GPIO_OUTPUT | PL_GPIO_INIT_L)) {
+			abort_msg("Failed to initialise Epson parallel GPIO");
+		}
+	}
 
 	/* initialise UART */
 	if (uart_init(&g_plat.gpio, BR_115200, 'N', 8, 1))
@@ -146,19 +282,27 @@ int app_main(void)
 	g_plat.hw_eeprom.i2c_addr = I2C_PSU_EEPROM_ADDR;
 	g_plat.hw_eeprom.type = EEPROM_24LC014;
 
-#if 0 /* this currently fails, the Epson needs to be reset first */
 	if (pl_hw_info_init(&pl_hw_info, &g_plat.hw_eeprom))
 		abort_msg("Failed to read hardware info EEPROM");
+#else
+	LOG("Using hard-coded hardware info");
 #endif
-#endif
+	pl_hw_info_log(&g_pl_hw_info);
 
 #if CONFIG_PLAT_AUTO
+#if 1
+	LOG("Temporary hack to keep things going until all bugs are fixed...");
+	*hbz6_plat = &g_plat;
+	if (plat_epson_init(&g_plat, &g_pl_hw_info, &g_epson_gpio_config)) {
+		LOG("Failed to automatically initialise platform");
+#else
 	/* determine platform from PSU eeprom contents */
 	platform_type = check_platform(&g_plat);
 
 	if (platform_type == EPDC_S1D13524 || platform_type == EPDC_S1D13541) {
-		plat_epson_init(&g_plat);
+		plat_epson_init(&g_plat, &g_pl_hw_info, &g_epson_gpio_config);
 	} else {
+#endif
 #endif
 #if CONFIG_PLAT_CUCKOO
 		plat_cuckoo_init(&g_plat);
@@ -178,10 +322,6 @@ int app_main(void)
 		/* ToDo: go to sleep */
 		udelay(1);
 	}
-
-#if 0 /* causes a compiler warning */
-	return 0;
-#endif
 }
 
 /* When something fatal has happened, this is called which prints a message on
