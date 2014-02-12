@@ -44,6 +44,12 @@ struct pl_system_gpio {
 	unsigned assert_led;
 };
 
+struct pl_hvpmic_gpio {
+	unsigned hvsw_ctrl;
+	unsigned pmic_en;
+	unsigned pmic_pok;
+};
+
 struct platform {
 	struct pl_gpio gpio;
 	struct pl_i2c host_i2c;
@@ -51,6 +57,7 @@ struct platform {
 	struct i2c_eeprom hw_eeprom;
 #endif
 	const struct pl_system_gpio *sys_gpio;
+	const struct pl_hvpmic_gpio *hv_gpio;
 };
 
 #endif /* PL_PLATFORM_H */
