@@ -1,7 +1,7 @@
 /*
   Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2013 Plastic Logic Limited
+  Copyright (C) 2013, 2014 Plastic Logic Limited
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -19,7 +19,9 @@
 /*
  * pnm-utils.c -- Utilities for dealing with PNM format graphics files
  *
- * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ * Authors:
+ *   Nick Terry <nick.terry@plasticlogic.com>
+ *   Guillaume Tucker <guillaume.tucker@plasticlogic.com>
  *
  * Utilities for dealing with PNM format graphics files
  * We are only interested in PGM and PBM
@@ -55,19 +57,23 @@
  *
  */
 
+#include <stdlib.h>
 #include "types.h"
 #include "assert.h"
 #include "FatFs/ff.h"
 #include "pnm-utils.h"
 
-int pnm_read_int(FIL *pnm_file)
+int pnm_read_int32(FIL *pnm_file, int32_t *value)
 {
-	int val = 0;
 	UINT count;
 	char ch;
 	int digits = 0;
 	int in_comment = 0;
 	int found = 0;
+	int32_t val = 0;
+
+	assert(pnm_file != NULL);
+	assert(value != NULL);
 
 	while (!found &&
 			(f_read(pnm_file,&ch,1,&count) == FR_OK) && count == 1)
@@ -103,9 +109,11 @@ int pnm_read_int(FIL *pnm_file)
 	}
 
 	if (!found)
-		val = -EIO;
+		return -1;
 
-	return val;
+	*value = val;
+
+	return 0;
 }
 
 int pnm_read_header(FIL *pnm_file, struct pnm_header *hdr)

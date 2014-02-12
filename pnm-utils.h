@@ -1,7 +1,7 @@
 /*
   Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2013 Plastic Logic Limited
+  Copyright (C) 2013, 2014 Plastic Logic Limited
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -19,12 +19,17 @@
 /*
  * pnm-utils.h -- Utilities for dealing with PNM format graphics files
  *
- * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ * Authors:
+ *   Nick Terry <nick.terry@plasticlogic.com>
+ *   Guillaume Tucker <guillaume.tucker@plasticlogic.com>
  *
  */
 
-#ifndef PNM_UTILS_H_
-#define PNM_UTILS_H_
+#ifndef PNM_UTILS_H
+#define PNM_UTILS_H 1
+
+#include <FatFs/ff.h>
+#include <stdint.h>
 
 enum {
 	PNM_BITMAP,
@@ -33,13 +38,18 @@ enum {
 };
 
 struct pnm_header {
-	u8 type;
+	uint8_t type;
 	int width;
 	int height;
 	int max_gray;
 };
 
-int pnm_read_header(FIL *pnm_file, struct pnm_header *hdr);
-int pnm_read_int(FIL *pnm_file);
+#define pnm_read_int(_f) ({			\
+		int32_t _value;			\
+		pnm_read_int32(_f, &_value);	\
+		(int)_value; })
 
-#endif /* PNM_UTILS_H_ */
+extern int pnm_read_header(FIL *pnm_file, struct pnm_header *hdr);
+extern int pnm_read_int32(FIL *pnm_file, int32_t *value);
+
+#endif /* PNM_UTILS_H */
