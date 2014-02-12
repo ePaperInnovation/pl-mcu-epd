@@ -35,8 +35,6 @@
 
 /* Common platform data */
 
-#define I2C_PSU_EEPROM_ADDR  0x50
-
 struct pl_system_gpio {
 	unsigned sel[4];
 	unsigned sw[5];
@@ -53,9 +51,6 @@ struct pl_hvpmic_gpio {
 struct platform {
 	struct pl_gpio gpio;
 	struct pl_i2c host_i2c;
-#if CONFIG_HW_INFO_EEPROM
-	struct i2c_eeprom hw_eeprom;
-#endif
 	const struct pl_system_gpio *sys_gpio;
 	const struct pl_hvpmic_gpio *hv_gpio;
 };
