@@ -1,7 +1,7 @@
 /*
   Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2013 Plastic Logic Limited
+  Copyright (C) 2013, 2014 Plastic Logic Limited
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -19,7 +19,9 @@
 /*
  * msp430-uart.c -- Serial UART driver
  *
- * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ * Authors:
+ *   Nick Terry <nick.terry@plasticlogic.com>
+ *   Guillaume Tucker <guillaume.tucker@plasticlogic.com>
  *
  */
 
@@ -30,8 +32,9 @@
 #include "msp430-uart.h"
 #include "msp430-gpio.h"
 
-
+#if CONFIG_UART_PRINTF
 typedef void FILE;
+#endif
 
 #define USCI_UNIT	A
 #define	USCI_CHAN	1
@@ -46,37 +49,34 @@ typedef void FILE;
 static u8 init_done = 0;
 
 #if CONFIG_UART_PRINTF
-int fputc(int _c, register FILE *_fp);
-int fputs(const char *_ptr, register FILE *_fp);
+int fputc(int c, register FILE *fp);
+int fputs(const char *ptr, register FILE *fp);
 #endif
 
-int uart_getc(void)
+int msp430_uart_getc(void)
 {
 	int ret = -EAGAIN;
 
 	if (init_done && (UCxnIFG & UCRXIFG))
-	{
 		ret = (UCxnRXBUF & 0x00ff);
-	}
+
 	return ret;
 }
 
-int uart_putc(int c)
+int msp430_uart_putc(int c)
 {
-	if (init_done)
-	{
+	if (init_done) {
 		if (c == '\n')
-		{
-			uart_putc('\r');
-		}
+			msp430_uart_putc('\r');
 
 		while(!(UCxnIFG & UCTXIFG));
 		UCxnTXBUF = (unsigned char)c;
 	}
-	return((unsigned char)c);
+
+	return (unsigned char)c;
 }
 
-int uart_puts(const char *s)
+int msp430_uart_puts(const char *s)
 {
 	unsigned int i;
 
@@ -84,15 +84,13 @@ int uart_puts(const char *s)
 		return 1;
 
 	for(i = 0; s[i]; i++)
-	{
-		uart_putc(s[i]);
-	}
+		msp430_uart_putc(s[i]);
 
 	return i;
 }
 
-int uart_init(struct pl_gpio *gpio, int baud_rate_id, char parity,
-	      int data_bits, int stop_bits)
+int msp430_uart_init(struct pl_gpio *gpio, int baud_rate_id, char parity,
+		     int data_bits, int stop_bits)
 {
 	static const struct pl_gpio_config gpios[] = {
 		{ UART_TX, PL_GPIO_SPECIAL | PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
@@ -200,15 +198,14 @@ int uart_init(struct pl_gpio *gpio, int baud_rate_id, char parity,
 
 #if CONFIG_UART_PRINTF
 /* Override fputc to allow printf et al to be routed over the serial port */
-int fputc(int _c, register FILE *_fp)
+int fputc(int c, register FILE *fp)
 {
-	return uart_putc(_c);
+	return msp430_uart_putc(c);
 }
 
 /* Override fputs to allow printf et al to be routed over the serial port */
-int fputs(const char *_ptr, register FILE *_fp)
+int fputs(const char *ptr, register FILE *fp)
 {
-	return uart_puts(_ptr);
+	return msp430_uart_puts(ptr);
 }
-
 #endif

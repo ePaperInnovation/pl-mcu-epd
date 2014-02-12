@@ -263,7 +263,7 @@ void app_main(void)
 	}
 
 	/* initialise UART */
-	if (uart_init(&g_plat.gpio, BR_115200, 'N', 8, 1))
+	if (msp430_uart_init(&g_plat.gpio, BR_115200, 'N', 8, 1))
 		abort_msg("Failed to initialise UART");
 
 	/* initialise MSP430 I2C master 0 */

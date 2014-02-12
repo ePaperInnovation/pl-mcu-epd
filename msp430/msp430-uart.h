@@ -1,7 +1,7 @@
 /*
   Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2013 Plastic Logic Limited
+  Copyright (C) 2013, 2014 Plastic Logic Limited
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -19,12 +19,14 @@
 /*
  * msp430-uart.h -- Serial UART driver
  *
- * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ * Authors:
+ *   Nick Terry <nick.terry@plasticlogic.com>
+ *   Guillaume Tucker <guillaume.tucker@plasticlogic.com>
  *
  */
 
-#ifndef MSP430_UART_H_
-#define MSP430_UART_H_
+#ifndef MSP430_UART_H
+#define MSP430_UART_H 1
 
 #define	BR_9600		1
 #define	BR_19200	2
@@ -35,10 +37,10 @@
 
 struct pl_gpio;
 
-extern int uart_getc(void);
-extern int uart_putc(int _c);
-extern int uart_puts(const char *_ptr);
-extern int uart_init(struct pl_gpio *gpio, int baud_rate_id, char parity,
-		     int data_bits, int stop_bits);
+extern int msp430_uart_getc(void);
+extern int msp430_uart_putc(int c);
+extern int msp430_uart_puts(const char *ptr);
+extern int msp430_uart_init(struct pl_gpio *gpio, int baud_rate_id,
+			    char parity, int data_bits, int stop_bits);
 
-#endif /* MSP430_UART_H_ */
+#endif /* MSP430_UART_H */
