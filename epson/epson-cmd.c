@@ -30,6 +30,8 @@
 #include "epson-cmd.h"
 #include "epson-if.h"
 
+#define SPI_HRDY_SELECT   1 /* HRDY pin only driven when selected */
+
 /* Enable prototype parallel interface support */
 #define CONFIG_IF_PARALLEL		0
 
@@ -293,7 +295,7 @@ int epson_is_busy(void)
 {
 	uint16_t status = 0;
 
-#if SPI_HRDY_USED
+#if SPI_HRDY_USED /* FIXME */
 	// Check the status of the HRDY pin if we are using it
 #if SPI_HRDY_SELECT
 	epsonif_select_epson();

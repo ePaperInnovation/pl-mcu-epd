@@ -26,48 +26,32 @@
  */
 
 #include <pl/gpio.h>
+#include "plat-epson.h"
 #include "types.h"
 #include "assert.h"
 #include "msp430-spi.h"
 #include "msp430-gpio.h"
 
-#define CONFIG_PLAT_RUDDOCK2	1
-
-// Optional pins used in SPI interface
-// HRDY indicates controller is ready
-#define SPI_HRDY_USED		0	// HRDY pin is used
-#define SPI_HRDY_SELECT		1	// HRDY pin only driven when selected
-// HDC required by the 524 controller, optional on others
-#define SPI_HDC_USED		1	// HDC pin is used
-#define SPI_RESET_USED		1	// Reset Pin on Epson used
-
-#if CONFIG_PLAT_RUDDOCK2
-// Remaining Epson interface pins
-#define	EPSON_HDC               MSP430_GPIO(1,3)
-#define	EPSON_HRDY              MSP430_GPIO(2,7)
-#define EPSON_RESET             MSP430_GPIO(5,0)
-
-#endif
-
-static struct pl_gpio *epsonif_gpio = NULL;
+static struct pl_gpio *g_epsonif_gpio = NULL;
+static const struct epson_gpio_config *g_epson_gpio = NULL;
 static screen_t screen;
 static int busy;
 
 int epsonif_init_reset(void)
 {
-#if SPI_RESET_USED
-	return epsonif_gpio->config(EPSON_RESET,
-				    PL_GPIO_OUTPUT | PL_GPIO_INIT_H);
-#endif
+	if (g_epson_gpio->reset == PL_GPIO_NONE)
+		return 0;
+
+	return g_epsonif_gpio->config(g_epson_gpio->reset,
+				      PL_GPIO_OUTPUT | PL_GPIO_INIT_H);
 }
 
 int epsonif_read_hrdy(void)
 {
-#if SPI_HRDY_USED
-	return epsonif_gpio->get(EPSON_HRDY);
-#else
-	return 0;
-#endif
+	if (g_epson_gpio->hrdy == PL_GPIO_NONE)
+		return 0; /* ToDo: read SPI register if no GPIO */
+
+	return g_epsonif_gpio->get(g_epson_gpio->hrdy);
 }
 
 /* Before using the spi interface you have to claim it and tell it what screen
@@ -104,61 +88,48 @@ int epsonif_release(int spi_channel, screen_t previous)
 
 void epsonif_set_command(void)
 {
-#if SPI_HDC_USED
-	epsonif_gpio->set(EPSON_HDC, 0);
-#endif
+	if (g_epson_gpio->hdc != PL_GPIO_NONE)
+		g_epsonif_gpio->set(g_epson_gpio->hdc, 0);
 }
 
 void epsonif_set_data(void)
 {
-#if SPI_HDC_USED
-	epsonif_gpio->set(EPSON_HDC, 1);
-#endif
+	if (g_epson_gpio->hdc != PL_GPIO_NONE)
+		g_epsonif_gpio->set(g_epson_gpio->hdc, 1);
 }
 
 void epsonif_assert_reset(void)
 {
-#if SPI_RESET_USED
-	epsonif_gpio->set(EPSON_RESET, 0);
-#endif
+	if (g_epson_gpio->reset != PL_GPIO_NONE)
+		g_epsonif_gpio->set(g_epson_gpio->reset, 0);
 }
 void epsonif_negate_reset(void)
 {
-#if SPI_RESET_USED
-	epsonif_gpio->set(EPSON_RESET, 1);
-#endif
+	if (g_epson_gpio->reset != PL_GPIO_NONE)
+		g_epsonif_gpio->set(g_epson_gpio->reset, 1);
 }
 
 void epsonif_select_epson(void)
 {
 	assert(screen > 0);
 
-	epsonif_gpio->set(screen, 0);
+	g_epsonif_gpio->set(screen, 0);
 }
 
 void epsonif_deselect_epson(void)
 {
 	assert(screen > 0);
 
-	epsonif_gpio->set(screen, 1);
+	g_epsonif_gpio->set(screen, 1);
 }
 
-int epsonif_init(struct pl_gpio *gpio, int spi_channel, u16 divisor)
+int epsonif_init(struct pl_gpio *gpio,
+		 const struct epson_gpio_config *epson_gpio,
+		 int spi_channel, u16 divisor)
 {
-	static const struct pl_gpio_config gpios[] = {
-#if SPI_HDC_USED
-		{ EPSON_HDC,  PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
-#endif
-#if SPI_HRDY_USED
-		{ EPSON_HRDY, PL_GPIO_INPUT },
-#endif
-	};
-
-	epsonif_gpio = gpio;
+	g_epsonif_gpio = gpio;
+	g_epson_gpio = epson_gpio;
 	spi_init(gpio, spi_channel, divisor);
-
-	if (pl_gpio_config_list(gpio, gpios, ARRAY_SIZE(gpios)))
-		return -1;
 
 	if (epsonif_init_reset())
 		return -1;
