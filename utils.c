@@ -206,22 +206,3 @@ void dump_hex(const void *data, uint16_t len)
 
 	puts(s);
 }
-
-/* ----------------------------------------------------------------------------
- * Other display related utilities
- */
-
-int util_read_vcom(void)
-{
-	FIL vcom_file;
-	int ret;
-
-	if (f_open(&vcom_file, "display/VCOM.txt", FA_READ) != FR_OK)
-		return -ENOENT;
-
-	ret = pnm_read_int(&vcom_file);
-
-	f_close(&vcom_file);
-
-	return ret;
-}
