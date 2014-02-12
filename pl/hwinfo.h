@@ -26,8 +26,8 @@
  *
  */
 
-#ifndef PL_HWINFO_H_
-#define PL_HWINFO_H_
+#ifndef PL_HWINFO_H
+#define PL_HWINFO_H 1
 
 #include <stdint.h>
 
@@ -45,20 +45,45 @@ struct  __attribute__((__packed__)) pl_hw_vcom_info {
 	int32_t swing_ideal;/* Ideal VG swing in mV for this design */
 };
 
+enum hv_pmic_id {
+	HV_PMIC_NONE = 0,
+	HV_PMIC_MAX17135,
+	HV_PMIC_TPS65185,
+};
+
+enum i2c_mode_id {
+	I2C_MODE_NONE = 0,
+	I2C_MODE_HOST,
+	I2C_MODE_DISP,
+	I2C_MODE_S1D13524,
+	I2C_MODE_SC18IS6XX,
+};
+
+enum temp_sensor_id {
+	TEMP_SENSOR_NONE = 0,
+	TEMP_SENSOR_LM75,
+};
+
+enum epdc_ref {
+	EPDC_NONE = 0,
+	EPDC_S1D13524,
+	EPDC_S1D13541,
+};
+
 /** Board information */
 struct __attribute__((__packed__)) pl_hw_board_info {
 	char board_type[9];
 	uint8_t board_ver_maj;
 	uint8_t board_ver_min;
 	uint8_t vcom_mode;
-	uint8_t hv_pmic;
+	uint8_t hv_pmic;          /* enum hv_pmic_id */
 	uint8_t vcom_dac;
 	uint8_t vcom_adc;
 	uint8_t io_config;
-	uint8_t i2c_mode;
-	uint8_t temp_sensor;
+	uint8_t i2c_mode;         /* enum i2c_mode_id */
+	uint8_t temp_sensor;      /* enum temp_sensor_id */
 	uint8_t frame_buffer;
-	uint8_t epdc_ref;
+	uint8_t epdc_ref;         /* enum epdc_ref */
 	int16_t adc_scale_1;
 	int16_t adc_scale_2;
 };
@@ -71,8 +96,11 @@ struct __attribute__((__packed__)) pl_hw_info {
 	uint16_t crc;
 };
 
+#if CONFIG_HW_INFO_EEPROM
 struct i2c_eeprom;
-
 extern int pl_hw_info_init(struct pl_hw_info *info, struct i2c_eeprom *eeprom);
+#endif
 
-#endif /* PL_HWINFO_H_ */
+extern void pl_hw_info_log(const struct pl_hw_info *info);
+
+#endif /* PL_HWINFO_H */

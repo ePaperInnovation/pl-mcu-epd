@@ -81,6 +81,15 @@ int pl_hw_info_init(struct pl_hw_info *info, struct i2c_eeprom *eeprom)
 	board->adc_scale_1 = be16toh(board->adc_scale_1);
 	board->adc_scale_2 = be16toh(board->adc_scale_2);
 
+	return 0;
+}
+
+void pl_hw_info_log(const struct pl_hw_info *info)
+{
+	const struct pl_hw_vcom_info *vcom = &info->vcom;
+	const struct pl_hw_board_info *board = &info->board;
+
+	LOG("version: %d", info->version);
 	LOG("VCOM DAC info: dac[%d]=%d, dac[%d]=%d",
 	    vcom->dac_x1, vcom->dac_y1, vcom->dac_x2, vcom->dac_y2);
 	LOG("Gate PSU info: VGPOS=%ld, VGNEG=%ld, swing=%ld",
@@ -94,7 +103,5 @@ int pl_hw_info_init(struct pl_hw_info *info, struct i2c_eeprom *eeprom)
 	    board->frame_buffer);
 	LOG("epdc_ref=%d, adc_scale_1=%d, adc_scale_2=%d",
 	    board->epdc_ref, board->adc_scale_1, board->adc_scale_2);
-	LOG("CRC16: %04X", crc);
-
-	return 0;
+	LOG("CRC16: %04X", info->crc);
 }
