@@ -27,7 +27,7 @@
 #include "types.h" /* mdelay */
 #include "hal_pmm.h"
 
-extern int app_main(void);
+extern void app_main(void);
 
 /* We need to disable the watchdog very early or the runtime system never gets
  * a chance to complete the initialisation of data before calling main and the
@@ -81,5 +81,7 @@ int main(void)
 	board_init();
 	__bis_SR_register(GIE);
 
-	return app_main();
+	app_main();
+
+	return 0;
 }
