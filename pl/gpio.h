@@ -36,6 +36,9 @@
    Abstract interface to use General Purpose Input / Output signals
 */
 
+/** This value can be used in to indicate that a GPIO is not available */
+#define PL_GPIO_NONE ((unsigned)-1)
+
 /** Pin configuration flags */
 enum pl_gpio_flags {
 	/* For inputs */
