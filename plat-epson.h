@@ -28,19 +28,26 @@
 #ifndef PLAT_EPSON_H
 #define PLAT_EPSON_H 1
 
-struct epson_gpio_config {
+#include <stdint.h>
+
+struct epson_config {
 	unsigned reset;
 	unsigned cs0;
 	unsigned hirq;
 	unsigned hrdy;
 	unsigned hdc;
+	int spi_channel;
+	uint16_t spi_divisor;
+	uint32_t wf_addr;
 };
 
 struct platform;
 struct pl_hw_info;
+struct s1d135xx;
 
 extern int plat_epson_init(struct platform *plat,
 			   const struct pl_hw_info *pl_hw_info,
-			   const struct epson_gpio_config *gpio_epson);
+			   const struct epson_config *config,
+			   struct s1d135xx *epson);
 
 #endif /* PLAT_EPSON_H */

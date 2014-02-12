@@ -99,15 +99,70 @@ static int wf_from_eeprom()
 }
 #endif
 
+static int init_s1d13524(struct platform *plat,
+			 const struct pl_hw_info *pl_hw_info,
+			 const struct epson_config *config,
+			 struct s1d135xx *epson)
+{
+	LOG("S1D13524 init - not tested yet");
+
+	return -1;
+}
+
+static int init_s1d13541(struct platform *plat,
+			 const struct pl_hw_info *pl_hw_info,
+			 const struct epson_config *config,
+			 struct s1d135xx *epson)
+{
+
+	if (epsonif_init(&plat->gpio, config))
+		return -1;
+
+	s1d135xx_set_wfid_table(pl_hw_info->board.epdc_ref);
+
+	if (s1d13541_early_init(epson))
+		return -1;
+
+	if (s1d13541_init(epson))
+		return -1;
+
+	s1d13541_set_temperature_mode(epson, TEMP_MODE_INTERNAL);
+
+	return 0;
+}
+
 int plat_epson_init(struct platform *plat,
 		    const struct pl_hw_info *pl_hw_info,
-		    const struct epson_gpio_config *gpio_epson)
+		    const struct epson_config *config,
+		    struct s1d135xx *epson)
+{
+	int stat;
+
+	LOG("init");
+
+	if (pl_hw_info->board.epdc_ref == EPDC_S1D13524)
+		stat = init_s1d13524(plat, pl_hw_info, config, epson);
+	else if (pl_hw_info->board.epdc_ref == EPDC_S1D13541)
+		stat = init_s1d13541(plat, pl_hw_info, config, epson);
+	else
+		abort_msg("Invalid EPDC reference");
+
+	return stat;
+}
+
+#if 0 /* phasing out */
+int plat_epson_init(struct platform *plat,
+		    const struct pl_hw_info *pl_hw_info,
+		    const struct epson_config *config,
+		    struct s1d135xx *epson)
 {
 	static const char platform_path[] = "0:/";
 	char full_path[10];
 	int ret = 0;
 	screen_t prev_screen;
 	int vcom;
+
+	LOG("init - NO FIXUP");
 
 #if CONFIG_DISP_DATA_SD_EEPROM
 	check(f_chdir(CONFIG_DISPLAY_TYPE) == FR_OK);
@@ -119,7 +174,7 @@ int plat_epson_init(struct platform *plat,
 #endif
 
 	/* initialise the Epson interface */
-	epsonif_init(&plat->gpio, gpio_epson, 0, 1);
+	epsonif_init(&plat->gpio, config);
 
 	/* Set the waveform id table for the current controller */
 	s1d135xx_set_wfid_table(pl_hw_info->board.epdc_ref);
@@ -131,12 +186,12 @@ int plat_epson_init(struct platform *plat,
 	case EPDC_S1D13524:
 		/* TODO: Proper display eeprom support for Raven */
 		check(f_chdir("0:/Type11") == FR_OK);
-		check(s1d13524_init(gpio_epson->cs0, &epson)==0);
+		check(s1d13524_init(config->cs0, &epson)==0);
 		break;
 	case EPDC_S1D13541:
 #if !CONFIG_PSU_ONLY
 		/* Epson S1D13541 controller early init */
-		check(s1d13541_early_init(gpio_epson->cs0, &prev_screen, &epson) == 0);
+		check(s1d13541_early_init(epson) == 0);
 #endif
 		break;
 	default:
@@ -196,7 +251,7 @@ int plat_epson_init(struct platform *plat,
 	if (pl_hw_info->board.epdc_ref == EPDC_S1D13541) {
 #if !CONFIG_PSU_ONLY
 		check(s1d13541_early_init_end(epson, prev_screen) == 0);
-		check(s1d13541_init_start(gpio_epson->cs0, &prev_screen, epson) == 0);
+		check(s1d13541_init_start(config->cs0, &prev_screen, epson) == 0);
 		check(s1d13541_init_prodcode(epson) == 0);
 		check(s1d13541_init_clock(epson) == 0);
 		check(s1d13541_init_initcode(epson) == 0);
@@ -211,18 +266,22 @@ int plat_epson_init(struct platform *plat,
 		LOG("Loading waveform from SD card");
 		if (s1d13541_send_waveform())
 			abort_msg("Failed to load waveform from SD card");
+#if 0
 		/* read the display vcom */
 		vcom = util_read_vcom();
 		assert(vcom > 0);
+#endif
 #elif CONFIG_DISP_DATA_EEPROM_SD
 		if (wf_from_eeprom()) {
 			LOG("Failed to load waveform from EEPROM");
 			LOG("Loading waveform from SD card");
 			if (s1d13541_send_waveform())
 				abort_msg("Failed to load waveform from SD card");
+#if 0
 			/* read the display vcom */
 			vcom = util_read_vcom();
 			assert(vcom > 0);
+#endif
 		} else {
 			vcom = plwf_data.info.vcom;
 		}
@@ -234,9 +293,11 @@ int plat_epson_init(struct platform *plat,
 				abort_msg("Failed to load waveform from EEPROM");
 			vcom = plwf_data.info.vcom;
 		} else {
+#if 0
 			/* read the display vcom */
 			vcom = util_read_vcom();
 			assert(vcom > 0);
+#endif
 		}
 #endif
 
@@ -324,3 +385,4 @@ int plat_epson_init(struct platform *plat,
 
 	return ret;
 }
+#endif
