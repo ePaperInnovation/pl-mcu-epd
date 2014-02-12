@@ -35,43 +35,18 @@
 /* Ruddock2 board EEPROM address */
 #define	I2C_ID_EEPROM 0x52
 
-/* Parallel interface */
-#define	HDB0        MSP430_GPIO(4,0)
-#define	HDB1        MSP430_GPIO(4,1)
-#define	HDB2        MSP430_GPIO(4,2)
-#define	HDB3        MSP430_GPIO(4,3)
-#define	HDB4        MSP430_GPIO(4,4)
-#define	HDB5        MSP430_GPIO(4,5)
-#define	HDB6        MSP430_GPIO(4,6)
-#define	HDB7        MSP430_GPIO(4,7)
-#define	HDB8        MSP430_GPIO(6,0)
-#define	HDB9        MSP430_GPIO(6,1)
-#define	HDB10       MSP430_GPIO(6,2)
-#define	HDB11       MSP430_GPIO(6,3)
-#define	HDB12       MSP430_GPIO(6,4)
-#define	HDB13       MSP430_GPIO(6,5)
-#define	HDB14       MSP430_GPIO(6,6)
-#define	HDB15       MSP430_GPIO(6,7)
-
-/* TFT interface extensions */
-#define	TFT_HSYNC   MSP430_GPIO(7,2)
-#define	TFT_VSYNC   MSP430_GPIO(7,3)
-#define	TFT_DE      MSP430_GPIO(7,4)
-#define	TFT_CLK     MSP430_GPIO(7,5)
-
+#if 0 /* dead code */
 /* General bits */
 #define	RESET       MSP430_GPIO(5,0)
 #define	SHUTDOWN    MSP430_GPIO(5,1)
 
-#if 0
 /* HV-PMIC things */
 #define	PMIC_FLT    MSP430_GPIO(2,5)
-#define	HIRQ        MSP430_GPIO(2,6)
 #endif
 
 static uint8_t led_state = 0;
 
-#if 0
+#if 0 /* dead code */
 static void ruddock2_leds_update(struct pl_gpio *gpio, uint8_t leds)
 {
 	gpio->set(LED1, (leds & RUDDOCK2_LED1));
@@ -83,7 +58,7 @@ static void ruddock2_leds_update(struct pl_gpio *gpio, uint8_t leds)
 
 int ruddock2_init(struct pl_gpio *gpio)
 {
-#if 0
+#if 0 /* dead code */
 	{ HIRQ,     PL_GPIO_INPUT | PL_GPIO_PU      },
 
 	/* Input pins that will move to new owner */
@@ -91,19 +66,8 @@ int ruddock2_init(struct pl_gpio *gpio)
 	{ SHUTDOWN, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
 #endif
 
-	static const uint16_t parallel_interface[] = {
-		HDB0, HDB1, HDB2, HDB3,	HDB4, HDB5, HDB6, HDB7,
-		HDB8, HDB9, HDB10, HDB11, HDB12, HDB13, HDB14, HDB15,
-		TFT_HSYNC, TFT_VSYNC, TFT_DE, TFT_CLK,
-	};
-	unsigned i;
 
 	/* parallel interface signals, define as low outputs for now */
-	for (i = 0; i < ARRAY_SIZE(parallel_interface); ++i) {
-		if (gpio->config(parallel_interface[i],
-				 PL_GPIO_OUTPUT | PL_GPIO_INIT_L))
-			return -1;
-	}
 
 #if 0
 	ruddock2_leds_update(gpio, led_state);

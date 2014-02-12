@@ -1,7 +1,7 @@
 /*
   Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2013 Plastic Logic Limited
+  Copyright (C) 2013, 2014 Plastic Logic Limited
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -19,14 +19,28 @@
 /*
  * plat-generic.h -- Plastic Logic non-platform specific calls
  *
- * Authors: Andrew Cox <andrew.cox@plasticlogic.com>
+ * Authors:
+ *   Andrew Cox <andrew.cox@plasticlogic.com>
+ *   Guillaume Tucker <guillaume.tucker@plasticlogic.com>
  *
  */
 
-#ifndef PLAT_GENERIC_H_
-#define PLAT_GENERIC_H_
+#ifndef PLAT_EPSON_H
+#define PLAT_EPSON_H 1
 
-int check_platform();
-int plat_epson_init();
+struct epson_gpio_config {
+	unsigned reset;
+	unsigned cs0;
+	unsigned hirq;
+	unsigned hrdy;
+	unsigned hdc;
+};
 
-#endif /* PLAT_GENERIC_H_ */
+struct platform;
+struct pl_hw_info;
+
+extern int plat_epson_init(struct platform *plat,
+			   const struct pl_hw_info *pl_hw_info,
+			   const struct epson_gpio_config *gpio_epson);
+
+#endif /* PLAT_EPSON_H */

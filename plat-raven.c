@@ -124,8 +124,10 @@ int plat_raven_init(struct platform *plat)
 	vcom = util_read_vcom();
 	assert(vcom > 0);
 
+#if 0
 	/* initialise the Epson interface */
 	epsonif_init(&plat->gpio, 0, 1);
+#endif
 
 	s1d135xx_set_wfid_table(EPDC_S1D13524);
 

@@ -113,9 +113,11 @@ int plat_cuckoo_init(struct platform *plat)
 	vcom = util_read_vcom();
 	assert(vcom > 0);
 
+#if 0
 	/* initialise the Epson interface */
 	/* Note slower clock speed because of long cables in wiring harness. */
 	epsonif_init(&plat->gpio, 0, 2);
+#endif
 
 	/* define gpio's required for operation */
 	check(!plat->gpio.config(EPSON_CS_0, PL_GPIO_OUTPUT | PL_GPIO_INIT_H));

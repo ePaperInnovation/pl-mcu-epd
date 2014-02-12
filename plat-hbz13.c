@@ -52,16 +52,6 @@
 #include "epson/epson-if.h"
 #include "slideshow.h"
 
-#define CONFIG_PLAT_RUDDOCK2	1
-#if CONFIG_PLAT_RUDDOCK2
-#define B_HWSW_CTRL             MSP430_GPIO(1,2)
-#define B_POK                   MSP430_GPIO(1,0)
-#define B_PMIC_EN               MSP430_GPIO(1,1)
-#define	EPSON_CS_0              MSP430_GPIO(3,6)
-
-#else
-#endif
-
 /* i2c addresses Maxim PMIC and DAC */
 #define I2C_PMIC_ADDR	0x48
 #define I2C_DAC_ADDR	0x39
@@ -96,17 +86,17 @@ static u8 needs_update;
 static int power_up(void)
 {
 	printk("Powering up\n");
-	g_plat->gpio.set(B_HWSW_CTRL, false);
-	g_plat->gpio.set(B_PMIC_EN, true);
+	g_plat->gpio.set(g_plat->hv_gpio->hvsw_ctrl, false);
+	g_plat->gpio.set(g_plat->hv_gpio->pmic_en, true);
 
 	do {
 		mdelay(1);
-	} while (!g_plat->gpio.get(B_POK));
+	} while (!g_plat->gpio.get(g_plat->hv_gpio->pmic_pok));
 
 	dac5820_write(dac_info);
 	dac5820_set_power(dac_info, true);
 
-	g_plat->gpio.set(B_HWSW_CTRL, true);
+	g_plat->gpio.set(g_plat->hv_gpio->hvsw_ctrl, true);
 
 	return 0;
 }
@@ -114,9 +104,9 @@ static int power_up(void)
 /* Board specific power down control */
 static int power_down(void)
 {
-	g_plat->gpio.set(B_HWSW_CTRL, false);
+	g_plat->gpio.set(g_plat->hv_gpio->hvsw_ctrl, false);
 	dac5820_set_power(dac_info, false);
-	g_plat->gpio.set(B_PMIC_EN, false);
+	g_plat->gpio.set(g_plat->hv_gpio->pmic_en, false);
 
 	printk("Powered down\n");
 
@@ -128,12 +118,6 @@ static int power_down(void)
 int plat_hbz13_init(struct platform *plat, const char *platform_path,
 		    int i2c_on_epson)
 {
-	static const struct pl_gpio_config gpios[] = {
-		{ B_HWSW_CTRL, PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
-		{ B_PMIC_EN,   PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
-		{ B_POK,       PL_GPIO_INPUT                   },
-		{ EPSON_CS_0,  PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
-	};
 	int done = 0;
 	short previous;
 	int vcom;
@@ -150,14 +134,12 @@ int plat_hbz13_init(struct platform *plat, const char *platform_path,
 	vcom = util_read_vcom();
 	assert(vcom > 0);
 
+#if 0
 	/* initialise the Epson interface */
 	epsonif_init(&plat->gpio, 0, 1);
+#endif
 
-	/* define gpio's required for operation */
-	if (pl_gpio_config_list(&plat->gpio, gpios, ARRAY_SIZE(gpios)))
-		return -1;
-
-#if !CONFIG_PSU_ONLY
+#if 0 /*!CONFIG_PSU_ONLY*/
 	/* initialise the Epson controller */
 	check(s1d13541_early_init(EPSON_CS_0, &prev_screen, &epson) == 0);
 	check(s1d13541_early_init_end(epson, prev_screen) == 0);

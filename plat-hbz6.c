@@ -58,16 +58,6 @@
 #define LOG_TAG "hbz6"
 #include "utils.h"
 
-#define CONFIG_PLAT_RUDDOCK2	1
-#if CONFIG_PLAT_RUDDOCK2
-#define B_HWSW_CTRL     MSP430_GPIO(1,2)
-#define B_POK           MSP430_GPIO(1,0)
-#define B_PMIC_EN       MSP430_GPIO(1,1)
-#define EPSON_CS_0      MSP430_GPIO(3,6)
-#define EPSON_CLK_EN    MSP430_GPIO(1,6)
-#define EPSON_3V3_EN    MSP430_GPIO(1,7)
-#endif
-
 /* 1 to cycle power supplies only, no display update (testing only) */
 #define	CONFIG_PSU_ONLY 0
 
@@ -79,6 +69,10 @@ static const char SLIDES_PATH[] = "img/slides.txt";
 static const char SEP[] = ", ";
 
 static struct platform *g_plat;
+#if 1
+struct platform **hbz6_plat = &g_plat;
+#endif
+
 static struct pl_i2c g_epson_i2c;
 static struct pl_i2c *g_i2c;
 static struct tps65185_info *pmic_info;
@@ -109,14 +103,14 @@ static const struct pl_hw_vcom_info def_vcom_info = {
 /* Board specific power up control */
 static int power_up(void)
 {
-	g_plat->gpio.set(B_HWSW_CTRL, false);
-	g_plat->gpio.set(B_PMIC_EN, true);
+	g_plat->gpio.set(g_plat->hv_gpio->hvsw_ctrl, false);
+	g_plat->gpio.set(g_plat->hv_gpio->pmic_en, true);
 
 	do {
 		mdelay(1);
-	} while (!g_plat->gpio.get(B_POK));
+	} while (!g_plat->gpio.get(g_plat->hv_gpio->pmic_pok));
 
-	g_plat->gpio.set(B_HWSW_CTRL, true);
+	g_plat->gpio.set(g_plat->hv_gpio->hvsw_ctrl, true);
 
 	return 0;
 }
@@ -124,8 +118,8 @@ static int power_up(void)
 /* Board specific power down control */
 static int power_down(void)
 {
-	g_plat->gpio.set(B_HWSW_CTRL, false);
-	g_plat->gpio.set(B_PMIC_EN, false);
+	g_plat->gpio.set(g_plat->hv_gpio->hvsw_ctrl, false);
+	g_plat->gpio.set(g_plat->hv_gpio->pmic_en, false);
 
 	return 0;
 }
@@ -293,14 +287,6 @@ static int wf_from_eeprom()
 int plat_hbZn_init(struct platform *plat, const char *platform_path,
 		   int i2c_on_epson)
 {
-	static const struct pl_gpio_config gpios[] = {
-		{ B_HWSW_CTRL,  PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
-		{ B_PMIC_EN,    PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
-		{ B_POK,        PL_GPIO_INPUT                   },
-		{ EPSON_CS_0,   PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
-		{ EPSON_3V3_EN, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
-		{ EPSON_CLK_EN, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
-	};
 	struct pl_hw_info pl_hw_info;
 	int ret = 0;
 	short previous;
@@ -314,16 +300,14 @@ int plat_hbZn_init(struct platform *plat, const char *platform_path,
 	if (f_chdir(platform_path) != FR_OK)
 		abort_msg("Failed to find platform directory");
 
+#if 0
 	/* initialise the Epson interface */
 	epsonif_init(&plat->gpio, 0, 1);
+#endif
 
 	s1d135xx_set_wfid_table(EPDC_S1D13541);
 
-	/* define gpio's required for operation */
-	if (pl_gpio_config_list(&plat->gpio, gpios, ARRAY_SIZE(gpios)))
-		return -1;
-
-#if !CONFIG_PSU_ONLY
+#if 0 /*!CONFIG_PSU_ONLY*/
 	/* initialise the Epson controller */
 	check(s1d13541_early_init(EPSON_CS_0, &prev_screen, &epson) == 0);
 	check(s1d13541_init_clock(epson) == 0);
@@ -442,6 +426,7 @@ int plat_s1d13541_init_display(struct s1d135xx *epson)
 	s1d13541_update_display(epson, s1d135xx_get_wfid(wf_init));
 	s1d13541_wait_update_end(epson);
 	power_down();
+
 	return 0;
 }
 
