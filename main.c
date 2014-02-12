@@ -26,12 +26,13 @@
 #include <pl/platform.h>
 #include <pl/gpio.h>
 #include <pl/hwinfo.h>
+#include <FatFs/ff.h>
 #include <stdio.h>
 #include "i2c-eeprom.h"
 #include "assert.h"
 #include "types.h"
 #include "config.h"
-#include "FatFs/ff.h"
+#include "probe.h"
 #include "msp430-i2c.h"
 #include "msp430-gpio.h"
 #include "msp430-sdcard.h"
@@ -42,9 +43,12 @@
 #include "plat-raven.h"
 #include "plat-ruddock2.h"
 #include "plat-epson.h"
+#include "epson/S1D13541.h"
 
 #define LOG_TAG "main"
 #include "utils.h"
+
+#define I2C_PSU_EEPROM_ADDR 0x50
 
 /* Navigation buttons */
 #define	SW1         MSP430_GPIO(2,0)
@@ -73,6 +77,9 @@ static const char VERSION[] = "v006";
 
 /* Platform instance, to be passed to other modules */
 static struct platform g_plat;
+
+/* Epson controller instance */
+static struct s1d135xx g_epson;
 
 /* --- System GPIOs --- */
 
@@ -183,7 +190,7 @@ static const uint16_t g_epson_parallel[] = {
 	EPSON_TFT_HSYNC, EPSON_TFT_VSYNC, EPSON_TFT_DE, EPSON_TFT_CLK,
 };
 
-static const struct epson_gpio_config g_epson_gpio_config = {
+static const struct epson_config g_epson_config = {
 	EPSON_RESET, EPSON_CS_0, EPSON_HIRQ,
 #if SPI_HRDY_USED
 	EPSON_HRDY,
@@ -195,13 +202,20 @@ static const struct epson_gpio_config g_epson_gpio_config = {
 #else
 	PL_GPIO_NONE,
 #endif
+	0, /* spi_channel */
+#if CONFIG_PLAT_CUCKOO
+	2, /* spi_divisor */
+#else
+	1, /* spi_divisor */
+#endif
+	S1D13541_WF_ADDR, /* wf_addr */
 };
 
 /* --- hardware info --- */
 
 #if CONFIG_HW_INFO_EEPROM
 static struct pl_hw_info g_pl_hw_info;
-#elif CONFIG_HW_INFO_DEFAULT
+#elif CONFIG_HW_INFO_DEFAULT /* ToDo: use default as fall-back solution */
 static const struct pl_hw_info g_pl_hw_info = {
 	/* version */
 	PL_HW_INFO_VERSION,
@@ -226,6 +240,11 @@ static const struct pl_hw_info g_pl_hw_info = {
 
 void app_main(void)
 {
+#if CONFIG_HW_INFO_EEPROM
+	static const struct i2c_eeprom hw_eeprom = {
+		&g_plat.host_i2c, I2C_PSU_EEPROM_ADDR, EEPROM_24LC014;
+	};
+#endif
 	FATFS sdcard;
 	int platform_type;
 	unsigned i;
@@ -277,33 +296,22 @@ void app_main(void)
 		abort_msg("Failed to initialise SD card");
 
 #if CONFIG_HW_INFO_EEPROM
-	/* hardware info EEPROM */
-	g_plat.hw_eeprom.i2c = &g_plat.host_i2c;
-	g_plat.hw_eeprom.i2c_addr = I2C_PSU_EEPROM_ADDR;
-	g_plat.hw_eeprom.type = EEPROM_24LC014;
-
-	if (pl_hw_info_init(&pl_hw_info, &g_plat.hw_eeprom))
+	if (pl_hw_info_init(&pl_hw_info, &hw_eeprom))
 		abort_msg("Failed to read hardware info EEPROM");
 #else
 	LOG("Using hard-coded hardware info");
 #endif
 	pl_hw_info_log(&g_pl_hw_info);
 
-#if CONFIG_PLAT_AUTO
 #if 1
 	LOG("Temporary hack to keep things going until all bugs are fixed...");
 	*hbz6_plat = &g_plat;
-	if (plat_epson_init(&g_plat, &g_pl_hw_info, &g_epson_gpio_config)) {
-		LOG("Failed to automatically initialise platform");
-#else
-	/* determine platform from PSU eeprom contents */
-	platform_type = check_platform(&g_plat);
+#endif
 
-	if (platform_type == EPDC_S1D13524 || platform_type == EPDC_S1D13541) {
-		plat_epson_init(&g_plat, &g_pl_hw_info, &g_epson_gpio_config);
-	} else {
-#endif
-#endif
+	if (probe(&g_plat, &g_pl_hw_info, &g_epson_config, &g_epson))
+		abort_msg("Failed to probe hardware");
+
+#if 0
 #if CONFIG_PLAT_CUCKOO
 		plat_cuckoo_init(&g_plat);
 #elif CONFIG_PLAT_Z13
@@ -315,7 +323,7 @@ void app_main(void)
 #elif CONFIG_PLAT_RAVEN
 		plat_raven_init(&g_plat);
 #endif
-	}
+#endif
 
 	/* Do not return from app_main */
 	for (;;) {
