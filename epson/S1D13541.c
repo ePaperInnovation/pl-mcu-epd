@@ -49,7 +49,8 @@
 /* These need changing to use our definitions */
 #define TIMEOUT_MS 5000
 
-#define REG_CLOCK_CONFIGURATION    ((uint16_t)0x0010)
+#define REG_I2C_CLK_CONFIG         ((uint16_t)0x001A)
+#define REG_CLOCK_CONFIG           ((uint16_t)0x0010)
 
 #define BF_INIT_CODE_CHECKSUM	   ((uint16_t)(1 << 15))
 #define INT_WF_CHECKSUM_ERROR	   ((uint16_t)(1 << 12))
@@ -152,87 +153,35 @@ void s1d13541_wait_update_end(struct s1d135xx *epson)
 	epson_wait_for_idle();
 }
 
-int s1d13541_early_init(screen_t screen, screen_t *previous,
-		struct s1d135xx **controller)
+static void s1d13541_reset(void)
 {
-	uint16_t product_code;
-	struct s1d135xx *epson;
-
-	*controller = epson = malloc(sizeof(struct s1d135xx));
-	memset(epson, 0, sizeof(struct s1d135xx));
-
-	if (NULL == epson)
-		return -1;
-
-	epson_wait_for_idle_mask(0x2000, 0x2000);
-
-	epson->screen = screen;
-
-	epson->keycode1 = KEY_2;
-	epson->keycode2 = KEY_1;
-	epson->temp_mode = TEMP_MODE_UNDEFINED;
-	epson->power_mode = PWR_STATE_UNDEFINED;
-
-	if (epsonif_claim(0, screen, previous) < 0)
-		return -1;
-
-	epson_reg_write(REG_CLOCK_CONFIGURATION, INTERNAL_CLOCK_ENABLE);
-	msleep(10);
-	epson_wait_for_idle();
-
-	epson_reg_read(PROD_CODE_REG, &product_code);
-
-	LOG("Product code: 0x%04x", product_code);
-
-	if (product_code != PRODUCT_CODE) {
-		LOG("invalid product code, %04X instead of %04X",
-		    product_code, PRODUCT_CODE);
-		return -1;
-	}
-
-	return 0;
-}
-
-int s1d13541_early_init_end(struct s1d135xx *epson, screen_t previous)
-{
-	assert(epson != NULL);
-
-	epsonif_release(0, previous);
-	return 0;
-}
-
-int s1d13541_init_start(screen_t screen, screen_t *previous,
-			struct s1d135xx *epson)
-{
-	assert (epson);
-
-	epson_wait_for_idle_mask(0x2000, 0x2000);
-
-	epson->screen = screen;
-
-	epson->keycode1 = KEY_2;
-	epson->keycode2 = KEY_1;
-	epson->temp_mode = TEMP_MODE_UNDEFINED;
-	epson->power_mode = PWR_STATE_UNDEFINED;
-
 	epsonif_assert_reset();
 	mdelay(4);
 	epsonif_negate_reset();
-
-	if (epsonif_claim(0, screen, previous) < 0)
-		return -1;
-
-	return 0;
 }
 
-int s1d13541_init_prodcode(struct s1d135xx *epson)
+static void s1d13541_init_clocks(void)
+{
+	epson_reg_write(REG_CLOCK_CONFIG, INTERNAL_CLOCK_ENABLE);
+	msleep(10);
+	epson_wait_for_idle();
+	epson_reg_write(REG_I2C_CLK_CONFIG, 0x0007);
+	epson_wait_for_idle();
+}
+
+int s1d13541_early_init(struct s1d135xx *epson)
 {
 	uint16_t product_code;
 
 	assert(epson != NULL);
 
+	epson_set_idle_mask(0x2000, 0x2000);
+
+	s1d13541_reset();
+	mdelay(10);
 	epson_softReset();
-	epson_wait_for_idle();
+	s1d13541_init_clocks();
+
 	epson_reg_read(PROD_CODE_REG, &product_code);
 
 	LOG("Product code: 0x%04x", product_code);
@@ -246,57 +195,32 @@ int s1d13541_init_prodcode(struct s1d135xx *epson)
 	return 0;
 }
 
-int s1d13541_init_clock(struct s1d135xx *epson)
+int s1d13541_init(struct s1d135xx *epson)
 {
 	assert(epson != NULL);
 
-	epson_reg_write(REG_CLOCK_CONFIGURATION, INTERNAL_CLOCK_ENABLE);
-	msleep(10);
-	epson_wait_for_idle();
+	epson->keycode1 = KEY_2;
+	epson->keycode2 = KEY_1;
+	epson->temp_mode = TEMP_MODE_UNDEFINED;
+	epson->power_mode = PWR_STATE_UNDEFINED;
 
-	return 0;
-}
+	s1d13541_reset();
+	epson_softReset();
+	s1d13541_init_clocks();
 
-int s1d13541_init_initcode(struct s1d135xx *epson)
-{
-	int retval = 0;
-
-	assert(epson != NULL);
-
-	retval = send_init_code();
-	if (retval != 0) {
-		LOG("send_init_code failed");
+	if (send_init_code()) {
+		LOG("Oops");
+		return -1;
 	}
-
-	return retval;
-}
-
-int s1d13541_init_pwrstate(struct s1d135xx *epson)
-{
-	assert(epson != NULL);
 
 	epson_cmd_p0(INIT_SYS_STBY);
 	epson->power_mode = PWR_STATE_STANDBY;
 	msleep(100);
 	epson_wait_for_idle();
 
-	return 0;
-}
-
-int s1d13541_init_keycode(struct s1d135xx *epson)
-{
-	assert(epson != NULL);
-
 	epson_reg_write(REG_PROTECTION_KEY_1, epson->keycode1);
 	epson_reg_write(REG_PROTECTION_KEY_2, epson->keycode2);
 	epson_wait_for_idle();
-
-	return 0;
-}
-
-int s1d13541_init_gateclr(struct s1d135xx *epson)
-{
-	assert(epson != NULL);
 
 #if GATE_POWER_BEFORE_INIT
 	epson_mode_run(epson);
@@ -307,11 +231,9 @@ int s1d13541_init_gateclr(struct s1d135xx *epson)
 	epson_wait_for_idle();
 	epson_mode_run(epson);
 #endif
+
 	epson_cmd_p0(WAIT_DSPE_TRG);
 	epson_wait_for_idle();
-
-	// init_rot_mode
-	// not required in this case
 
 #if 0
 	// fill buffer with blank image using H/W fill support
@@ -329,18 +251,9 @@ int s1d13541_init_gateclr(struct s1d135xx *epson)
 	epson_wait_for_idle();
 #endif
 
-	return 0;
-}
-
-int s1d13541_init_end(struct s1d135xx *epson, screen_t previous)
-{
-	assert(epson != NULL);
-
-	// get x and y definitions.
 	epson_reg_read(REG_LINE_DATA_LENGTH, &epson->xres);
 	epson_reg_read(REG_FRAME_DATA_LENGTH, &epson->yres);
 
-	epsonif_release(0, previous);
 	return 0;
 }
 
@@ -465,9 +378,9 @@ int s1d13541_pwrstate_sleep(struct s1d135xx *epson)
 	uint16_t current_clk_state;
 	epson_mode_sleep(epson);
 	epson_wait_for_idle();
-	epson_reg_read(REG_CLOCK_CONFIGURATION, &current_clk_state);
+	epson_reg_read(REG_CLOCK_CONFIG, &current_clk_state);
 	epson_wait_for_idle();
-	epson_reg_write(REG_CLOCK_CONFIGURATION, (current_clk_state & 0xFB7F) | INTERNAL_CLOCK_DISABLE);
+	epson_reg_write(REG_CLOCK_CONFIG, (current_clk_state & 0xFB7F) | INTERNAL_CLOCK_DISABLE);
 	epson_wait_for_idle();
 	epson_reg_write(PWR_SAVE_MODE_REG, POWER_PASSIVE);
 	return 0;
@@ -476,7 +389,7 @@ int s1d13541_pwrstate_sleep(struct s1d135xx *epson)
 int s1d13541_pwrstate_standby(struct s1d135xx *epson)
 {
 	uint16_t current_pwr_state;
-	epson_reg_write(REG_CLOCK_CONFIGURATION, INTERNAL_CLOCK_ENABLE);
+	epson_reg_write(REG_CLOCK_CONFIG, INTERNAL_CLOCK_ENABLE);
 	epson_wait_for_idle();
 	epson_reg_read(PWR_SAVE_MODE_REG, &current_pwr_state);
 	epson_wait_for_idle();
@@ -492,7 +405,7 @@ int s1d13541_pwrstate_standby(struct s1d135xx *epson)
 int s1d13541_pwrstate_run(struct s1d135xx *epson)
 {
 	uint16_t current_pwr_state;
-	epson_reg_write(REG_CLOCK_CONFIGURATION, INTERNAL_CLOCK_ENABLE);
+	epson_reg_write(REG_CLOCK_CONFIG, INTERNAL_CLOCK_ENABLE);
 	epson_wait_for_idle();
 	epson_reg_read(PWR_SAVE_MODE_REG, &current_pwr_state);
 	epson_wait_for_idle();

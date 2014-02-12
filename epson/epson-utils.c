@@ -78,7 +78,9 @@ void epson_power_down(void)
 
 void epson_softReset(void)
 {
-	epson_reg_write(SOFT_RST_REG, 0xff);
+	epson_reg_write(SOFT_RST_REG, 0);
+	mdelay(1);
+	epson_wait_for_idle();
 }
 
 static int set_power_mode(struct s1d135xx *e, enum s1d135xx_pwr_state mode)

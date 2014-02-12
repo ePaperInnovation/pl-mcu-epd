@@ -33,103 +33,64 @@
 #include "msp430-gpio.h"
 
 static struct pl_gpio *g_epsonif_gpio = NULL;
-static const struct epson_gpio_config *g_epson_gpio = NULL;
-static screen_t screen;
-static int busy;
+static const struct epson_config *g_config = NULL;
 
 int epsonif_init_reset(void)
 {
-	if (g_epson_gpio->reset == PL_GPIO_NONE)
+	if (g_config->reset == PL_GPIO_NONE)
 		return 0;
 
-	return g_epsonif_gpio->config(g_epson_gpio->reset,
+	return g_epsonif_gpio->config(g_config->reset,
 				      PL_GPIO_OUTPUT | PL_GPIO_INIT_H);
 }
 
 int epsonif_read_hrdy(void)
 {
-	if (g_epson_gpio->hrdy == PL_GPIO_NONE)
+	if (g_config->hrdy == PL_GPIO_NONE)
 		return 0; /* ToDo: read SPI register if no GPIO */
 
-	return g_epsonif_gpio->get(g_epson_gpio->hrdy);
-}
-
-/* Before using the spi interface you have to claim it and tell it what screen
- * id you will be talking to. This is to avoid having to pass screen
- * everywhere.  You get the current screen id back. This is to allow nesting of
- * spi access.
- */
-int epsonif_claim(int spi_channel, screen_t screen_id, screen_t *previous)
-{
-	*previous = screen;
-
-	if (spi_channel != 0)
-		return -EACCES;
-
-	screen = screen_id;
-	busy++;
-
-	return 0;
-}
-
-/* Indicate the spi interface is no longer in use at a higher level.  Restores
- * the previous screen selection, if there was one.
- */
-int epsonif_release(int spi_channel, screen_t previous)
-{
-	if (busy <= 0)
-		return -EINVAL;
-
-	screen = previous;
-	busy--;
-
-	return 0;
+	return g_epsonif_gpio->get(g_config->hrdy);
 }
 
 void epsonif_set_command(void)
 {
-	if (g_epson_gpio->hdc != PL_GPIO_NONE)
-		g_epsonif_gpio->set(g_epson_gpio->hdc, 0);
+	if (g_config->hdc != PL_GPIO_NONE)
+		g_epsonif_gpio->set(g_config->hdc, 0);
 }
 
 void epsonif_set_data(void)
 {
-	if (g_epson_gpio->hdc != PL_GPIO_NONE)
-		g_epsonif_gpio->set(g_epson_gpio->hdc, 1);
+	if (g_config->hdc != PL_GPIO_NONE)
+		g_epsonif_gpio->set(g_config->hdc, 1);
 }
 
 void epsonif_assert_reset(void)
 {
-	if (g_epson_gpio->reset != PL_GPIO_NONE)
-		g_epsonif_gpio->set(g_epson_gpio->reset, 0);
+	if (g_config->reset != PL_GPIO_NONE)
+		g_epsonif_gpio->set(g_config->reset, 0);
 }
 void epsonif_negate_reset(void)
 {
-	if (g_epson_gpio->reset != PL_GPIO_NONE)
-		g_epsonif_gpio->set(g_epson_gpio->reset, 1);
+	if (g_config->reset != PL_GPIO_NONE)
+		g_epsonif_gpio->set(g_config->reset, 1);
 }
 
 void epsonif_select_epson(void)
 {
-	assert(screen > 0);
-
-	g_epsonif_gpio->set(screen, 0);
+	g_epsonif_gpio->set(g_config->cs0, 0);
 }
 
 void epsonif_deselect_epson(void)
 {
-	assert(screen > 0);
-
-	g_epsonif_gpio->set(screen, 1);
+	g_epsonif_gpio->set(g_config->cs0, 1);
 }
 
 int epsonif_init(struct pl_gpio *gpio,
-		 const struct epson_gpio_config *epson_gpio,
-		 int spi_channel, u16 divisor)
+		 const struct epson_config *config)
 {
 	g_epsonif_gpio = gpio;
-	g_epson_gpio = epson_gpio;
-	spi_init(gpio, spi_channel, divisor);
+	g_config = config;
+	spi_init(gpio, config->spi_channel, config->spi_divisor);
 
 	if (epsonif_init_reset())
 		return -1;
@@ -138,8 +99,15 @@ int epsonif_init(struct pl_gpio *gpio,
 	mdelay(4);
 	epsonif_negate_reset();
 
-	screen = -1;
-	busy = 0;
+	return 0;
+}
 
+int epsonif_claim(int spi_channel, screen_t screen_id, screen_t *previous)
+{
+	return 0;
+}
+
+int epsonif_release(int spi_channel, screen_t previous)
+{
 	return 0;
 }

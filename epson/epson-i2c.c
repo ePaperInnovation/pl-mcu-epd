@@ -73,8 +73,6 @@
 
 struct epson_i2c {
 	struct pl_i2c i2c;
-	screen_t screen;
-	uint8_t busy;
 };
 
 static int epson_i2c_read(struct pl_i2c *i2c, uint8_t i2c_addr,
@@ -89,27 +87,21 @@ static struct epson_i2c epson_i2c;
  */
 int epson_i2c_init(struct s1d135xx *epson, struct pl_i2c *i2c)
 {
-	screen_t previous;
-
 	assert(epson);
 	assert(i2c);
 
 	epson_i2c.i2c.read = epson_i2c_read;
 	epson_i2c.i2c.write = epson_i2c_write;
-	epson_i2c.screen = epson->screen;
-	epson_i2c.busy = 0;
-
-	epsonif_claim(0,epson->screen, &previous);
 
 	/* reset the controller */
 	epson_reg_write(I2C_STAT_REG, I2C_STAT_RESET);
 	epson_wait_for_idle();
 	epson_reg_write(I2C_STAT_REG, I2C_STAT_SAMPLE_AT(3));
 
+#if 0
 	/* set I2C clock divider (0..15) */
 	epson_reg_write(I2C_CLK_CONF_REG, 0x0007);
-
-	epsonif_release(0, previous);
+#endif
 
 	i2c = &epson_i2c.i2c;
 
@@ -144,11 +136,8 @@ static int epson_i2c_command(int cmd, int flags)
 static int epson_i2c_write(struct pl_i2c *i2c, uint8_t i2c_addr,
 			   const uint8_t *data, uint8_t count, uint8_t flags)
 {
-	screen_t previous;
 	int result = -EIO;
 	struct epson_i2c *p = (struct epson_i2c*)i2c;
-
-	epsonif_claim(0, p->screen, &previous);
 
 	if (count == 0)
 		goto no_data;
@@ -179,8 +168,6 @@ error:
 		epson_i2c_command(I2C_STOP, 0);
 	}
 
-	epsonif_release(0, previous);
-
 	return result;
 }
 
@@ -190,13 +177,10 @@ error:
 static int epson_i2c_read(struct pl_i2c *i2c, uint8_t i2c_addr, uint8_t *data,
 			  uint8_t count, uint8_t flags)
 {
-	screen_t previous;
 	uint16_t stat;
 	uint16_t cmd;
 	int result = -EIO;
 	struct epson_i2c *p = (struct epson_i2c*)i2c;
-
-	epsonif_claim(0, p->screen, &previous);
 
 	if (count == 0)
 		goto no_data;
@@ -229,8 +213,6 @@ no_data:
 error:
 		epson_i2c_command(I2C_STOP, 0);
 	}
-
-	epsonif_release(0, previous);
 
 	return result;
 }

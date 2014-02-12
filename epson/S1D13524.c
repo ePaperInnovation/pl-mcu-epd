@@ -57,7 +57,7 @@ int s1d13524_init(screen_t screen, struct s1d135xx **controller)
 	if (NULL == epson)
 		return -ENOMEM;
 
-	epson_wait_for_idle_mask(0x0020, 0x0000);
+	epson_set_idle_mask(0x0020, 0x0000);
 
 	epson->screen = screen;
 	epson->temp_mode = TEMP_MODE_UNDEFINED;

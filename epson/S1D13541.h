@@ -52,20 +52,8 @@
 
 /* -- Initialisation -- */
 
-/* Initialise the controller and leave it in a state ready to do updates */
-extern int s1d13541_early_init(screen_t screen, screen_t *previous,
-		struct s1d135xx **controller);
-extern int s1d13541_early_init_end(struct s1d135xx *epson, screen_t previous);
-extern int s1d13541_init_start(screen_t screen, screen_t *previous,
-			       struct s1d135xx *epson);
-extern int s1d13541_init_prodcode(struct s1d135xx *epson);
-extern int s1d13541_init_clock(struct s1d135xx *epson);
-extern int s1d13541_init_initcode(struct s1d135xx *epson);
-extern int s1d13541_init_pwrstate(struct s1d135xx *epson);
-extern int s1d13541_init_keycode(struct s1d135xx *epson);
-extern int s1d13541_init_gateclr(struct s1d135xx *epson);
-extern int s1d13541_init_end(struct s1d135xx *epson, screen_t previous);
-
+extern int s1d13541_early_init(struct s1d135xx *epson);
+extern int s1d13541_init(struct s1d135xx *epson);
 
 /* -- Display updates -- */
 

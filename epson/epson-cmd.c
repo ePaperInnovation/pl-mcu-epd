@@ -313,7 +313,7 @@ int epson_is_busy(void)
 	return ((status & idle_mask) != idle_result);
 }
 
-void epson_wait_for_idle_mask(uint16_t mask, uint16_t result)
+void epson_set_idle_mask(uint16_t mask, uint16_t result)
 {
 	idle_mask = mask;
 	idle_result = result;

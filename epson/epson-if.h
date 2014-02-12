@@ -27,17 +27,16 @@
 #define EPSON_IF_H_
 
 struct pl_gpio;
-struct epson_gpio_config;
+struct epson_config;
 
 extern int epsonif_init(struct pl_gpio *gpio,
-			const struct epson_gpio_config *epson_gpio,
-			int spi_channel, u16 divisor);
+			const struct epson_config *config);
 
+/* stubs - to be removed */
 extern int epsonif_claim(int spi_channel, screen_t screen_id,
 			 screen_t *previous);
 extern int epsonif_release(int spi_channel, screen_t previous);
 
-extern void epsonif_close(void);
 extern void epsonif_select_epson(void);
 extern void epsonif_deselect_epson(void);
 extern void epsonif_set_command(void);

@@ -70,7 +70,7 @@ extern int epson_end_bulk_transfer(void);
 
 extern int epson_is_busy(void);
 extern void epson_wait_for_idle_timeout(unsigned timeout_ms);
-extern void epson_wait_for_idle_mask(uint16_t mask, uint16_t result);
+extern void epson_set_idle_mask(uint16_t mask, uint16_t result);
 extern int epson_reg_read(uint16_t reg, uint16_t* value);
 extern int epson_reg_write(uint16_t reg, uint16_t value);
 
