@@ -43,10 +43,10 @@ struct i2c_eeprom {
 	enum i2c_eeprom_type type;
 };
 
-extern int eeprom_read(struct i2c_eeprom *eeprom, uint16_t offset,
+extern int eeprom_read(const struct i2c_eeprom *eeprom, uint16_t offset,
 		       uint16_t count, uint8_t *data);
 #if CONFIG_EEPROM_WRITE
-extern int eeprom_write(struct i2c_eeprom *eeprom, uint16_t offset,
+extern int eeprom_write(const struct i2c_eeprom *eeprom, uint16_t offset,
 			uint16_t count, const uint8_t *data);
 #endif
 

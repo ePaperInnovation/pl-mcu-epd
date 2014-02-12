@@ -46,8 +46,8 @@ static const struct eeprom_data device_data[] = {
 	{ 0x7FFF, 64, EEPROM_16BIT_ADDRESS } /* 24aa256 (32 KBytes) */
 };
 
-int eeprom_read(struct i2c_eeprom *eeprom, uint16_t offset, uint16_t count,
-		uint8_t *data)
+int eeprom_read(const struct i2c_eeprom *eeprom, uint16_t offset,
+		uint16_t count, uint8_t *data)
 {
 	const struct eeprom_data *device;
 	struct pl_i2c *i2c;
@@ -97,8 +97,8 @@ int eeprom_read(struct i2c_eeprom *eeprom, uint16_t offset, uint16_t count,
 }
 
 #if CONFIG_EEPROM_WRITE
-int eeprom_write(struct i2c_eeprom *eeprom, uint16_t offset, uint16_t count,
-		 const uint8_t *data)
+int eeprom_write(const struct i2c_eeprom *eeprom, uint16_t offset,
+		 uint16_t count, const uint8_t *data)
 {
 	struct eeprom_data *device;
 	struct pl_i2c *i2c;
