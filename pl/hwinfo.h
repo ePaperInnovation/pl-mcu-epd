@@ -98,7 +98,8 @@ struct __attribute__((__packed__)) pl_hw_info {
 
 #if CONFIG_HW_INFO_EEPROM
 struct i2c_eeprom;
-extern int pl_hw_info_init(struct pl_hw_info *info, struct i2c_eeprom *eeprom);
+extern int pl_hw_info_init(struct pl_hw_info *info,
+			   const struct i2c_eeprom *eeprom);
 #endif
 
 extern void pl_hw_info_log(const struct pl_hw_info *info);

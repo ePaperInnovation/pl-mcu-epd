@@ -37,7 +37,7 @@
 #define LOG_TAG "hwinfo"
 #include "utils.h"
 
-int pl_hw_info_init(struct pl_hw_info *info, struct i2c_eeprom *eeprom)
+int pl_hw_info_init(struct pl_hw_info *info, const struct i2c_eeprom *eeprom)
 {
 	struct pl_hw_vcom_info *vcom;
 	struct pl_hw_board_info *board;
