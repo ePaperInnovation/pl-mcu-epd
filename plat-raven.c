@@ -120,9 +120,11 @@ int plat_raven_init(struct platform *plat)
 	/* all file operations will be within the Type11 subtree */
 	check(f_chdir("0:/Type11") == 0);
 
+#if 0
 	/* read the display vcom */
 	vcom = util_read_vcom();
 	assert(vcom > 0);
+#endif
 
 #if 0
 	/* initialise the Epson interface */

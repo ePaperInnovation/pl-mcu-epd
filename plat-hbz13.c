@@ -130,9 +130,11 @@ int plat_hbz13_init(struct platform *plat, const char *platform_path,
 	if (f_chdir(platform_path) != FR_OK)
 		abort_msg("Failed to find platform directory");
 
+#if 0
 	/* read the display vcom */
 	vcom = util_read_vcom();
 	assert(vcom > 0);
+#endif
 
 #if 0
 	/* initialise the Epson interface */

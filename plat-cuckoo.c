@@ -109,9 +109,11 @@ int plat_cuckoo_init(struct platform *plat)
 	/* all file operations will be within the Type4 subtree */
 	check(f_chdir("0:/Type4") == 0);
 
+#if 0
 	/* read the display vcom */
 	vcom = util_read_vcom();
 	assert(vcom > 0);
+#endif
 
 #if 0
 	/* initialise the Epson interface */

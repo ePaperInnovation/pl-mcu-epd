@@ -189,18 +189,22 @@ static int pwrstate_poweron_mode(void)
 	LOG("Loading display data from SD card");
 	if (s1d13541_send_waveform())
 		abort_msg("Failed to load waveform from SD card");
+#if 0
 	/* read the display vcom */
 	vcom = util_read_vcom();
 	assert(vcom > 0);
+#endif
 #elif CONFIG_DISP_DATA_EEPROM_SD
 	if (wf_from_eeprom()) {
 		LOG("Failed to load waveform from EEPROM");
 		LOG("Loading display data from SD card");
 		if (s1d13541_send_waveform())
 			abort_msg("Failed to load waveform from SD card");
+#if 0
 		/* read the display vcom */
 		vcom = util_read_vcom();
 		assert(vcom > 0);
+#endif
 	} else {
 		vcom = plwf_data.info.vcom;
 	}
@@ -212,13 +216,17 @@ static int pwrstate_poweron_mode(void)
 			abort_msg("Failed to load waveform from EEPROM");
 		vcom = plwf_data.info.vcom;
 	} else {
+#if 0
 		/* read the display vcom */
 		vcom = util_read_vcom();
 		assert(vcom > 0);
+#endif
 	}
 #endif
 
+#if 0
 	check(s1d13541_init_gateclr(epson) == 0);
+#endif
 return 0;
 }
 
@@ -337,9 +345,11 @@ int plat_hbZn_init(struct platform *plat, const char *platform_path,
 	LOG("Loading display data from SD card");
 	if (s1d13541_send_waveform())
 		abort_msg("Failed to load waveform from SD card");
+#if 0
 	/* read the display vcom */
 	vcom = util_read_vcom();
 	assert(vcom > 0);
+#endif
 #elif CONFIG_DISP_DATA_EEPROM_SD
 	if (wf_from_eeprom()) {
 		LOG("Failed to load waveform from EEPROM");
@@ -366,8 +376,10 @@ int plat_hbZn_init(struct platform *plat, const char *platform_path,
 	}
 #endif
 
+#if 0
 	check(s1d13541_init_gateclr(epson) == 0);
 	check(s1d13541_init_end(epson, prev_screen) == 0);
+#endif
 #endif
 
 #if CONFIG_HW_INFO_EEPROM
