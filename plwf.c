@@ -48,18 +48,18 @@
 #define PLWF_WF_OFFS (sizeof(struct plwf_data))
 
 /* Context to read from the EEPROM */
-struct __attribute__((__packed__)) rd_ctx {
+struct rd_ctx {
 	uint8_t buffer[64];        /* buffer to read a block of data */
 	size_t buflen;             /* length of payload in buffer */
 	size_t datalen;            /* length of the data left to read */
 	size_t index;              /* index of current byte in buffer */
 	size_t offset;             /* offset where to read next in EEPROM */
 	uint16_t crc;              /* accumulated CRC for all data read */
-	struct i2c_eeprom *eeprom; /* EEPROM instance */
+	const struct i2c_eeprom *eeprom; /* EEPROM instance */
 };
 
 /* Context to write to the Epson controller */
-struct __attribute__((__packed__)) wr_ctx {
+struct wr_ctx {
 	uint8_t buffer[128];       /* buffer to read a block of data */
 	size_t buflen;             /* length of payload in buffer */
 	size_t index;              /* index of current byte in buffer */
@@ -96,7 +96,7 @@ static int plwf_wf_wr(int c, struct wr_ctx *ctx)
 	return c;
 }
 
-int plwf_data_init(struct plwf_data *data, struct i2c_eeprom *eeprom)
+int plwf_data_init(struct plwf_data *data, const struct i2c_eeprom *eeprom)
 {
 	uint16_t crc;
 
@@ -120,17 +120,11 @@ int plwf_data_init(struct plwf_data *data, struct i2c_eeprom *eeprom)
 	PLWF_STR_TERM(data->info.waveform_target);
 	data->info_crc = be16toh(data->info_crc);
 
-#if PLWF_VERBOSE_LOG
-	LOG("Vermagic: %lx", data->vermagic.magic);
-#endif
-
 	if (data->vermagic.magic != PLWF_MAGIC) {
 		LOG("Invalid magic number: %lX instead of %lX",
 		    data->vermagic.magic, PLWF_MAGIC);
 		return -1;
 	}
-
-	LOG("Version: %x", data->vermagic.version);
 
 	if (data->vermagic.version != PLWF_VERSION) {
 		LOG("Unsupported format version: %d, requires %d",
@@ -138,15 +132,29 @@ int plwf_data_init(struct plwf_data *data, struct i2c_eeprom *eeprom)
 		return -1;
 	}
 
-#if PLWF_VERBOSE_LOG
-	LOG("Info CRC: %04X", crc);
-#endif
-
 	if (data->info_crc != crc) {
 		LOG("Info CRC mismatch: %04X instead of %04X",
 		    data->info_crc, crc);
 		return -1;
 	}
+
+	return  0;
+}
+
+void plwf_log(const struct plwf_data *data)
+{
+	const char *magic = (const char *)&data->vermagic.magic;
+
+	LOG("Version: %d", data->vermagic.version);
+
+#if PLWF_VERBOSE_LOG
+	LOG("Magic: 0x%lX %c%c%c%c",
+	    data->vermagic.magic, magic[0], magic[1], magic[2], magic[3]);
+#endif
+
+#if PLWF_VERBOSE_LOG
+	LOG("Info CRC: 0x%04X", data->info_crc);
+#endif
 
 	LOG("Panel ID: %s", data->info.panel_id);
 	LOG("Panel Type: %s", data->info.panel_type);
@@ -158,7 +166,7 @@ int plwf_data_init(struct plwf_data *data, struct i2c_eeprom *eeprom)
 	LOG("Waveform ID: %s", data->info.waveform_id);
 	LOG("Waveform Target: %s", data->info.waveform_target);
 #if PLWF_VERBOSE_LOG
-	printf("Waveform MD5:");
+	printf("Waveform MD5: 0x");
 	{
 		int i;
 
@@ -167,11 +175,9 @@ int plwf_data_init(struct plwf_data *data, struct i2c_eeprom *eeprom)
 	}
 	printf("\n");
 #endif
-
-	return  0;
 }
 
-int plwf_load_wf(struct plwf_data *data, struct i2c_eeprom *eeprom,
+int plwf_load_wf(struct plwf_data *data, const struct i2c_eeprom *eeprom,
 		 struct s1d135xx *epson, uint32_t addr)
 {
 	struct lzss lzss;

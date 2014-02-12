@@ -61,11 +61,28 @@ struct __attribute__((__packed__)) plwf_data {
 struct i2c_eeprom;
 struct s1d135xx;
 
-/** Initialise the plwf_data structure */
-extern int plwf_data_init(struct plwf_data *data, struct i2c_eeprom *eeprom);
+enum plwf_mode {
+	PLWF_MODE_EEPROM,
+	PLWF_MODE_SD_CARD,
+};
+
+struct plwf {
+	enum plwf_mode mode;
+	struct i2c_eeprom *eeprom; /* use with PLWF_MODE_EEPROM */
+	const char *path;          /* use with PLWF_MODE_SD_CARD */
+	struct plwf_data data;     /* initialised by plwf_init */
+};
+
+/** Initialise the plwf_data structure from a display EEPROM */
+extern int plwf_data_init(struct plwf_data *data,
+			  const struct i2c_eeprom *eeprom);
+
+/** Log the display data */
+extern void plwf_log(const struct plwf_data *data);
 
 /** Read the waveform from the EEPROM and send it to the EPSON */
-extern int plwf_load_wf(struct plwf_data *data, struct i2c_eeprom *eeprom,
+extern int plwf_load_wf(struct plwf_data *data,
+			const struct i2c_eeprom *eeprom,
 			struct s1d135xx *epson, uint32_t addr);
 
 #endif /* PLWF_H_ */
