@@ -66,13 +66,6 @@ typedef  s16 screen_t;		/* screen selector - a handle */
 }												\
 )
 
-enum plwf_mode {
-	PLWF_EEPROM_SD = 0,
-	PLWF_EEPROM_ONLY,
-	PLWF_SD_ONLY,
-	PLWF_SD_EEPROM
-};
-
 struct area {
 	int left;
 	int top;
@@ -145,10 +138,5 @@ int printf(const char *_format, ...);
 extern void udelay(u16 us);
 extern void mdelay(u16 ms);
 extern void msleep(u16 ms);
-
-
-/* -- Other display related utilities -- */
-
-extern int util_read_vcom(void);
 
 #endif /* TYPES_H_ */
