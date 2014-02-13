@@ -30,101 +30,25 @@
 #include "epson-if.h"
 #include <string.h>
 
-static const char _wf_init[] = WF_INIT;
-static const char _wf_refresh[] = WF_REFRESH;
-static const char _wf_delta[] = WF_DELTA;
-static const char _wf_refresh_mono[] = WF_REFRESH"/"WF_MONO;
-static const char _wf_delta_mono[] = WF_DELTA"/"WF_MONO;
-
-const char * const wf_init = _wf_init;
-const char * const wf_refresh = _wf_refresh;
-const char * const wf_delta = _wf_delta;
-const char * const wf_refresh_mono = _wf_refresh_mono;
-const char * const wf_delta_mono = _wf_delta_mono;
-
-struct wfid {
-	const char *path;
-	int id;
-};
-
-static const struct wfid wfid_s1d13541[] = {
-	{ _wf_refresh,      1 },
-	{ _wf_delta,        3 },
-	{ _wf_delta_mono,   2 },
-	{ _wf_refresh_mono, 4 },
-	{ _wf_init,         0 },
-	{ NULL, 0 }
-};
-
-static const struct wfid wfid_s1d13524[] = {
-	{ _wf_refresh,      2 },
-	{ _wf_delta,        3 },
-	{ _wf_delta_mono,   4 },
-	{ _wf_refresh_mono, 1 },
-	{ _wf_init,         0 },
-	{ NULL, 0 }
-};
-
-#if 0 /* some E-Ink libraries appear to use this convention */
-static const struct wfid wfid_eink[] = {
-	{ _wf_refresh,      2 },
-	{ _wf_delta,        3 },
-	{ _wf_delta_mono,   1 },
-	{ _wf_refresh_mono, 3 },
-	{ _wf_init,         0 },
-	{ NULL, 0 }
-};
-#endif
-
-const static struct wfid *wfid_table;
-
-int s1d135xx_set_wfid_table(int epdc)
-{
-	switch (epdc) {
-	case EPDC_S1D13524:
-		wfid_table = wfid_s1d13524;
-		break;
-	case EPDC_S1D13541:
-		wfid_table = wfid_s1d13541;
-		break;
-	default:
-		/* Default to use '541 table */
-		wfid_table = wfid_s1d13541;
-		break;
-	}
-	return 0;
-}
-
-int s1d135xx_get_wfid(const char *wf_path)
-{
-	const struct wfid *wfid;
-
-	assert(wf_path != NULL);
-
-	/* Optimised string comparison first */
-	for (wfid = wfid_table; wfid->path != NULL; ++wfid)
-		if (wfid->path == wf_path)
-			return wfid->id;
-
-	/* Full string compare now */
-	for (wfid = wfid_table; wfid->path != NULL; ++wfid)
-		if (!strcmp(wfid->path, wf_path))
-			return wfid->id;
-
-	return -1;
-}
-
 int s1d135xx_select(struct s1d135xx *epson, screen_t *previous)
 {
+#if 1
+	return 0;
+#else
 	assert(epson != NULL);
 	assert(previous != NULL);
 
 	return epsonif_claim(0, epson->screen, previous);
+#endif
 }
 
 int s1d135xx_deselect(struct s1d135xx *epson, screen_t previous)
 {
+#if 1
+	return 0;
+#else
 	assert(epson);
 
 	return epsonif_release(0, previous);
+#endif
 }

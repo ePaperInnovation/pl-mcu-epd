@@ -169,23 +169,6 @@ struct s1d135xx {
 extern int s1d135xx_select(struct s1d135xx *epson, screen_t *previous);
 extern int s1d135xx_deselect(struct s1d135xx *epson, screen_t previous);
 
-/* ----------------------------------------------------------------------------
- * Waveform identifiers
- */
-
-/** Waveform string elements */
-#define WF_INIT "init"
-#define WF_REFRESH "refresh"
-#define WF_DELTA "delta"
-#define WF_MONO "mono"
-
-/** Optimised look-up path strings - use for improved performance */
-extern const char * const wf_init;          /**< init */
-extern const char * const wf_refresh;       /**< refresh */
-extern const char * const wf_delta;         /**< delta */
-extern const char * const wf_refresh_mono;  /**< refresh/mono */
-extern const char * const wf_delta_mono;    /**< delta/mono */
-
 /** Get the waveform identifier to use in updates for the given path */
 extern int s1d135xx_set_wfid_table(int epdc);
 extern int s1d135xx_get_wfid(const char *wf_path);

@@ -37,6 +37,17 @@
 static struct s1d135xx g_epson;
 #endif
 
+#if 0 /* some E-Ink libraries appear to use this convention */
+static const struct pl_wfid epson_epdc_wf_table_eink[] = {
+	{ wf_refresh,      2 },
+	{ wf_delta,        3 },
+	{ wf_delta_mono,   1 },
+	{ wf_refresh_mono, 3 },
+	{ wf_init,         0 },
+	{ NULL, 0 }
+};
+#endif
+
 static const struct pl_wfid epson_epdc_wf_table_s1d13524[] = {
 	{ wf_refresh,      2 },
 	{ wf_delta,        3 },
