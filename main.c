@@ -78,9 +78,6 @@ static const char VERSION[] = "v006";
 /* Platform instance, to be passed to other modules */
 static struct platform g_plat;
 
-/* Epson controller instance */
-static struct s1d135xx g_epson;
-
 /* --- System GPIOs --- */
 
 static const struct pl_gpio_config g_gpios[] = {
@@ -306,15 +303,15 @@ int app_main(void)
 	if (pl_epdpsu_gpio_init(&g_plat.psu, &g_epdpsu_gpio))
 		abort_msg("Failed to initialise HV-PSU");
 
-	if (probe(&g_plat, &g_pl_hw_info, &g_epson_config, &g_epson))
+	if (probe(&g_plat, &g_pl_hw_info, &g_epson_config))
 		abort_msg("Failed to probe hardware");
 
 	/* clear the display */
-	if (plat_s1d13541_clear(&g_plat, &g_epson))
+	if (plat_s1d13541_clear(&g_plat))
 		abort_msg("Failed to clear the screen");
 
 	/* run the application */
-	if (plat_s1d13541_app(&g_plat, &g_epson))
+	if (plat_s1d13541_app(&g_plat))
 		abort_msg("Application failed");
 
 	return 0;
