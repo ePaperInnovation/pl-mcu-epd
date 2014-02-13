@@ -30,6 +30,7 @@
 
 #include <pl/gpio.h>
 #include <pl/i2c.h>
+#include <pl/epdpsu.h>
 #include "i2c-eeprom.h"
 #include "config.h"
 
@@ -42,17 +43,11 @@ struct pl_system_gpio {
 	unsigned assert_led;
 };
 
-struct pl_hvpmic_gpio {
-	unsigned hvsw_ctrl;
-	unsigned pmic_en;
-	unsigned pmic_pok;
-};
-
 struct platform {
 	struct pl_gpio gpio;
 	struct pl_i2c host_i2c;
 	const struct pl_system_gpio *sys_gpio;
-	const struct pl_hvpmic_gpio *hv_gpio;
+	struct pl_epdpsu psu;
 };
 
 #endif /* PL_PLATFORM_H */
