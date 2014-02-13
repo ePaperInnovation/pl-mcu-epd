@@ -26,13 +26,13 @@
 
 #include <pl/platform.h>
 #include <pl/hwinfo.h>
+#include <epson/epson-epdc.h>
 #include <string.h>
 #include <stdio.h>
 #include "probe.h"
 #include "assert.h"
 #include "config.h"
 #include "i2c-eeprom.h"
-#include "plat-epson.h"
 #include "pnm-utils.h"
 #include "plwf.h"
 #include "vcom.h"
@@ -65,7 +65,7 @@ static int load_wf_sdcard(struct platform *plat, struct plwf *plwf);
 #endif
 
 int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
-	  const struct epson_config *epson_config, struct s1d135xx *epson)
+	  const struct epson_config *epson_config)
 {
 #if !CONFIG_DISP_DATA_SD_ONLY
 	const struct i2c_eeprom *pe = &g_disp_eeprom;
@@ -106,7 +106,6 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 		break;
 	default:
 		abort_msg("Invalid I2C mode");
-		break;
 	}
 
 	if (stat)
@@ -114,7 +113,6 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 
 	/* -- Load the display data -- */
 
-	LOG("Loading the waveform data");
 #if CONFIG_DISP_DATA_EEPROM_ONLY
 	stat = load_wf_eeprom(plat, &plwf);
 #elif CONFIG_DISP_DATA_SD_ONLY
@@ -124,15 +122,45 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 #elif CONFIG_DISP_DATA_SD_EEPROM
 	stat = load_wf_sdcard(plat, &plwf) || load_wf_eeprom(plat, &plwf);
 #endif
-	if (stat)
+	if (stat) {
+		LOG("Failed to load display data");
 		return -1;
+	}
 
 	plwf_log(&plwf.data);
 
+	/* -- Initialise the VCOM and HV-PMIC -- */
+
+	vcom_init(&vcomcal, &pl_hw_info->vcom);
+	tps65185_init(&plat->host_i2c, I2C_PMIC_ADDR, &pmic_info);
+	tps65185_configure(pmic_info, &vcomcal);
+	tps65185_set_vcom_voltage(pmic_info, plwf.data.info.vcom);
+
 	/* -- Initialise the EPDC controller -- */
 
-	if (plat_epson_init(plat, pl_hw_info, epson_config, epson))
+#if EPSON_INTERIM
+	if (epsonif_init(&plat->gpio, epson_config))
 		return -1;
+#endif
+
+	switch (pl_hw_info->board.epdc_ref) {
+	case EPDC_S1D13524:
+		stat = epson_epdc_init(&plat->epdc, EPSON_EPDC_S1D13524);
+		break;
+	case EPDC_S1D13541:
+		stat = epson_epdc_init(&plat->epdc, EPSON_EPDC_S1D13541);
+		break;
+	case EPDC_NONE:
+		stat = 0;
+		break;
+	default:
+		abort_msg("Invalid EPDC identifier");
+	}
+
+	if (stat) {
+		LOG("Failed to initialised EPDC");
+		return -1;
+	}
 
 #if 1 /* ToDo: make plwf_load_wf work for both EEPROM and SD card */
 	if (s1d13541_send_waveform())
@@ -141,13 +169,6 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 	if (plwf_load_wf(&plwf.data, pe, epson, epson_config->wf_addr))
 		return -1;
 #endif
-
-	/* -- Initialise the VCOM and HV-PMIC -- */
-
-	vcom_init(&vcomcal, &pl_hw_info->vcom);
-	tps65185_init(&plat->host_i2c, I2C_PMIC_ADDR, &pmic_info);
-	tps65185_configure(pmic_info, &vcomcal);
-	tps65185_set_vcom_voltage(pmic_info, plwf.data.info.vcom);
 
 	return 0;
 }
