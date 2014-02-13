@@ -68,11 +68,6 @@
 static const char SLIDES_PATH[] = "img/slides.txt";
 static const char SEP[] = ", ";
 
-static struct platform *g_plat;
-#if 1
-struct platform **hbz6_plat = &g_plat;
-#endif
-
 static struct pl_i2c g_epson_i2c;
 static struct pl_i2c *g_i2c;
 static struct tps65185_info *pmic_info;
@@ -84,10 +79,10 @@ static struct i2c_eeprom plwf_eeprom = {
 static struct plwf_data plwf_data;
 
 static void check_temperature(struct s1d135xx *epson);
-static int run_region_slideshow(struct s1d135xx *epson);
-static int run_std_slideshow(struct s1d135xx *epson);
+static int run_region_slideshow(struct platform *plat, struct s1d135xx *epson);
+static int run_std_slideshow(struct platform *plat, struct s1d135xx *epson);
 
-#if CONFIG_HW_INFO_DEFAULT
+#if 0 /*CONFIG_HW_INFO_DEFAULT*/
 /* Fallback VCOM calibration data if EEPROM fails */
 static const struct pl_hw_vcom_info def_vcom_info = {
 	.dac_x1 = 127,
@@ -100,28 +95,14 @@ static const struct pl_hw_vcom_info def_vcom_info = {
 };
 #endif
 
-/* Board specific power up control */
-static int power_up(void)
+static int power_up(struct platform *plat)
 {
-	g_plat->gpio.set(g_plat->hv_gpio->hvsw_ctrl, false);
-	g_plat->gpio.set(g_plat->hv_gpio->pmic_en, true);
-
-	do {
-		mdelay(1);
-	} while (!g_plat->gpio.get(g_plat->hv_gpio->pmic_pok));
-
-	g_plat->gpio.set(g_plat->hv_gpio->hvsw_ctrl, true);
-
-	return 0;
+	return plat->psu.on(&plat->psu);
 }
 
-/* Board specific power down control */
-static int power_down(void)
+static int power_down(struct platform *plat)
 {
-	g_plat->gpio.set(g_plat->hv_gpio->hvsw_ctrl, false);
-	g_plat->gpio.set(g_plat->hv_gpio->pmic_en, false);
-
-	return 0;
+	return plat->psu.off(&plat->psu);
 }
 
 #if CONFIG_DEMO_POWERMODES
@@ -291,6 +272,7 @@ static int wf_from_eeprom()
 }
 #endif
 
+#if 0
 /* Initialise the Hummingbird Z[6|7].x platform */
 int plat_hbZn_init(struct platform *plat, const char *platform_path,
 		   int i2c_on_epson)
@@ -413,15 +395,18 @@ int plat_hbZn_init(struct platform *plat, const char *platform_path,
 	tps65185_configure(pmic_info, &vcom_calibration);
 	tps65185_set_vcom_voltage(pmic_info, vcom);
 
+#if 0
 	plat_s1d13541_init_display(epson);
 	plat_s1d13541_slideshow(epson);
+#endif
 
 	s1d135xx_deselect(epson, previous);
 
 	return ret;
 }
+#endif
 
-int plat_s1d13541_init_display(struct s1d135xx *epson)
+int plat_s1d13541_clear(struct platform *plat, struct s1d135xx *epson)
 {
 #if CONFIG_PSU_ONLY
 	while (1) {
@@ -434,15 +419,15 @@ int plat_s1d13541_init_display(struct s1d135xx *epson)
 	/* initialise display */
 	epson_fill_buffer(0x0030, false, epson->yres, epson->xres, 0xff);
 	s1d13541_init_display(epson);
-	power_up();
+	plat->psu.on(&plat->psu);
 	s1d13541_update_display(epson, s1d135xx_get_wfid(wf_init));
 	s1d13541_wait_update_end(epson);
-	power_down();
+	plat->psu.off(&plat->psu);
 
 	return 0;
 }
 
-int plat_s1d13541_slideshow(struct s1d135xx *epson)
+int plat_s1d13541_app(struct platform *plat, struct s1d135xx *epson)
 {
 	int ret = 0;
 #if CONFIG_DEMO_POWERMODES
@@ -452,15 +437,16 @@ int plat_s1d13541_slideshow(struct s1d135xx *epson)
 #else
 	/* run the slideshow */
 	if (is_file_present(SLIDES_PATH))
-		ret = run_region_slideshow(epson);
+		ret = run_region_slideshow(plat, epson);
 	else
-		ret = run_std_slideshow(epson);
+		ret = run_std_slideshow(plat, epson);
 #endif
 
 	return ret;
 }
 
-static int cmd_update(struct s1d135xx *epson, const char *line)
+static int cmd_update(struct platform *plat, struct s1d135xx *epson,
+		      const char *line)
 {
 	char waveform[16];
 	struct area area;
@@ -501,7 +487,8 @@ static int cmd_update(struct s1d135xx *epson, const char *line)
 	return stat;
 }
 
-static int cmd_power(struct s1d135xx *epson, const char *line)
+static int cmd_power(struct platform *plat, struct s1d135xx *epson,
+		     const char *line)
 {
 	char on_off[4];
 
@@ -510,10 +497,10 @@ static int cmd_power(struct s1d135xx *epson, const char *line)
 
 	if (!strcmp(on_off, "on")) {
 		check_temperature(epson);
-		power_up();
+		plat->psu.on(&plat->psu);
 	} else if (!strcmp(on_off, "off")) {
 		s1d13541_wait_update_end(epson);
-		power_down();
+		plat->psu.off(&plat->psu);
 	} else {
 		LOG("Invalid on/off value: %s", on_off);
 		return -1;
@@ -522,7 +509,8 @@ static int cmd_power(struct s1d135xx *epson, const char *line)
 	return 0;
 }
 
-static int cmd_fill(struct s1d135xx *epson, const char *line)
+static int cmd_fill(struct platform *plat, struct s1d135xx *epson,
+		    const char *line)
 {
 	struct area area;
 	const char *opt;
@@ -552,7 +540,8 @@ static int cmd_fill(struct s1d135xx *epson, const char *line)
 	return 0;
 }
 
-static int cmd_image(struct s1d135xx *epson, const char *line)
+static int cmd_image(struct platform *plat, struct s1d135xx *epson,
+		     const char *line)
 {
 	struct slideshow_item item;
 
@@ -565,7 +554,8 @@ static int cmd_image(struct s1d135xx *epson, const char *line)
 	return 0;
 }
 
-static int cmd_sleep(struct s1d135xx *epson, const char *line)
+static int cmd_sleep(struct platform *plat, struct s1d135xx *epson,
+		     const char *line)
 {
 	int sleep_ms;
 	int len;
@@ -588,7 +578,7 @@ static int cmd_sleep(struct s1d135xx *epson, const char *line)
 #define SLIDES_LOG(msg, ...)					\
 	LOG("[%s:%4lu] "msg, SLIDES_PATH, lno, ##__VA_ARGS__)
 
-static int run_region_slideshow(struct s1d135xx *epson)
+static int run_region_slideshow(struct platform *plat, struct s1d135xx *epson)
 {
 	FIL slides;
 	int stat;
@@ -607,7 +597,8 @@ static int run_region_slideshow(struct s1d135xx *epson)
 	while (!stat) {
 		struct cmd {
 			const char *name;
-			int (*func)(struct s1d135xx *epson, const char *str);
+			int (*func)(struct platform *plat,
+				    struct s1d135xx *epson, const char *str);
 		};
 		static const struct cmd cmd_table[] = {
 			{ "update", cmd_update },
@@ -651,7 +642,7 @@ static int run_region_slideshow(struct s1d135xx *epson)
 
 		for (cmd = cmd_table; cmd->name != NULL; ++cmd) {
 			if (!strcmp(cmd->name, cmd_name)) {
-				stat = cmd->func(epson, (line + len));
+				stat = cmd->func(plat, epson, (line + len));
 				break;
 			}
 		}
@@ -670,29 +661,34 @@ static int run_region_slideshow(struct s1d135xx *epson)
 
 #undef SLIDES_LOG
 
+/* One more thing to tidy-up */
+static struct platform *g_show_image_plat = NULL;
+
 static int show_image(const char *image, void *arg)
 {
 	struct s1d135xx *epson = arg;
+
+	assert(g_show_image_plat != NULL);
 
 	if (slideshow_load_image(image, 0x0030, false))
 		return -1;
 
 	check_temperature(epson);
-	power_up();
+	power_up(g_show_image_plat);
 	s1d13541_update_display(epson, s1d135xx_get_wfid(wf_refresh));
 	s1d13541_wait_update_end(epson);
-	power_down();
+	power_down(g_show_image_plat);
 
 	return 0;
 }
 
-int run_std_slideshow(struct s1d135xx *epson)
+int run_std_slideshow(struct platform *plat, struct s1d135xx *epson)
 {
-	int run = 1;
-
 	LOG("Running standard slideshow");
 
-	while (run)
+	g_show_image_plat = plat;
+
+	for (;;)
 		slideshow_run("img", show_image, epson);
 
 	return 0;

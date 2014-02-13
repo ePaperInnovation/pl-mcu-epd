@@ -85,6 +85,7 @@ static u8 needs_update;
 /* Board specific power up control */
 static int power_up(void)
 {
+#if 0
 	printk("Powering up\n");
 	g_plat->gpio.set(g_plat->hv_gpio->hvsw_ctrl, false);
 	g_plat->gpio.set(g_plat->hv_gpio->pmic_en, true);
@@ -97,6 +98,7 @@ static int power_up(void)
 	dac5820_set_power(dac_info, true);
 
 	g_plat->gpio.set(g_plat->hv_gpio->hvsw_ctrl, true);
+#endif
 
 	return 0;
 }
@@ -104,11 +106,13 @@ static int power_up(void)
 /* Board specific power down control */
 static int power_down(void)
 {
+#if 0
 	g_plat->gpio.set(g_plat->hv_gpio->hvsw_ctrl, false);
 	dac5820_set_power(dac_info, false);
 	g_plat->gpio.set(g_plat->hv_gpio->pmic_en, false);
 
 	printk("Powered down\n");
+#endif
 
 	return 0;
 }

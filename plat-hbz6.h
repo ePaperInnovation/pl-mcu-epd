@@ -29,14 +29,11 @@
 struct platform;
 struct s1d135xx;
 
-#if 1 /* temporary hack to work around initialisation bug */
-struct platform;
-extern struct platform **hbz6_plat;
-#endif
-
+#if 0
 extern int plat_hbZn_init(struct platform *plat, const char *platform_path,
 			  int i2c_on_epson);
-extern int plat_s1d13541_slideshow(struct s1d135xx *epson);
-extern int plat_s1d13541_init_display(struct s1d135xx *epson);
+#endif
+extern int plat_s1d13541_clear(struct platform *plat, struct s1d135xx *epson);
+extern int plat_s1d13541_app(struct platform *plat, struct s1d135xx *epson);
 
 #endif /* PLAT_HBZ6_H_ */
