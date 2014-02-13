@@ -45,9 +45,11 @@ struct platform;
 struct pl_hw_info;
 struct s1d135xx;
 
+#if 0
 extern int plat_epson_init(struct platform *plat,
 			   const struct pl_hw_info *pl_hw_info,
 			   const struct epson_config *config,
 			   struct s1d135xx *epson);
+#endif
 
 #endif /* PLAT_EPSON_H */

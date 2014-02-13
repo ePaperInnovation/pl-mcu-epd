@@ -99,6 +99,7 @@ static int wf_from_eeprom()
 }
 #endif
 
+#if 0 /* see epson/epson-epdc.c */
 static int init_s1d13524(struct platform *plat,
 			 const struct pl_hw_info *pl_hw_info,
 			 const struct epson_config *config,
@@ -149,6 +150,7 @@ int plat_epson_init(struct platform *plat,
 
 	return stat;
 }
+#endif
 
 #if 0 /* phasing out */
 int plat_epson_init(struct platform *plat,
