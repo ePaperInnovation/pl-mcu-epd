@@ -33,7 +33,7 @@ struct s1d135xx;
 extern int plat_hbZn_init(struct platform *plat, const char *platform_path,
 			  int i2c_on_epson);
 #endif
-extern int plat_s1d13541_clear(struct platform *plat, struct s1d135xx *epson);
-extern int plat_s1d13541_app(struct platform *plat, struct s1d135xx *epson);
+extern int plat_s1d13541_clear(struct platform *plat);
+extern int plat_s1d13541_app(struct platform *plat);
 
 #endif /* PLAT_HBZ6_H_ */
