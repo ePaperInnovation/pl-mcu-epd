@@ -142,18 +142,12 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 		return -1;
 #endif
 
-	/* -- Initialise the display PSU -- */
+	/* -- Initialise the VCOM and HV-PMIC -- */
 
 	vcom_init(&vcomcal, &pl_hw_info->vcom);
 	tps65185_init(&plat->host_i2c, I2C_PMIC_ADDR, &pmic_info);
 	tps65185_configure(pmic_info, &vcomcal);
 	tps65185_set_vcom_voltage(pmic_info, plwf.data.info.vcom);
-
-	/* -- Now run the init waveform -- */
-	plat_s1d13541_init_display(epson);
-
-	/* -- Start the application -- */
-	plat_s1d13541_slideshow(epson);
 
 	return 0;
 }

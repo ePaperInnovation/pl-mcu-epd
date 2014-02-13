@@ -27,7 +27,7 @@
 #include "types.h" /* mdelay */
 #include "hal_pmm.h"
 
-extern void app_main(void);
+extern int app_main(void);
 
 /* We need to disable the watchdog very early or the runtime system never gets
  * a chance to complete the initialisation of data before calling main and the
@@ -72,8 +72,6 @@ static void board_init(void)
 												// Clear XT2,XT1,DCO fault flags
 		SFRIFG1 &= ~OFIFG;                      // Clear fault flags
 	} while (SFRIFG1 & OFIFG);
-
-	mdelay(500);
 }
 
 int main(void)
@@ -81,7 +79,5 @@ int main(void)
 	board_init();
 	__bis_SR_register(GIE);
 
-	app_main();
-
-	return 0;
+	return app_main();
 }

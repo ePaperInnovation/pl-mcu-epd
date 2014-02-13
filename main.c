@@ -126,8 +126,8 @@ static const struct pl_gpio_config g_hvpmic_gpios[] = {
 	{ PMIC_POK,   PL_GPIO_INPUT                   },
 };
 
-static const struct pl_hvpmic_gpio g_hv_gpio = {
-	HVSW_CTRL, PMIC_EN, PMIC_POK,
+static struct pl_epdpsu_gpio g_epdpsu_gpio = {
+	&g_plat.gpio, PMIC_EN, HVSW_CTRL, PMIC_POK, 100,
 };
 
 /* --- Epson GPIOs --- */
@@ -238,7 +238,7 @@ static const struct pl_hw_info g_pl_hw_info = {
 
 /* --- main --- */
 
-void app_main(void)
+int app_main(void)
 {
 #if CONFIG_HW_INFO_EEPROM
 	static const struct i2c_eeprom hw_eeprom = {
@@ -253,7 +253,6 @@ void app_main(void)
 	LOG("Starting pl-mcu-epd %s", VERSION);
 
 	g_plat.sys_gpio = &g_sys_gpio;
-	g_plat.hv_gpio = &g_hv_gpio;
 
 	/* initialise GPIO interface */
 	if (msp430_gpio_init(&g_plat.gpio))
@@ -303,37 +302,26 @@ void app_main(void)
 #endif
 	pl_hw_info_log(&g_pl_hw_info);
 
-#if 1
-	LOG("Temporary hack to keep things going until all bugs are fixed...");
-	*hbz6_plat = &g_plat;
-#endif
+	/* initialise EPD HV-PSU */
+	if (pl_epdpsu_gpio_init(&g_plat.psu, &g_epdpsu_gpio))
+		abort_msg("Failed to initialise HV-PSU");
 
 	if (probe(&g_plat, &g_pl_hw_info, &g_epson_config, &g_epson))
 		abort_msg("Failed to probe hardware");
 
-#if 0
-#if CONFIG_PLAT_CUCKOO
-		plat_cuckoo_init(&g_plat);
-#elif CONFIG_PLAT_Z13
-		plat_hbz13_init(&g_plat, CONFIG_DISPLAY_TYPE,
-				CONFIG_I2C_ON_EPSON);
-#elif CONFIG_PLAT_Z6 || CONFIG_PLAT_Z7
-		plat_hbZn_init(&g_plat, CONFIG_DISPLAY_TYPE,
-			       CONFIG_I2C_ON_EPSON);
-#elif CONFIG_PLAT_RAVEN
-		plat_raven_init(&g_plat);
-#endif
-#endif
+	/* clear the display */
+	if (plat_s1d13541_clear(&g_plat, &g_epson))
+		abort_msg("Failed to clear the screen");
 
-	/* Do not return from app_main */
-	for (;;) {
-		/* ToDo: go to sleep */
-		udelay(1);
-	}
+	/* run the application */
+	if (plat_s1d13541_app(&g_plat, &g_epson))
+		abort_msg("Application failed");
+
+	return 0;
 }
 
-/* When something fatal has happened, this is called which prints a message on
- * stderr and flashes the ASSERT LED.
+/* When something fatal happens, this is called to print a message on stderr
+ * and flash the "assert" LED forever.
  */
 void abort_now(const char *abort_msg)
 {
