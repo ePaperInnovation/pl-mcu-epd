@@ -25,12 +25,13 @@
  *
  */
 
-#ifndef PL_PLATFORM_H
-#define PL_PLATFORM_H 1
+#ifndef INCLUDE_PL_PLATFORM_H
+#define INCLUDE_PL_PLATFORM_H 1
 
 #include <pl/gpio.h>
 #include <pl/i2c.h>
 #include <pl/epdpsu.h>
+#include <pl/epdc.h>
 #include "i2c-eeprom.h"
 #include "config.h"
 
@@ -48,6 +49,7 @@ struct platform {
 	struct pl_i2c host_i2c;
 	const struct pl_system_gpio *sys_gpio;
 	struct pl_epdpsu psu;
+	struct pl_epdc epdc;
 };
 
-#endif /* PL_PLATFORM_H */
+#endif /* INCLUDE_PL_PLATFORM_H */
