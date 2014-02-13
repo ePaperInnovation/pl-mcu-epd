@@ -24,8 +24,8 @@
  *
  */
 
-#ifndef INCLUDE_EPDPSU_H
-#define INCLUDE_EPDPSU_H 1
+#ifndef INCLUDE_PL_EPDPSU_H
+#define INCLUDE_PL_EPDPSU_H 1
 
 /**
    @file pl/epdpsu.h
@@ -33,19 +33,22 @@
    Abstract interface and generic implementation to the EPD PSU
 */
 
+/** Set to 1 to enable stub  */
+#define PL_EPDPSU_STUB 1
+
 /** Interface */
 struct pl_epdpsu {
 	/**
 	   turn the EPD PSU on
 	   @param[in] psu pl_epdpsu instance
-	   @return -1 if an error occured, 0 otherwisw
+	   @return -1 if an error occured, 0 otherwise
 	 */
 	int (*on)(struct pl_epdpsu *psu);
 
 	/**
 	   turn the EPD PSU off
 	   @param[in] psu pl_epdpsu instance
-	   @return -1 if an error occured, 0 otherwisw
+	   @return -1 if an error occured, 0 otherwise
 	 */
 	int (*off)(struct pl_epdpsu *psu);
 
@@ -72,6 +75,18 @@ struct pl_epdpsu_gpio {
    @param[in] p pl_epdpsu_gpio instance
    @return -1 if an error occured, 0 otherwise
 */
-extern int pl_epdpsu_gpio_init(struct pl_epdpsu *psu, struct pl_epdpsu_gpio *p);
+extern int pl_epdpsu_gpio_init(struct pl_epdpsu *psu,
+			       struct pl_epdpsu_gpio *p);
 
-#endif /* INCLUDE_EPDPSU_H */
+#if PL_EPDPSU_STUB
+/** Initialise an pl_epdpsu instance with stub implementation.
+
+    This is especially useful with automatic power control or for debugging.
+
+    @param[in] psu pl_epdpsu instance
+    @return 0 unless something went really wrong
+*/
+extern int pl_epdpsu_stub_init(struct pl_epdpsu *psu);
+#endif
+
+#endif /* INCLUDE_PL_EPDPSU_H */

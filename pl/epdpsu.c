@@ -98,3 +98,39 @@ int pl_epdpsu_gpio_init(struct pl_epdpsu *psu, struct pl_epdpsu_gpio *p)
 
 	return 0;
 }
+
+#if PL_EPDPSU_STUB
+static int pl_epdpsu_stub_on(struct pl_epdpsu *psu)
+{
+#if LOG_VERBOSE
+	LOG("stub on");
+#endif
+
+	psu->state = 1;
+
+	return 0;
+}
+
+static int pl_epdpsu_stub_off(struct pl_epdpsu *psu)
+{
+#if LOG_VERBOSE
+	LOG("stub off");
+#endif
+
+	psu->state = 0;
+
+	return 0;
+}
+
+int pl_epdpsu_stub_init(struct pl_epdpsu *psu)
+{
+	assert(psu != NULL);
+
+	psu->on = pl_epdpsu_stub_on;
+	psu->off = pl_epdpsu_stub_off;
+	psu->state = 0;
+	psu->data = NULL;
+
+	return 0;
+}
+#endif /* PL_EPDPSU_STUB */
