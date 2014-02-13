@@ -24,8 +24,8 @@
  *
  */
 
-#ifndef PL_GPIO_H
-#define PL_GPIO_H 1
+#ifndef INCLUDE_PL_GPIO_H
+#define INCLUDE_PL_GPIO_H 1
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -108,4 +108,4 @@ extern void pl_gpio_log_flags(uint16_t flags);
 */
 extern int pl_gpio_check_flags(uint16_t flags);
 
-#endif /* PL_GPIO_H */
+#endif /* INCLUDE_PL_GPIO_H */

@@ -26,8 +26,8 @@
  *
  */
 
-#ifndef PL_HWINFO_H
-#define PL_HWINFO_H 1
+#ifndef INCLUDE_PL_HWINFO_H
+#define INCLUDE_PL_HWINFO_H 1
 
 #include <stdint.h>
 
@@ -104,4 +104,4 @@ extern int pl_hw_info_init(struct pl_hw_info *info,
 
 extern void pl_hw_info_log(const struct pl_hw_info *info);
 
-#endif /* PL_HWINFO_H */
+#endif /* INCLUDE_PL_HWINFO_H */

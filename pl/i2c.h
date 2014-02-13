@@ -25,8 +25,8 @@
  *
  */
 
-#ifndef PL_I2C_H
-#define PL_I2C_H 1
+#ifndef INCLUDE_PL_I2C_H
+#define INCLUDE_PL_I2C_H 1
 
 #include <stdint.h>
 
@@ -120,4 +120,4 @@ extern int pl_i2c_reg_read_16be(struct pl_i2c *i2c, uint8_t addr,
 extern int pl_i2c_reg_write_16be(struct pl_i2c *i2c, uint8_t addr,
 				 uint8_t reg, uint16_t data);
 
-#endif /* PL_I2C_H */
+#endif /* INCLUDE_PL_I2C_H */
