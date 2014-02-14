@@ -29,10 +29,9 @@
 
 struct platform;
 struct pl_hw_info;
-struct epson_config;
 struct s1d135xx;
 
 extern int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
-		 const struct epson_config *epson_config);
+		 struct s1d135xx *s1d135xx);
 
 #endif /* INCLUDE_PROBE_H */

@@ -24,9 +24,9 @@
  *
  */
 
+#include <epson/epson-epdc.h>
 #include <pl/platform.h>
 #include <pl/hwinfo.h>
-#include <epson/epson-epdc.h>
 #include <string.h>
 #include <stdio.h>
 #include "probe.h"
@@ -43,6 +43,13 @@
 #define I2C_PLWF_EEPROM_ADDR 0x54
 #define I2C_PMIC_ADDR        0x68
 
+#include "epson/epson-s1d135xx.h"
+
+#if S1D135XX_INTERIM
+#include "epson/S1D135xx.h"
+struct _s1d135xx g_epson;
+#endif
+
 #if !CONFIG_DISP_DATA_SD_ONLY
 static const struct i2c_eeprom g_disp_eeprom = {
 	&plat->i2c_host, I2C_PLWF_EEPROM_ADDR, EEPROM_24AA256
@@ -55,8 +62,6 @@ static const struct i2c_eeprom g_disp_eeprom = {
 static const char g_display_path[] = DISPLAY_PATH;
 #endif
 
-/*static const char g_platform_path[] = PLATFORM_PATH;*/
-
 #if !CONFIG_DISP_DATA_SD_ONLY
 static int load_wf_eeprom(struct platform *plat, struct plwf *plwf);
 #endif
@@ -65,7 +70,7 @@ static int load_wf_sdcard(struct platform *plat, struct plwf *plwf);
 #endif
 
 int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
-	  const struct epson_config *epson_config)
+	  struct s1d135xx *s1d135xx)
 {
 #if !CONFIG_DISP_DATA_SD_ONLY
 	const struct i2c_eeprom *pe = &g_disp_eeprom;
@@ -80,9 +85,6 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 	static struct tps65185_info *pmic_info;
 
 	int stat;
-
-	LOG("probe");
-	LOG("disp path: [%s]", DISPLAY_PATH);
 
 	/* -- Configure the I2C bus again if we use an external bridge -- */
 
@@ -136,19 +138,21 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 	tps65185_configure(pmic_info, &vcomcal);
 	tps65185_set_vcom_voltage(pmic_info, plwf.data.info.vcom);
 
-	/* -- Initialise the EPDC controller -- */
-
-#if EPSON_INTERIM
-	if (epsonif_init(&plat->gpio, epson_config))
-		return -1;
+#if S1D135XX_INTERIM
+	s1d135xx->epson = &g_epson;
+	epsonif_hack(&plat->gpio, s1d135xx->data);
 #endif
+
+	/* -- Initialise the EPDC controller -- */
 
 	switch (pl_hw_info->board.epdc_ref) {
 	case EPDC_S1D13524:
-		stat = epson_epdc_init(&plat->epdc, EPSON_EPDC_S1D13524);
+		stat = epson_epdc_init(&plat->epdc, EPSON_EPDC_S1D13524,
+				       s1d135xx);
 		break;
 	case EPDC_S1D13541:
-		stat = epson_epdc_init(&plat->epdc, EPSON_EPDC_S1D13541);
+		stat = epson_epdc_init(&plat->epdc, EPSON_EPDC_S1D13541,
+				       s1d135xx);
 		break;
 	case EPDC_NONE:
 		stat = 0;
@@ -158,17 +162,9 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 	}
 
 	if (stat) {
-		LOG("Failed to initialised EPDC");
+		LOG("Failed to initialise EPDC");
 		return -1;
 	}
-
-#if 1 /* ToDo: make plwf_load_wf work for both EEPROM and SD card */
-	if (s1d13541_send_waveform())
-		return -1;
-#else
-	if (plwf_load_wf(&plwf.data, pe, epson, epson_config->wf_addr))
-		return -1;
-#endif
 
 	return 0;
 }
