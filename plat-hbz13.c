@@ -34,6 +34,7 @@
  *
  */
 
+#if 0
 #include <pl/platform.h>
 #include <pl/gpio.h>
 #include <pl/i2c.h>
@@ -238,4 +239,4 @@ static int show_image(const char *image, void *arg)
 
 	return 0;
 }
-
+#endif

@@ -30,6 +30,7 @@
  *
  */
 
+#if 0
 #include <pl/platform.h>
 #include <pl/i2c.h>
 #include <stdio.h>
@@ -186,4 +187,4 @@ static int show_image(const char *image, void *arg)
 
 	return 0;
 }
-
+#endif

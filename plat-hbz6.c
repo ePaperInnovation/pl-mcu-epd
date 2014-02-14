@@ -32,6 +32,7 @@
  *
  */
 
+#if 0
 #include <pl/platform.h>
 #include <pl/gpio.h>
 #include <pl/i2c.h>
@@ -462,136 +463,6 @@ int plat_s1d13541_app(struct platform *plat)
 	return ret;
 }
 
-static int cmd_update(struct platform *plat, const char *line)
-{
-	struct pl_epdc *epdc = &plat->epdc;
-	char waveform[16];
-	struct pl_area area;
-	int delay_ms;
-	const char *opt;
-	int len;
-	int stat = 0;
-	int wfid;
-
-	opt = line;
-	len = parser_read_str(opt, SEP, waveform, sizeof(waveform));
-
-	if (len <= 0)
-		return -1;
-
-	opt += len;
-	len = parser_read_area(opt, SEP, &area);
-
-	if (len <= 0)
-		return -1;
-
-	opt += len;
-	len = parser_read_int(opt, SEP, &delay_ms);
-
-	if (len < 0)
-		return -1;
-
-	wfid = pl_epdc_get_wfid(epdc, waveform);
-
-	if (wfid < 0) {
-		LOG("Invalid waveform name: %s", waveform);
-		return -1;
-	}
-
-	if (epdc->update_area(epdc, wfid, &area))
-		return -1;
-
-	mdelay(delay_ms);
-
-	return stat;
-}
-
-static int cmd_power(struct platform *plat, const char *line)
-{
-	struct s1d135xx *epson = plat->epdc.data;
-
-	char on_off[4];
-
-	if (parser_read_str(line, SEP, on_off, sizeof(on_off)) < 0)
-		return -1;
-
-	if (!strcmp(on_off, "on")) {
-		check_temperature(epson);
-		plat->psu.on(&plat->psu);
-	} else if (!strcmp(on_off, "off")) {
-		s1d13541_wait_update_end(epson);
-		plat->psu.off(&plat->psu);
-	} else {
-		LOG("Invalid on/off value: %s", on_off);
-		return -1;
-	}
-
-	return 0;
-}
-
-static int cmd_fill(struct platform *plat, const char *line)
-{
-	struct area area;
-	const char *opt;
-	int len;
-	int gl;
-
-	opt = line;
-	len = parser_read_area(opt, SEP, &area);
-
-	if (len <= 0)
-		return -1;
-
-	opt += len;
-	len = parser_read_int(opt, SEP, &gl);
-
-	if (len < 0)
-		return -1;
-
-	if ((gl > 15) || (gl < 0)) {
-		LOG("Invalid grey level value: %d", gl);
-		return -1;
-	}
-
-	gl |= (gl << 4);
-	epson_fill_area(0x0030, false, &area, gl);
-
-	return 0;
-}
-
-static int cmd_image(struct platform *plat, const char *line)
-{
-	struct slideshow_item item;
-
-	if (slideshow_parse_item(line, &item))
-		return -1;
-
-	if (slideshow_load_image_area(&item, "img", 0x0030, false))
-		return -1;
-
-	return 0;
-}
-
-static int cmd_sleep(struct platform *plat, const char *line)
-{
-	int sleep_ms;
-	int len;
-
-	len = parser_read_int(line, SEP, &sleep_ms);
-
-	if (len < 0)
-		return -1;
-
-	if (sleep_ms < 0) {
-		LOG("Invalid sleep duration: %d", sleep_ms);
-		return -1;
-	}
-
-	msleep(sleep_ms);
-
-	return 0;
-}
-
 #define SLIDES_LOG(msg, ...)					\
 	LOG("[%s:%4lu] "msg, SLIDES_PATH, lno, ##__VA_ARGS__)
 
@@ -740,3 +611,4 @@ static void check_temperature(struct s1d135xx *epson)
 	}
 #endif
 }
+#endif

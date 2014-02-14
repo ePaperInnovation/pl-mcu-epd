@@ -33,6 +33,7 @@
  *
  */
 
+#if 0
 #include <pl/platform.h>
 #include <pl/gpio.h>
 #include <pl/i2c.h>
@@ -233,4 +234,4 @@ int plat_s1d12524_run_std_slideshow(struct s1d135xx *epson)
 
 	return 0;
 }
-
+#endif
