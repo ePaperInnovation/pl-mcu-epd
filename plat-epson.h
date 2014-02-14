@@ -30,17 +30,6 @@
 
 #include <stdint.h>
 
-struct epson_config {
-	unsigned reset;
-	unsigned cs0;
-	unsigned hirq;
-	unsigned hrdy;
-	unsigned hdc;
-	int spi_channel;
-	uint16_t spi_divisor;
-	uint32_t wf_addr;
-};
-
 struct platform;
 struct pl_hw_info;
 struct s1d135xx;

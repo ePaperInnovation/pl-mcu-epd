@@ -44,6 +44,7 @@
 #include "msp430-gpio.h"
 #include "msp430-spi.h"
 #include "vcom.h"
+#include "plwf.h"
 #include "msp430-i2c.h"
 #include "FatFs/ff.h"
 #include "pmic-tps65185.h"
@@ -407,9 +408,12 @@ int plat_hbZn_init(struct platform *plat, const char *platform_path,
 }
 #endif
 
+#include "epson/epson-s1d135xx.h"
+
 int plat_s1d13541_clear(struct platform *plat)
 {
-	struct s1d135xx *epson = plat->epdc.data;
+	struct s1d135xx *s1d135xx = plat->epdc.data;
+	struct _s1d135xx *epson = s1d135xx->epson;
 
 #if CONFIG_PSU_ONLY
 	while (1) {
@@ -432,7 +436,7 @@ int plat_s1d13541_clear(struct platform *plat)
 			      pl_epdc_get_wfid(&plat->epdc, wf_init)))
 		return -1;
 
-	plat->epdc.wait_idle(&plat->epdc);
+	plat->epdc.wait_update_end(&plat->epdc);
 
 	if (plat->psu.off(&plat->psu))
 		return -1;
@@ -690,7 +694,7 @@ static int show_image(const char *image, void *arg)
 	check_temperature(epson);
 	psu->on(psu);
 	epdc->update(epdc, pl_epdc_get_wfid(epdc, wf_refresh));
-	epdc->wait_idle(epdc);
+	epdc->wait_update_end(epdc);
 	psu->off(psu);
 
 	return 0;

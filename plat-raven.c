@@ -109,6 +109,7 @@ static int power_down(void)
 	return 0;
 }
 
+#if 0
 /* Initialise the platform */
 int plat_raven_init(struct platform *plat)
 {
@@ -183,6 +184,7 @@ int plat_raven_init(struct platform *plat)
 
 	return 0;
 }
+#endif /* 0 */
 
 int plat_s1d13524_init_display(struct s1d135xx *epson)
 {

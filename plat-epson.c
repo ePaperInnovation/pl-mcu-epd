@@ -24,6 +24,7 @@
  *
  */
 
+#if 0
 #include <pl/platform.h>
 #include <pl/i2c.h>
 #include <pl/hwinfo.h>
@@ -388,3 +389,4 @@ int plat_epson_init(struct platform *plat,
 	return ret;
 }
 #endif
+#endif /* 0 */

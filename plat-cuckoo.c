@@ -97,6 +97,7 @@ static int power_down(void)
 	return 0;
 }
 
+#if 0
 /* Initialise the platform */
 int plat_cuckoo_init(struct platform *plat)
 {
@@ -164,6 +165,7 @@ int plat_cuckoo_init(struct platform *plat)
 
 	return 0;
 }
+#endif /* 0 */
 
 static int show_image(const char *image, void *arg)
 {
