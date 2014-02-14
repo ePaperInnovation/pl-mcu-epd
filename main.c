@@ -23,10 +23,12 @@
  *
  */
 
+#include <epson/epson-s1d135xx.h>
 #include <pl/platform.h>
 #include <pl/gpio.h>
 #include <pl/hwinfo.h>
 #include <FatFs/ff.h>
+#include <app/app.h>
 #include <stdio.h>
 #include "i2c-eeprom.h"
 #include "assert.h"
@@ -37,13 +39,6 @@
 #include "msp430-gpio.h"
 #include "msp430-sdcard.h"
 #include "msp430-uart.h"
-#include "plat-hbz13.h"
-#include "plat-cuckoo.h"
-#include "plat-hbz6.h"
-#include "plat-raven.h"
-#include "plat-ruddock2.h"
-#include "plat-epson.h"
-#include "epson/S1D13541.h"
 
 #define LOG_TAG "main"
 #include "utils.h"
@@ -187,7 +182,7 @@ static const uint16_t g_epson_parallel[] = {
 	EPSON_TFT_HSYNC, EPSON_TFT_VSYNC, EPSON_TFT_DE, EPSON_TFT_CLK,
 };
 
-static const struct epson_config g_epson_config = {
+static const struct s1d135xx_data g_s1d135xx_data = {
 	EPSON_RESET, EPSON_CS_0, EPSON_HIRQ,
 #if SPI_HRDY_USED
 	EPSON_HRDY,
@@ -199,14 +194,14 @@ static const struct epson_config g_epson_config = {
 #else
 	PL_GPIO_NONE,
 #endif
-	0, /* spi_channel */
-#if CONFIG_PLAT_CUCKOO
-	2, /* spi_divisor */
-#else
-	1, /* spi_divisor */
-#endif
-	S1D13541_WF_ADDR, /* wf_addr */
 };
+
+#define SPI_CHANNEL 0
+#if CONFIG_PLAT_CUCKOO
+#define SPI_DIVISOR 2
+#else
+#define SPI_DIVISOR 1
+#endif
 
 /* --- hardware info --- */
 
@@ -235,13 +230,16 @@ static const struct pl_hw_info g_pl_hw_info = {
 
 /* --- main --- */
 
-int app_main(void)
+int main_init(void)
 {
 #if CONFIG_HW_INFO_EEPROM
 	static const struct i2c_eeprom hw_eeprom = {
 		&g_plat.host_i2c, I2C_PSU_EEPROM_ADDR, EEPROM_24LC014;
 	};
 #endif
+	struct s1d135xx s1d135xx = { /* ToDo: static const? */
+		&g_s1d135xx_data, &g_plat.gpio,
+	};
 	FATFS sdcard;
 	int platform_type;
 	unsigned i;
@@ -277,13 +275,17 @@ int app_main(void)
 		}
 	}
 
-	/* initialise UART */
+	/* initialise MSP430 UART */
 	if (msp430_uart_init(&g_plat.gpio, BR_115200, 'N', 8, 1))
 		abort_msg("Failed to initialise UART");
 
 	/* initialise MSP430 I2C master 0 */
 	if (msp430_i2c_init(&g_plat.gpio, 0, &g_plat.host_i2c))
 		abort_msg("Failed to initialise I2C master");
+
+	/* initialise MSP430 SPI bus */
+	if (spi_init(&g_plat.gpio, SPI_CHANNEL, SPI_DIVISOR))
+		abort_msg("Failed to initialise SPI bus");
 
 	/* initialise SD-card */
 	SDCard_plat = &g_plat;
@@ -303,15 +305,20 @@ int app_main(void)
 	if (pl_epdpsu_gpio_init(&g_plat.psu, &g_epdpsu_gpio))
 		abort_msg("Failed to initialise HV-PSU");
 
-	if (probe(&g_plat, &g_pl_hw_info, &g_epson_config))
+	if (probe(&g_plat, &g_pl_hw_info, &s1d135xx))
 		abort_msg("Failed to probe hardware");
 
-	/* clear the display */
-	if (plat_s1d13541_clear(&g_plat))
-		abort_msg("Failed to clear the screen");
+#if 1 /* ToDo: make plwf_load_wf work for both EEPROM and SD card */
+	LOG("Sending waveform...");
+	if (s1d13541_send_waveform())
+		return -1;
+#else
+	if (plwf_load_wf(&plwf.data, pe, epson, epson_config->wf_addr))
+		return -1;
+#endif
 
 	/* run the application */
-	if (plat_s1d13541_app(&g_plat))
+	if (app_demo(&g_plat))
 		abort_msg("Application failed");
 
 	return 0;
