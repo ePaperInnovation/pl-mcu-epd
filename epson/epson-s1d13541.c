@@ -24,7 +24,6 @@
  *
  */
 
-#include "epson/epson-s1d13541.h"
 #include "epson/epson-s1d135xx.h"
 #include <pl/epdc.h>
 #include <stdlib.h>
