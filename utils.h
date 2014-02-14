@@ -34,6 +34,14 @@
 /** Check for the presence of a file in FatFs */
 #define is_file_present(_path) ({ FILINFO i; f_stat(_path, &i) == FR_OK; })
 
+/* FatFS only supports 8.3 filenames, and we work from the current directory so
+   paths should be short... */
+#define MAX_PATH_LEN 64
+
+struct pnm_header;
+extern int open_image(const char *dir, const char *file, FIL *f,
+		      struct pnm_header *hrd);
+
 /* -- Lightweight string parser -- */
 
 /** Return the offset of the first occurence of any sep characters in str if
