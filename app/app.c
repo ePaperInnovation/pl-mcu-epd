@@ -35,12 +35,20 @@
 #include <epson/S1D135xx.h>
 #include <epson/S1D13541.h>
 
+int app_stop = 0;
+
 int app_demo(struct platform *plat)
 {
 	if (app_clear(plat))
 		return -1;
 
-	LOG("That's all folks.");
+#if 1
+	if (app_sequencer(plat, "img/slides.txt"))
+		return -1;
+#else
+	if (app_slideshow(plat, "img"))
+		return -1;
+#endif
 
 	return 0;
 }
@@ -49,22 +57,36 @@ int app_clear(struct platform *plat)
 {
 	struct s1d135xx *s1d135xx = plat->epdc.data;
 	struct _s1d135xx *epson = s1d135xx->epson;
+	struct pl_epdpsu *psu = &plat->psu;
+	struct pl_epdc *epdc = &plat->epdc;
 
 	/* Interim implementation using direct Epson functions */
 	epson_fill_buffer(0x0030, false, epson->yres, epson->xres, 0xff);
 	s1d13541_init_display(epson);
 
-	if (plat->psu.on(&plat->psu))
+#if 1
+	{
+		uint8_t needs_update;
+
+		s1d13541_measure_temperature(epson, &needs_update);
+
+		if (needs_update) {
+			LOG("needs update...");
+
+			if (s1d13541_send_waveform())
+				return -1;
+		}
+	}
+#endif
+
+	if (psu->on(psu))
 		return -1;
 
-	if (plat->epdc.update(&plat->epdc,
-			      pl_epdc_get_wfid(&plat->epdc, wf_init)))
+	if (epdc->update(epdc, pl_epdc_get_wfid(epdc, wf_init)))
 		return -1;
 
-	plat->epdc.wait_update_end(&plat->epdc);
-
-	if (plat->psu.off(&plat->psu))
+	if (epdc->wait_update_end(epdc))
 		return -1;
 
-	return 0;
+	return psu->off(psu);
 }

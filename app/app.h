@@ -29,7 +29,11 @@
 
 struct platform;
 
+extern int app_stop;
+
 extern int app_demo(struct platform *plat);
 extern int app_clear(struct platform *plat);
+extern int app_slideshow(struct platform *plat, const char *path);
+extern int app_sequencer(struct platform *plat, const char *path);
 
 #endif /* INCLUDE_APP_H */
