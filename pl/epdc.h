@@ -44,19 +44,23 @@ enum pl_epdc_power_state {
 	PL_EPDC_OFF,
 };
 
+enum pl_epdc_temp_mode {
+	PL_EPDC_TEMP_MANUAL,
+	PL_EPDC_TEMP_EXTERNAL,
+	PL_EPDC_TEMP_INTERNAL,
+};
+
 struct pl_epdc{
 	int (*update)(struct pl_epdc *p, int wfid);
 	int (*update_area)(struct pl_epdc *p, int wfid,
 			   const struct pl_area *area);
-	int (*wait_idle)(struct pl_epdc *p);
+	int (*wait_update_end)(struct pl_epdc *p);
 	int (*set_power)(struct pl_epdc *p, enum pl_epdc_power_state state);
-
-	/* ToDo:
-	   send waveform library
-	   manage temperature
-	 */
+	int (*set_temp_mode)(struct pl_epdc *p, enum pl_epdc_temp_mode mode);
 
 	const struct pl_wfid *wf_table;
+	enum pl_epdc_power_state power_state;
+	enum pl_epdc_temp_mode temp_mode;
 	unsigned xres;
 	unsigned yres;
 	void *data;

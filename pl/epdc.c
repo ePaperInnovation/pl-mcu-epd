@@ -79,7 +79,7 @@ static int pl_epdc_stub_update_area(struct pl_epdc *p, int wfid,
 	return 0;
 }
 
-static int pl_epdc_stub_wait_idle(struct pl_epdc *p)
+static int pl_epdc_stub_wait_update_end(struct pl_epdc *p)
 {
 	return 0;
 }
@@ -87,6 +87,16 @@ static int pl_epdc_stub_wait_idle(struct pl_epdc *p)
 static int pl_epdc_stub_set_power(struct pl_epdc *p,
 				  enum pl_epdc_power_state state)
 {
+	p->power_state = state;
+
+	return 0;
+}
+
+static int pl_epdc_stub_set_temp_mode(struct pl_epdc *p,
+				      enum pl_epdc_temp_mode mode)
+{
+	p->temp_mode = mode;
+
 	return 0;
 }
 
@@ -96,8 +106,9 @@ int pl_epdc_stub_init(struct pl_epdc *p)
 
 	p->update = pl_epdc_stub_update;
 	p->update_area = pl_epdc_stub_update_area;
-	p->wait_idle = pl_epdc_stub_wait_idle;
+	p->wait_update_end = pl_epdc_stub_wait_update_end;
 	p->set_power = pl_epdc_stub_set_power;
+	p->set_temp_mode = pl_epdc_stub_set_temp_mode;
 	p->wf_table = pl_epdc_stub_wf_table;
 	p->xres = 640;
 	p->yres = 480;
