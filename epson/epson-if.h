@@ -26,11 +26,13 @@
 #ifndef EPSON_IF_H_
 #define EPSON_IF_H_
 
+#include "types.h"
+
 struct pl_gpio;
 struct epson_config;
 
 extern int epsonif_init(struct pl_gpio *gpio,
-			const struct epson_config *config);
+			const struct s1d135xx_data *config);
 
 /* stubs - to be removed */
 extern int epsonif_claim(int spi_channel, screen_t screen_id,

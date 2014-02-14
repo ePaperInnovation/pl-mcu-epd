@@ -33,6 +33,7 @@
 #include "epson-cmd.h"
 #include "FatFs/ff.h"
 #include "S1D135xx.h"
+#include "epson-s1d135xx.h"
 
 #define LOG_TAG "epson"
 #include "utils.h"
@@ -44,6 +45,7 @@
  * line worth of pixels */
 #define IMAGE_BUFFER_LENGTH 720
 
+#if 0
 void epson_power_up(void)
 {
 	uint16_t temp;
@@ -75,6 +77,7 @@ void epson_power_down(void)
 		epson_reg_read(PWR_CTRL_REG, &temp);
 	} while (temp & 0x0080);
 }
+#endif
 
 void epson_softReset(void)
 {
@@ -83,7 +86,7 @@ void epson_softReset(void)
 	epson_wait_for_idle();
 }
 
-static int set_power_mode(struct s1d135xx *e, enum s1d135xx_pwr_state mode)
+static int set_power_mode(struct _s1d135xx *e, enum s1d135xx_pwr_state mode)
 {
 	static const u8 pwr_cmds[3] = { SLP, STBY, RUN_SYS };
 	int result;
@@ -101,17 +104,17 @@ static int set_power_mode(struct s1d135xx *e, enum s1d135xx_pwr_state mode)
 	return result;
 }
 
-int epson_mode_standby(struct s1d135xx *epson)
+int epson_mode_standby(struct _s1d135xx *epson)
 {
 	return set_power_mode(epson, PWR_STATE_STANDBY);
 }
 
-int epson_mode_sleep(struct s1d135xx *epson)
+int epson_mode_sleep(struct _s1d135xx *epson)
 {
 	return set_power_mode(epson, PWR_STATE_SLEEP);
 }
 
-int epson_mode_run(struct s1d135xx *epson)
+int epson_mode_run(struct _s1d135xx *epson)
 {
 	return set_power_mode(epson, PWR_STATE_RUN);
 }
@@ -169,7 +172,7 @@ static void transfer_data(const uint16_t *data, size_t n)
 		epson_bulk_transfer_word(data[i]);
 }
 
-static int transfer_file(FIL *f, int swap, int pack)
+int transfer_file(FIL *f, int swap, int pack)
 {
 	uint16_t data[FILE_BUFFER_SIZE];
 	size_t count;
@@ -178,7 +181,8 @@ static int transfer_file(FIL *f, int swap, int pack)
 		if (read_file_data(f, data, sizeof(data), &count, swap, pack))
 			return -1;
 
-		transfer_data(data, count / 2);
+		if (count)
+			transfer_data(data, count / 2);
 	} while (count);
 
 	return 0;
@@ -212,7 +216,7 @@ static int transfer_image(FIL *f, int swap, int pack,
 	return 0;
 }
 
-int epson_loadEpsonCode(char *code_path)
+int epson_loadEpsonCode(const char *code_path)
 {
 	FIL ControllerCode;
 	int result;
@@ -257,13 +261,11 @@ int epson_BulkTransferImage(FIL *file, int pack, const struct area *area,
 	return result;
 }
 
-int epson_loadEpsonWaveform(char *path, uint32_t address)
+int epson_loadEpsonWaveform(const char *path, uint32_t address)
 {
 	FIL File;
 	uint32_t file_size;
 	int result;
-
-	LOG("Load Waveform From SD Card");
 
 	if (f_open(&File, path, FA_READ) != FR_OK)
 		return -1;
@@ -280,7 +282,6 @@ int epson_loadEpsonWaveform(char *path, uint32_t address)
 		     (address & 0x0ffff), ((address >> 16) & 0x0ffff),
 		     (file_size / 2) & 0x0ffff,
 		     ((file_size / 2) >> 16) & 0x0ffff);
-
 	result = epson_BulkTransferFile(&File, false);
 
 	/* Terminate burst operation */

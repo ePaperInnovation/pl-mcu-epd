@@ -26,6 +26,8 @@
 #ifndef EPSON_CMD_H_
 #define EPSON_CMD_H_
 
+#if 1
+
 #include <msp430.h>
 #include "epson-if.h"
 #include "msp430-spi.h"
@@ -73,5 +75,7 @@ extern void epson_wait_for_idle_timeout(unsigned timeout_ms);
 extern void epson_set_idle_mask(uint16_t mask, uint16_t result);
 extern int epson_reg_read(uint16_t reg, uint16_t* value);
 extern int epson_reg_write(uint16_t reg, uint16_t value);
+
+#endif /* 0 */
 
 #endif /* EPSON_CMD_H_ */

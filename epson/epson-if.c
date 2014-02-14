@@ -25,6 +25,7 @@
  *
  */
 
+#include "epson-s1d135xx.h"
 #include <pl/gpio.h>
 #include "plat-epson.h"
 #include "types.h"
@@ -33,7 +34,8 @@
 #include "msp430-gpio.h"
 
 static struct pl_gpio *g_epsonif_gpio = NULL;
-static const struct epson_config *g_config = NULL;
+/*static const struct epson_config *g_config = NULL;*/
+static const struct s1d135xx_data *g_config = NULL;
 
 int epsonif_init_reset(void)
 {
@@ -86,11 +88,11 @@ void epsonif_deselect_epson(void)
 }
 
 int epsonif_init(struct pl_gpio *gpio,
-		 const struct epson_config *config)
+		 const struct s1d135xx_data *config)
 {
 	g_epsonif_gpio = gpio;
 	g_config = config;
-	spi_init(gpio, config->spi_channel, config->spi_divisor);
+	spi_init(gpio, 0, 1);
 
 	if (epsonif_init_reset())
 		return -1;
@@ -110,4 +112,10 @@ int epsonif_claim(int spi_channel, screen_t screen_id, screen_t *previous)
 int epsonif_release(int spi_channel, screen_t previous)
 {
 	return 0;
+}
+
+void epsonif_hack(struct pl_gpio *gpio, const struct s1d135xx_data *data)
+{
+	g_epsonif_gpio = gpio;
+	g_config = data;
 }

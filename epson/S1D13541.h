@@ -52,23 +52,25 @@
 
 /* -- Initialisation -- */
 
-extern int s1d13541_early_init(struct s1d135xx *epson);
-extern int s1d13541_init(struct s1d135xx *epson);
+#if 0
+extern int s1d13541_early_init(struct _s1d135xx *epson);
+extern int s1d13541_init(struct _s1d135xx *epson);
+#endif
 
 /* -- Display updates -- */
 
 /* Initialise the pixel buffer but do not drive the display */
-extern void s1d13541_init_display(struct s1d135xx *epson);
+extern void s1d13541_init_display(struct _s1d135xx *epson);
 
 /* Start to update the full display with a given waveform */
-extern void s1d13541_update_display(struct s1d135xx *epson, int waveform);
+extern void s1d13541_update_display(struct _s1d135xx *epson, int waveform);
 
 /* Start to update an area of the display with a given waveform */
-extern void s1d13541_update_display_area(struct s1d135xx *epson, int waveform,
+extern void s1d13541_update_display_area(struct _s1d135xx *epson, int waveform,
 					 const struct area *area);
 
 /* Wait for the current display update (full or area) to end */
-extern void s1d13541_wait_update_end(struct s1d135xx *epson);
+extern void s1d13541_wait_update_end(struct _s1d135xx *epson);
 
 /* -- Waveform management -- */
 
@@ -77,29 +79,32 @@ extern int s1d13541_send_waveform(void);
 /* -- Temperature management -- */
 
 /* Configure controller for specified temperature mode */
-extern void s1d13541_set_temperature_mode(struct s1d135xx *epson,
+#if 0
+extern void s1d13541_set_temperature_mode(struct _s1d135xx *epson,
 					  enum s1d135xx_temp_mode temp_mode);
+#endif
 
 /* Set temperature for manual mode */
-extern void s1d13541_set_temperature(struct s1d135xx *epson, int8_t temp);
+extern void s1d13541_set_temperature(struct _s1d135xx *epson, int8_t temp);
 
 /* Get last measured temperature */
-extern int8_t s1d13541_get_temperature(struct s1d135xx *epson);
+extern int8_t s1d13541_get_temperature(struct _s1d135xx *epson);
 
 /* Measure temperature using specified mode */
-extern void s1d13541_measure_temperature(struct s1d135xx *epson,
+extern void s1d13541_measure_temperature(struct _s1d135xx *epson,
 					 uint8_t *needs_update);
 
 
 /* -- Power management -- */
-
+#if 0
 /* Set power mode to sleep */
-extern int s1d13541_pwrstate_sleep(struct s1d135xx *epson);
+extern int s1d13541_pwrstate_sleep(struct _s1d135xx *epson);
 
 /* Set power mode to standby */
-extern int s1d13541_pwrstate_standby(struct s1d135xx *epson);
+extern int s1d13541_pwrstate_standby(struct _s1d135xx *epson);
 
 /* Set power mode to run */
-extern int s1d13541_pwrstate_run(struct s1d135xx *epson);
+extern int s1d13541_pwrstate_run(struct _s1d135xx *epson);
+#endif
 
 #endif /* S1D13541_H_ */

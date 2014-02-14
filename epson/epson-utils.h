@@ -29,9 +29,12 @@
 
 #include "FatFs/ff.h"
 #include "types.h"
-#include "S1D135xx.h"
+/*#include "S1D135xx.h"*/
 #include <stdint.h>
 
+struct s1d135xx;
+
+#if 0
 /* Powerup the display power supplies using Epson power control pins. */
 extern void epson_power_up(void);
 
@@ -42,19 +45,20 @@ extern void epson_power_down(void);
 extern void epson_softReset(void);
 
 /* Place controller in Standby mode. Can still access registers and RAM.  */
-extern int epson_mode_standby(struct s1d135xx *epson);
+extern int epson_mode_standby(struct _s1d135xx *epson);
 
 /* Place controller in Sleep mode. Can only access few registers and bring out
  * of sleep.  */
-extern int epson_mode_sleep(struct s1d135xx *epson);
+extern int epson_mode_sleep(struct _s1d135xx *epson);
 
 /* Place controller in Run state. Display updates possible.  */
-extern int epson_mode_run(struct s1d135xx *epson);
+extern int epson_mode_run(struct _s1d135xx *epson);
+#endif
 
 /* Load the Epson configuration data. The file supplied by Epson is in the
  * correct format to be loaded directly so we do not need to worry about cpu
  * endianess.  */
-extern int epson_loadEpsonCode(char *code_path);
+extern int epson_loadEpsonCode(const char *code_path);
 
 /* Bulk transfer a file to the epson. The data is asssumed to be in cpu
  * endianess and may need swapping.  */
@@ -68,7 +72,7 @@ extern int epson_BulkTransferImage(FIL *file, int pack,
 extern void epson_WaveformStreamInit(uint32_t address);
 extern void epson_WaveformStreamTransfer(uint8_t *buffer, size_t len);
 extern void epson_WaveformStreamClose(void);
-extern int epson_loadEpsonWaveform(char *path, uint32_t address);
+extern int epson_loadEpsonWaveform(const char *path, uint32_t address);
 extern int epson_loadColorConfig(char *path, uint32_t address);
 extern int epson_loadImageFile(FIL *image, uint16_t mode, int pack);
 extern int epson_loadImageFileArea(FIL *image, uint16_t mode, int pack,
@@ -78,5 +82,7 @@ extern void epson_fill_buffer(uint16_t mode, uint8_t pack, uint16_t height,
 			      uint16_t width, uint8_t fill);
 extern void epson_fill_area(uint16_t mode, uint8_t pack,
 			    const struct area *area, uint8_t fill);
+
+extern int transfer_file(FIL *f, int swap, int pack);
 
 #endif /* EPSON_UTILS_H_ */

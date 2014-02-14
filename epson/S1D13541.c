@@ -33,6 +33,7 @@
 #include "epson-utils.h"
 #include "i2c-eeprom.h"
 #include "plwf.h"
+#include "epson-s1d135xx.h"
 
 #define LOG_TAG "S1D13541"
 #include "utils.h"
@@ -67,6 +68,10 @@
 
 /* 541 constant value list */
 #define PRODUCT_CODE 0x0053
+
+#if S1D135XX_INTERIM
+struct s1d135xx *g_s1d13541_hack;
+#endif
 
 static int send_init_code(void)
 {
@@ -109,9 +114,11 @@ static int send_waveform(void)
 	return 0;
 }
 
-void s1d13541_init_display(struct s1d135xx *epson)
+void s1d13541_init_display(struct _s1d135xx *epson)
 {
 	assert(epson != NULL);
+
+	LOG("init_display");
 
 	epson_cmd_p0(UPD_INIT);
 	epson_wait_for_idle();
@@ -119,7 +126,7 @@ void s1d13541_init_display(struct s1d135xx *epson)
 	epson_wait_for_idle();
 }
 
-void s1d13541_update_display(struct s1d135xx *epson, int waveform)
+void s1d13541_update_display(struct _s1d135xx *epson, int waveform)
 {
 	assert(epson != NULL);
 
@@ -130,7 +137,7 @@ void s1d13541_update_display(struct s1d135xx *epson, int waveform)
 	epson_wait_for_idle();
 }
 
-void s1d13541_update_display_area(struct s1d135xx *epson, int waveform,
+void s1d13541_update_display_area(struct _s1d135xx *epson, int waveform,
 				  const struct area *area)
 {
 	assert(epson != NULL);
@@ -147,7 +154,7 @@ void s1d13541_update_display_area(struct s1d135xx *epson, int waveform,
 	epson_wait_for_idle();
 }
 
-void s1d13541_wait_update_end(struct s1d135xx *epson)
+void s1d13541_wait_update_end(struct _s1d135xx *epson)
 {
 	epson_cmd_p0(WAIT_DSPE_FREND);
 	epson_wait_for_idle();
@@ -169,7 +176,8 @@ static void s1d13541_init_clocks(void)
 	epson_wait_for_idle();
 }
 
-int s1d13541_early_init(struct s1d135xx *epson)
+#if 0
+int s1d13541_early_init(struct _s1d135xx *epson)
 {
 	uint16_t product_code;
 
@@ -195,7 +203,7 @@ int s1d13541_early_init(struct s1d135xx *epson)
 	return 0;
 }
 
-int s1d13541_init(struct s1d135xx *epson)
+int s1d13541_init(struct _s1d135xx *epson)
 {
 	assert(epson != NULL);
 
@@ -209,7 +217,6 @@ int s1d13541_init(struct s1d135xx *epson)
 	s1d13541_init_clocks();
 
 	if (send_init_code()) {
-		LOG("Oops");
 		return -1;
 	}
 
@@ -223,7 +230,11 @@ int s1d13541_init(struct s1d135xx *epson)
 	epson_wait_for_idle();
 
 #if GATE_POWER_BEFORE_INIT
+#if S1D135XX_INTERIM
+	s1d135xx_set_power_state(g_s1d13541_hack, 0);
+#else
 	epson_mode_run(epson);
+#endif
 	epson_cmd_p0(UPD_GDRV_CLR);
 	epson_wait_for_idle();
 #else
@@ -256,13 +267,15 @@ int s1d13541_init(struct s1d135xx *epson)
 
 	return 0;
 }
+#endif
 
 int s1d13541_send_waveform(void)
 {
 	return send_waveform();
 }
 
-void s1d13541_set_temperature_mode(struct s1d135xx *epson,
+#if 0
+void s1d13541_set_temperature_mode(struct _s1d135xx *epson,
 				   enum s1d135xx_temp_mode temp_mode)
 {
 	uint16_t reg;
@@ -287,7 +300,7 @@ void s1d13541_set_temperature_mode(struct s1d135xx *epson,
 		abort_msg("Invalid temperature mode");
 	}
 
-	epson_reg_write(PERIPHERAL_CONFIG_REG, reg );
+	epson_reg_write(PERIPHERAL_CONFIG_REG, reg);
 	epson->temp_mode = temp_mode;
 
 	/* Configure the controller to check for waveform update after
@@ -296,15 +309,16 @@ void s1d13541_set_temperature_mode(struct s1d135xx *epson,
 	epson_reg_write(REG_WAVEFORM_DECODER_BYPASS,
 			(reg | AUTO_TEMP_JUDGE_ENABLE));
 }
+#endif
 
-void s1d13541_set_temperature(struct s1d135xx *epson, int8_t temp)
+void s1d13541_set_temperature(struct _s1d135xx *epson, int8_t temp)
 {
 	assert(epson != NULL);
 
 	epson->temp_set = temp;
 }
 
-int8_t s1d13541_get_temperature(struct s1d135xx *epson)
+int8_t s1d13541_get_temperature(struct _s1d135xx *epson)
 {
 	assert(epson != NULL);
 
@@ -329,7 +343,7 @@ static void measured_temp(uint16_t temp_reg, uint8_t *needs_update,
 	*measured = (reg & 0x00ff);
 }
 
-void s1d13541_measure_temperature(struct s1d135xx *epson, u8 *needs_update)
+void s1d13541_measure_temperature(struct _s1d135xx *epson, u8 *needs_update)
 {
 	s8 temp_measured;
 
@@ -373,7 +387,7 @@ void s1d13541_measure_temperature(struct s1d135xx *epson, u8 *needs_update)
 	epson->temp_measured = temp_measured;
 }
 
-int s1d13541_pwrstate_sleep(struct s1d135xx *epson)
+int s1d13541_pwrstate_sleep(struct _s1d135xx *epson)
 {
 	uint16_t current_clk_state;
 	epson_mode_sleep(epson);
@@ -386,7 +400,7 @@ int s1d13541_pwrstate_sleep(struct s1d135xx *epson)
 	return 0;
 }
 
-int s1d13541_pwrstate_standby(struct s1d135xx *epson)
+int s1d13541_pwrstate_standby(struct _s1d135xx *epson)
 {
 	uint16_t current_pwr_state;
 	epson_reg_write(REG_CLOCK_CONFIG, INTERNAL_CLOCK_ENABLE);
@@ -402,7 +416,7 @@ int s1d13541_pwrstate_standby(struct s1d135xx *epson)
 	return 0;
 }
 
-int s1d13541_pwrstate_run(struct s1d135xx *epson)
+int s1d13541_pwrstate_run(struct _s1d135xx *epson)
 {
 	uint16_t current_pwr_state;
 	epson_reg_write(REG_CLOCK_CONFIG, INTERNAL_CLOCK_ENABLE);

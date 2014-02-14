@@ -28,6 +28,8 @@
 #ifndef S1D13524_H_
 #define S1D13524_H_
 
+#if 0
+
 // include generic, cross controller definitions
 #include "S1D135xx.h"
 
@@ -58,5 +60,6 @@ int s1d13524_set_temperature(struct s1d135xx *epson, s8 temp);
 int s1d13524_get_temperature(struct s1d135xx *epson, s8 *temp);
 int s1d13524_measure_temperature(struct s1d135xx *epson);
 
+#endif /* 0 */
 
 #endif /* S1D13524_H_ */

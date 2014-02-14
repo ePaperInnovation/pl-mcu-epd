@@ -23,6 +23,7 @@
  *
  */
 
+#if 0
 #include <stdlib.h>
 #include "types.h"
 #include "assert.h"
@@ -300,3 +301,4 @@ void setup_auto_temp(u8 i2c_addr)
 
 }
 #endif
+#endif /* 0 */

@@ -30,7 +30,8 @@
 #include "epson-if.h"
 #include <string.h>
 
-int s1d135xx_select(struct s1d135xx *epson, screen_t *previous)
+#if 1
+int s1d135xx_select(struct _s1d135xx *epson, screen_t *previous)
 {
 #if 1
 	return 0;
@@ -42,7 +43,7 @@ int s1d135xx_select(struct s1d135xx *epson, screen_t *previous)
 #endif
 }
 
-int s1d135xx_deselect(struct s1d135xx *epson, screen_t previous)
+int s1d135xx_deselect(struct _s1d135xx *epson, screen_t previous)
 {
 #if 1
 	return 0;
@@ -52,3 +53,4 @@ int s1d135xx_deselect(struct s1d135xx *epson, screen_t previous)
 	return epsonif_release(0, previous);
 #endif
 }
+#endif /* 0 */

@@ -17,31 +17,42 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
- * epson-epdc.h -- Epson EPDC implementations
+ * epson-s1d13524.c -- Epson EPDC S1D13524
  *
  * Authors:
  *   Guillaume Tucker <guillaume.tucker@plasticlogic.com>
  *
  */
 
-#ifndef INCLUDE_EPSON_EPDC_H
-#define INCLUDE_EPSON_EPDC_H 1
+#include "epson-s1d13524.h"
+#include "epson-s1d135xx.h"
+#include <pl/epdc.h>
+#include <stdlib.h>
+#include "assert.h"
 
-struct pl_epdc;
-struct s1d135xx;
+#define LOG_TAG "s1d13524"
+#include "utils.h"
 
-enum epson_epdc_ref {
-	EPSON_EPDC_S1D13524,
-	EPSON_EPDC_S1D13541,
+#define S1D13524_STATUS_HRDY    (1 << 5)
+
+static const struct pl_wfid epson_epdc_wf_table_s1d13524[] = {
+	{ wf_refresh,      2 },
+	{ wf_delta,        3 },
+	{ wf_delta_mono,   4 },
+	{ wf_refresh_mono, 1 },
+	{ wf_init,         0 },
+	{ NULL,           -1 }
 };
 
-extern int epson_epdc_init(struct pl_epdc *epdc, enum epson_epdc_ref ref,
-			   struct s1d135xx *s1d135xx);
+int epson_epdc_init_s1d13524(struct pl_epdc *epdc)
+{
+	struct s1d135xx *s1d135xx = epdc->data;
 
-#if 0
-extern int epson_epdc_early_init_s1d13541(void);
-#endif
-extern int epson_epdc_init_s1d13541(struct pl_epdc *epdc);
-extern int epson_epdc_init_s1d13524(struct pl_epdc *epdc);
+	epdc->wf_table = epson_epdc_wf_table_s1d13524;
+	s1d135xx->hrdy_mask = S1D13524_STATUS_HRDY;
+	s1d135xx->hrdy_result = 0;
 
-#endif /* INCLUDE_EPSON_EPDC_H */
+	abort_msg("S1D13524 not tested yet");
+
+	return 0;
+}

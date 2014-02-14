@@ -23,6 +23,7 @@
  *
  */
 
+#if 1
 #include <pl/endian.h>
 #include "assert.h"
 #include "types.h"
@@ -308,6 +309,7 @@ int epson_is_busy(void)
 #else
 	// Read the system status register to determine if busy
 	(void)epson_reg_read(SYS_STAT_REG, &status);
+	/*printf("status: %04X %04X %04X\n", status, idle_mask, idle_result);*/
 #endif
 
 	return ((status & idle_mask) != idle_result);
@@ -328,3 +330,4 @@ void epson_wait_for_idle_timeout(unsigned timeout_ms)
 		mdelay(1);
 	}
 }
+#endif /* 0 */

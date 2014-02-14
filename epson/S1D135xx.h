@@ -26,6 +26,7 @@
 #ifndef S1D135XX_H_
 #define S1D135XX_H_ 1
 
+#if 1
 #include <stdint.h>
 
 enum s1d135xx_pwr_state {
@@ -42,7 +43,7 @@ enum s1d135xx_temp_mode {
 	TEMP_MODE_UNDEFINED
 };
 
-struct s1d135xx {
+struct _s1d135xx {
 	uint16_t id;
 	screen_t screen;
 	enum s1d135xx_pwr_state power_mode;
@@ -166,11 +167,14 @@ struct s1d135xx {
 #define WAVEFORM_MODE(x)		((x << 8) & 0x0f00)
 #define UPDATE_LUT(x)			((x << 4) & 0x00f0)
 
-extern int s1d135xx_select(struct s1d135xx *epson, screen_t *previous);
-extern int s1d135xx_deselect(struct s1d135xx *epson, screen_t previous);
+#if 0
+extern int s1d135xx_select(struct _s1d135xx *epson, screen_t *previous);
+extern int s1d135xx_deselect(struct _s1d135xx *epson, screen_t previous);
 
 /** Get the waveform identifier to use in updates for the given path */
 extern int s1d135xx_set_wfid_table(int epdc);
 extern int s1d135xx_get_wfid(const char *wf_path);
+#endif
+#endif /* 0 */
 
 #endif /* S1D135XX_H_ */
