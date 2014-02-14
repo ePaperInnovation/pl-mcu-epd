@@ -27,6 +27,7 @@
 #define MSP430_SPI_H_
 
 #include <stddef.h>
+#include "types.h"
 
 struct pl_gpio;
 
