@@ -147,12 +147,12 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 
 	switch (pl_hw_info->board.epdc_ref) {
 	case EPDC_S1D13524:
-		stat = epson_epdc_init(&plat->epdc, EPSON_EPDC_S1D13524,
-				       s1d135xx);
+		stat = epson_epdc_init(&plat->epdc, &plwf.data,
+				       EPSON_EPDC_S1D13524, s1d135xx);
 		break;
 	case EPDC_S1D13541:
-		stat = epson_epdc_init(&plat->epdc, EPSON_EPDC_S1D13541,
-				       s1d135xx);
+		stat = epson_epdc_init(&plat->epdc, &plwf.data,
+				       EPSON_EPDC_S1D13541, s1d135xx);
 		break;
 	case EPDC_NONE:
 		stat = 0;
@@ -195,8 +195,8 @@ static int load_wf_sdcard(struct platform *plat, struct plwf *plwf)
 	plwf->eeprom = NULL;
 	plwf->path = g_display_path;
 
-	plwf->data.vermagic.magic = PLWF_MAGIC;
-	plwf->data.vermagic.version = PLWF_VERSION;
+	plwf->data.vermagic.magic = PL_DATA_MAGIC;
+	plwf->data.vermagic.version = PL_DATA_VERSION;
 	plwf->data.info.panel_id[0] = '\0';
 	strncpy(plwf->data.info.panel_type, CONFIG_DISPLAY_TYPE,
 		sizeof plwf->data.info.panel_type);

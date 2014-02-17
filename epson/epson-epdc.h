@@ -35,7 +35,9 @@ enum epson_epdc_ref {
 	EPSON_EPDC_S1D13541,
 };
 
-extern int epson_epdc_init(struct pl_epdc *epdc, enum epson_epdc_ref ref,
+extern int epson_epdc_init(struct pl_epdc *epdc,
+			   const struct pl_disp_data *disp_data,
+			   enum epson_epdc_ref ref,
 			   struct s1d135xx *s1d135xx);
 
 #if 0
