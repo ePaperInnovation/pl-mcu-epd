@@ -31,6 +31,7 @@
 #define PL_EPDC_STUB 1
 
 struct pl_area;
+struct pl_disp_data;
 
 struct pl_wfid {
 	const char *path;
@@ -58,6 +59,7 @@ struct pl_epdc{
 	int (*set_power)(struct pl_epdc *p, enum pl_epdc_power_state state);
 	int (*set_temp_mode)(struct pl_epdc *p, enum pl_epdc_temp_mode mode);
 
+	const struct pl_disp_data *disp_data;
 	const struct pl_wfid *wf_table;
 	enum pl_epdc_power_state power_state;
 	enum pl_epdc_temp_mode temp_mode;

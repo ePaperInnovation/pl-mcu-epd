@@ -42,10 +42,10 @@
 #define PLWF_LZSS_EJ 4
 
 /* Ensure the last byte from an EEPROM string is a null character */
-#define PLWF_STR_TERM(_str) do { _str[PLWF_STR_LEN] = '\0'; } while(0)
+#define PLWF_STR_TERM(_str) do { _str[PL_DATA_STR_LEN] = '\0'; } while(0)
 
 /* Offset where to start reading the waveform data from */
-#define PLWF_WF_OFFS (sizeof(struct plwf_data))
+#define PLWF_WF_OFFS (sizeof(struct pl_disp_data))
 
 /* Context to read from the EEPROM */
 struct rd_ctx {
@@ -96,7 +96,7 @@ static int plwf_wf_wr(int c, struct wr_ctx *ctx)
 	return c;
 }
 
-int plwf_data_init(struct plwf_data *data, const struct i2c_eeprom *eeprom)
+int plwf_data_init(struct pl_disp_data *data, const struct i2c_eeprom *eeprom)
 {
 	uint16_t crc;
 
@@ -120,15 +120,15 @@ int plwf_data_init(struct plwf_data *data, const struct i2c_eeprom *eeprom)
 	PLWF_STR_TERM(data->info.waveform_target);
 	data->info_crc = be16toh(data->info_crc);
 
-	if (data->vermagic.magic != PLWF_MAGIC) {
+	if (data->vermagic.magic != PL_DATA_MAGIC) {
 		LOG("Invalid magic number: %lX instead of %lX",
-		    data->vermagic.magic, PLWF_MAGIC);
+		    data->vermagic.magic, PL_DATA_MAGIC);
 		return -1;
 	}
 
-	if (data->vermagic.version != PLWF_VERSION) {
+	if (data->vermagic.version != PL_DATA_VERSION) {
 		LOG("Unsupported format version: %d, requires %d",
-		    data->vermagic.version, PLWF_VERSION);
+		    data->vermagic.version, PL_DATA_VERSION);
 		return -1;
 	}
 
@@ -141,7 +141,7 @@ int plwf_data_init(struct plwf_data *data, const struct i2c_eeprom *eeprom)
 	return  0;
 }
 
-void plwf_log(const struct plwf_data *data)
+void plwf_log(const struct pl_disp_data *data)
 {
 	const char *magic = (const char *)&data->vermagic.magic;
 
@@ -177,7 +177,7 @@ void plwf_log(const struct plwf_data *data)
 #endif
 }
 
-int plwf_load_wf(struct plwf_data *data, const struct i2c_eeprom *eeprom,
+int plwf_load_wf(struct pl_disp_data *data, const struct i2c_eeprom *eeprom,
 		 struct s1d135xx *epson, uint32_t addr)
 {
 	struct lzss lzss;

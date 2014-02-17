@@ -28,35 +28,8 @@
 #ifndef PLWF_H_
 #define PLWF_H_
 
+#include <pl/disp-data.h>
 #include <stdint.h>
-
-#define PLWF_MAGIC 0x46574C50UL
-#define PLWF_VERSION 1
-
-#define PLWF_STR_LEN 63
-#define PLWF_STR_SIZE (PLWF_STR_LEN + 1)
-
-struct __attribute__((__packed__)) plwf_vermagic {
-	uint32_t magic;
-	uint16_t version;
-};
-
-struct __attribute__((__packed__)) plwf_info {
-	char panel_id[PLWF_STR_SIZE];
-	char panel_type[PLWF_STR_SIZE];
-	int32_t vcom;
-	uint8_t waveform_md5[16];
-	uint32_t waveform_full_length;
-	uint32_t waveform_lzss_length;
-	char waveform_id[PLWF_STR_SIZE];
-	char waveform_target[PLWF_STR_SIZE];
-};
-
-struct __attribute__((__packed__)) plwf_data {
-	struct plwf_vermagic vermagic;
-	struct plwf_info info;
-	uint16_t info_crc;
-};
 
 struct i2c_eeprom;
 struct s1d135xx;
@@ -70,18 +43,18 @@ struct plwf {
 	enum plwf_mode mode;
 	struct i2c_eeprom *eeprom; /* use with PLWF_MODE_EEPROM */
 	const char *path;          /* use with PLWF_MODE_SD_CARD */
-	struct plwf_data data;     /* initialised by plwf_init */
+	struct pl_disp_data data;  /* initialised by plwf_init */
 };
 
-/** Initialise the plwf_data structure from a display EEPROM */
-extern int plwf_data_init(struct plwf_data *data,
+/** Initialise the pl_disp_data structure from a display EEPROM */
+extern int plwf_data_init(struct pl_disp_data *data,
 			  const struct i2c_eeprom *eeprom);
 
 /** Log the display data */
-extern void plwf_log(const struct plwf_data *data);
+extern void plwf_log(const struct pl_disp_data *data);
 
 /** Read the waveform from the EEPROM and send it to the EPSON */
-extern int plwf_load_wf(struct plwf_data *data,
+extern int plwf_load_wf(struct pl_disp_data *data,
 			const struct i2c_eeprom *eeprom,
 			struct s1d135xx *epson, uint32_t addr);
 
