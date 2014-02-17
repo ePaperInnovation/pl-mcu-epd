@@ -58,11 +58,13 @@ struct pl_epdc{
 	int (*wait_update_end)(struct pl_epdc *p);
 	int (*set_power)(struct pl_epdc *p, enum pl_epdc_power_state state);
 	int (*set_temp_mode)(struct pl_epdc *p, enum pl_epdc_temp_mode mode);
+	int (*update_temp)(struct pl_epdc *p);
 
 	const struct pl_disp_data *disp_data;
 	const struct pl_wfid *wf_table;
 	enum pl_epdc_power_state power_state;
 	enum pl_epdc_temp_mode temp_mode;
+	int manual_temp;
 	unsigned xres;
 	unsigned yres;
 	void *data;
