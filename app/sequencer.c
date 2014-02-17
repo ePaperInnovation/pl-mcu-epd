@@ -268,13 +268,17 @@ static int cmd_power(struct platform *plat, const char *line)
 		return -1;
 
 	if (!strcmp(on_off, "on")) {
-#if 0
-		check_temperature(epson);
-#endif
-		psu->on(psu);
+		if (epdc->update_temp(epdc))
+			return -1;
+
+		if (psu->on(psu))
+			return -1;
 	} else if (!strcmp(on_off, "off")) {
-		epdc->wait_update_end(epdc);
-		psu->off(psu);
+		if (epdc->wait_update_end(epdc))
+			return -1;
+
+		if (psu->off(psu))
+			return -1;
 	} else {
 		LOG("Invalid on/off value: %s", on_off);
 		return -1;

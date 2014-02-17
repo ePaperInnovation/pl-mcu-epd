@@ -65,21 +65,6 @@ int app_clear(struct platform *plat)
 	epson_fill_buffer(0x0030, false, epson->yres, epson->xres, 0xff);
 	s1d13541_init_display(epson);
 
-#if 1
-	{
-		uint8_t needs_update;
-
-		s1d13541_measure_temperature(epson, &needs_update);
-
-		if (needs_update) {
-			LOG("needs update...");
-
-			if (s1d13541_send_waveform())
-				return -1;
-		}
-	}
-#endif
-
 	if (psu->on(psu))
 		return -1;
 

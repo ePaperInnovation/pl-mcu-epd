@@ -117,6 +117,9 @@ static int show_image(struct platform *plat, const char *dir,
 	if (epson_loadImageFile(&image_file, 0x0030, 0))
 		goto exit_close_file;
 
+	if (epdc->update_temp(epdc))
+		goto exit_close_file;
+
 	if (psu->on(psu))
 		goto exit_close_file;
 
