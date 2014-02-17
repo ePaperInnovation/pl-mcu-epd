@@ -39,12 +39,16 @@ struct pl_gpio;
 struct _s1d135xx;
 #endif
 
+#define S1D135XX_TEMP_MASK                   0x00FF
+
 enum s1d135xx_reg {
 	S1D135XX_REG_REV_CODE              = 0x0002,
 	S1D135XX_REG_SOFTWARE_RESET        = 0x0008,
 	S1D135XX_REG_SYSTEM_STATUS         = 0x000A,
 	S1D135XX_REG_PERIPH_CONFIG         = 0x0020,
+	S1D135XX_REG_I2C_TEMP_SENSOR_VALUE = 0x0216,
 	S1D135XX_REG_SEQ_AUTOBOOT_CMD      = 0x02A8,
+	S1D135XX_REG_INT_RAW_STAT          = 0x033A,
 };
 
 struct s1d135xx_data {
@@ -60,6 +64,10 @@ struct s1d135xx {
 	struct pl_gpio *gpio;
 	uint16_t hrdy_mask;
 	uint16_t hrdy_result;
+	int measured_temp;
+	struct {
+		uint8_t needs_update:1;
+	} flags;
 #if S1D135XX_INTERIM
 	struct _s1d135xx *epson;
 #endif
