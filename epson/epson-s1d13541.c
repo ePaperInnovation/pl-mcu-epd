@@ -162,12 +162,15 @@ int epson_epdc_init_s1d13541(struct pl_epdc *epdc)
 	epdc->yres = s1d135xx_read_reg(p, S1D13541_REG_FRAME_DATA_LENGTH);
 	epdc->set_temp_mode = s1d13541_set_temp_mode;
 
-	LOG("Ready %dx%d", epdc->xres, epdc->yres);
-
 #if S1D135XX_INTERIM
 	g_s1d13541_hack = p;
 	epson_set_idle_mask(0x2000, 0x2000);
+
+	if (s1d13541_send_waveform())
+		return -1;
 #endif
+
+	LOG("Ready %dx%d", epdc->xres, epdc->yres);
 
 	return 0;
 }

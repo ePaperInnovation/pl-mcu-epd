@@ -308,11 +308,7 @@ int main_init(void)
 	if (probe(&g_plat, &g_pl_hw_info, &s1d135xx))
 		abort_msg("Failed to probe hardware");
 
-#if 1 /* ToDo: make plwf_load_wf work for both EEPROM and SD card */
-	LOG("Sending waveform...");
-	if (s1d13541_send_waveform())
-		return -1;
-#else
+#if 0 /* ToDo: make plwf_load_wf work for both EEPROM and SD card */
 	if (plwf_load_wf(&plwf.data, pe, epson, epson_config->wf_addr))
 		return -1;
 #endif
