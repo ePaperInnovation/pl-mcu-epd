@@ -35,22 +35,23 @@
 #include <epson/S1D135xx.h>
 #include <epson/S1D13541.h>
 
+static const char SLIDES_PATH[] = "img/slides.txt";
+
 int app_stop = 0;
 
 int app_demo(struct platform *plat)
 {
+	int stat;
+
 	if (app_clear(plat))
 		return -1;
 
-#if 1
-	if (app_sequencer(plat, "img/slides.txt"))
-		return -1;
-#else
-	if (app_slideshow(plat, "img"))
-		return -1;
-#endif
+	if (is_file_present(SLIDES_PATH))
+		stat = app_sequencer(plat, SLIDES_PATH);
+	else
+		stat = app_slideshow(plat, "img");
 
-	return 0;
+	return stat;
 }
 
 int app_clear(struct platform *plat)
