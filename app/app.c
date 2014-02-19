@@ -57,13 +57,8 @@ int app_demo(struct platform *plat)
 int app_clear(struct platform *plat)
 {
 	struct s1d135xx *s1d135xx = plat->epdc.data;
-	struct _s1d135xx *epson = s1d135xx->epson;
 	struct pl_epdpsu *psu = &plat->psu;
 	struct pl_epdc *epdc = &plat->epdc;
-
-	/* Interim implementation using direct Epson functions */
-	epson_fill_buffer(0x0030, false, epson->yres, epson->xres, 0xff);
-	s1d13541_init_display(epson);
 
 	if (psu->on(psu))
 		return -1;

@@ -31,6 +31,7 @@
 
 #if S1D135XX_INTERIM
 #include "epson-cmd.h"
+#include "S1D135xx.h"
 extern struct s1d135xx *g_s1d13541_hack;
 #endif
 
@@ -218,6 +219,9 @@ int epson_epdc_init_s1d13541(struct pl_epdc *epdc)
 
 	if (s1d13541_send_waveform())
 		return -1;
+
+	epson_fill_buffer(0x0030, false, p->epson->yres, p->epson->xres, 0xff);
+	s1d13541_init_display(p->epson);
 #endif
 
 	LOG("Ready %dx%d", epdc->xres, epdc->yres);
