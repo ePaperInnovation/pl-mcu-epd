@@ -67,6 +67,7 @@ enum s1d135xx_cmd {
 static int get_hrdy(struct s1d135xx *p);
 static int do_fill(struct s1d135xx *p, const struct pl_area *area,
 		   unsigned bpp, uint8_t g);
+static void send_cmd_cs(struct s1d135xx *p, uint16_t cmd);
 static void send_cmd(struct s1d135xx *p, uint16_t cmd);
 static void send_params(const uint16_t *params, size_t n);
 static void send_param(uint16_t param);
@@ -131,9 +132,7 @@ int s1d135xx_load_init_code(struct s1d135xx *p)
 		return -1;
 	}
 
-	set_cs(p, 0);
-	send_cmd(p, S1D135XX_CMD_INIT_STBY);
-	set_cs(p, 1);
+	send_cmd_cs(p, S1D135XX_CMD_INIT_STBY);
 	mdelay(100);
 
 	return s1d135xx_wait_idle(p);
@@ -178,9 +177,7 @@ int s1d135xx_load_wf_lib(struct s1d135xx *p, const char *path, uint32_t addr)
 	if (s1d135xx_wait_idle(p))
 		return -1;
 
-	set_cs(p, 0);
-	send_cmd(p, S1D135XX_CMD_BST_END_SDR);
-	set_cs(p, 1);
+	send_cmd_cs(p, S1D135XX_CMD_BST_END_SDR);
 
 	return s1d135xx_wait_idle(p);
 }
@@ -190,18 +187,14 @@ int s1d135xx_init_gate_drv(struct s1d135xx *p)
 	if (s1d135xx_set_power_state(p, PL_EPDC_RUN))
 		return -1;
 
-	set_cs(p, 0);
-	send_cmd(p, S1D135XX_CMD_EPD_GDRV_CLR);
-	set_cs(p, 1);
+	send_cmd_cs(p, S1D135XX_CMD_EPD_GDRV_CLR);
 
 	return s1d135xx_wait_idle(p);
 }
 
 int s1d135xx_wait_dspe_trig(struct s1d135xx *p)
 {
-	set_cs(p, 0);
-	send_cmd(p, S1D135XX_CMD_WAIT_DSPE_TRG);
-	set_cs(p, 1);
+	send_cmd_cs(p, S1D135XX_CMD_WAIT_DSPE_TRG);
 
 	return s1d135xx_wait_idle(p);
 }
@@ -279,9 +272,7 @@ int s1d135xx_update(struct s1d135xx *p, int wfid, const struct pl_area *area)
 
 int s1d135xx_wait_update_end(struct s1d135xx *p)
 {
-	set_cs(p, 0);
-	send_cmd(p, S1D135XX_CMD_WAIT_DSPE_FREND);
-	set_cs(p, 1);
+	send_cmd_cs(p, S1D135XX_CMD_WAIT_DSPE_FREND);
 
 	return s1d135xx_wait_idle(p);
 }
@@ -316,9 +307,7 @@ int s1d135xx_set_power_state(struct s1d135xx *p,
 	if (s1d135xx_wait_idle(p))
 		return -1;
 
-	set_cs(p, 0);
-	send_cmd(p, pwr_cmds[state]);
-	set_cs(p, 1);
+	send_cmd_cs(p, pwr_cmds[state]);
 #if 0
 	mdelay(100);
 #endif
@@ -426,11 +415,16 @@ static int do_fill(struct s1d135xx *p, const struct pl_area *area,
 	if (s1d135xx_wait_idle(p))
 		return -1;
 
-	set_cs(p, 0);
-	send_cmd(p, S1D135XX_CMD_LD_IMG_END);
-	set_cs(p, 1);
+	send_cmd_cs(p, S1D135XX_CMD_LD_IMG_END);
 
 	return s1d135xx_wait_idle(p);
+}
+
+static void send_cmd_cs(struct s1d135xx *p, uint16_t cmd)
+{
+	set_cs(p, 0);
+	send_cmd(p, cmd);
+	set_cs(p, 1);
 }
 
 static void send_cmd(struct s1d135xx *p, uint16_t cmd)
