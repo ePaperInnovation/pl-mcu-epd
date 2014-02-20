@@ -25,8 +25,14 @@
  */
 
 #include <pl/epdc.h>
+#if PL_EPDC_STUB
+#include <pl/types.h>
+#endif
 #include <string.h>
 #include "assert.h"
+
+#define LOG_TAG "epdc"
+#include "utils.h"
 
 const char wf_init[] = WF_INIT;
 const char wf_refresh[] = WF_REFRESH;
@@ -59,6 +65,9 @@ int pl_epdc_get_wfid(struct pl_epdc *p, const char *wf_path)
  * Stub EPDC implementation
  */
 
+/* Set to 1 to enable verbose log messages */
+#define PL_EPDC_STUB_VERBOSE 1
+
 static const struct pl_wfid pl_epdc_stub_wf_table[] = {
 	{ wf_refresh,      0 },
 	{ wf_delta,        1 },
@@ -70,23 +79,42 @@ static const struct pl_wfid pl_epdc_stub_wf_table[] = {
 
 static int pl_epdc_stub_update(struct pl_epdc *p, int wfid)
 {
+#if PL_EPDC_STUB_VERBOSE
+	LOG("stub update wfid=%d", wfid);
+#endif
+
 	return 0;
 }
 
 static int pl_epdc_stub_update_area(struct pl_epdc *p, int wfid,
 				    const struct pl_area *area)
 {
+#if PL_EPDC_STUB_VERBOSE
+	LOG("stub update wfid=%d, start=(%d, %d), dim=%dx%d",
+	    wfid, area->top, area->left, area->width, area->height);
+#endif
+
 	return 0;
 }
 
 static int pl_epdc_stub_wait_update_end(struct pl_epdc *p)
 {
+#if PL_EPDC_STUB_VERBOSE
+	LOG("stub wait_update_end");
+#endif
+
+	mdelay(1000);
+
 	return 0;
 }
 
 static int pl_epdc_stub_set_power(struct pl_epdc *p,
 				  enum pl_epdc_power_state state)
 {
+#if PL_EPDC_STUB_VERBOSE
+	LOG("stub set_power state=%d", state);
+#endif
+
 	p->power_state = state;
 
 	return 0;
@@ -95,6 +123,10 @@ static int pl_epdc_stub_set_power(struct pl_epdc *p,
 static int pl_epdc_stub_set_temp_mode(struct pl_epdc *p,
 				      enum pl_epdc_temp_mode mode)
 {
+#if PL_EPDC_STUB_VERBOSE
+	LOG("stub set_temp_mode mode=%d", mode);
+#endif
+
 	p->temp_mode = mode;
 
 	return 0;
@@ -102,6 +134,10 @@ static int pl_epdc_stub_set_temp_mode(struct pl_epdc *p,
 
 int pl_epdc_stub_init(struct pl_epdc *p)
 {
+#if PL_EPDC_STUB_VERBOSE
+	LOG("stub init");
+#endif
+
 	assert(p != NULL);
 
 	p->update = pl_epdc_stub_update;

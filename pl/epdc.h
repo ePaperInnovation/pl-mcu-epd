@@ -27,8 +27,16 @@
 #ifndef INCLUDE_PL_EPDC_H
 #define INCLUDE_PL_EPDC_H 1
 
+#include <stdint.h>
+
 /* Set to 1 to enable stub EPDC implementation */
-#define PL_EPDC_STUB 1
+#define PL_EPDC_STUB 0
+
+/* Use this macro to convert a 16-greyscale value to 8 bits */
+#define PL_GL16(_g) ({			\
+	uint8_t g16 = (_g) & 0xF;	\
+	g16 | g16 << 4;			\
+})
 
 struct pl_area;
 struct pl_disp_data;
@@ -59,7 +67,7 @@ struct pl_epdc{
 	int (*set_power)(struct pl_epdc *p, enum pl_epdc_power_state state);
 	int (*set_temp_mode)(struct pl_epdc *p, enum pl_epdc_temp_mode mode);
 	int (*update_temp)(struct pl_epdc *p);
-	int (*fill)(struct pl_epdc *p, const struct pl_area *area, int grey);
+	int (*fill)(struct pl_epdc *p, const struct pl_area *area, uint8_t g);
 
 	const struct pl_disp_data *disp_data;
 	const struct pl_wfid *wf_table;
