@@ -78,6 +78,7 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 	const struct i2c_eeprom *pe = NULL;
 #endif
 	char full_path[10];
+	struct pl_epdc *epdc = &plat->epdc;
 
 	/* ToDo: This should be either in platform or main */
 	struct plwf plwf;
@@ -147,16 +148,16 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 
 	switch (pl_hw_info->board.epdc_ref) {
 	case EPDC_S1D13524:
-		stat = epson_epdc_init(&plat->epdc, &plwf.data,
+		stat = epson_epdc_init(epdc, &plwf.data,
 				       EPSON_EPDC_S1D13524, s1d135xx);
 		break;
 	case EPDC_S1D13541:
-		stat = epson_epdc_init(&plat->epdc, &plwf.data,
+		stat = epson_epdc_init(epdc, &plwf.data,
 				       EPSON_EPDC_S1D13541, s1d135xx);
 		break;
 	case EPDC_NONE:
 #if PL_EPDC_STUB
-		stat = pl_epdc_stub_init(&plat->epdc);
+		stat = pl_epdc_stub_init(epdc);
 		break;
 #endif
 	default:
@@ -167,6 +168,17 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 		LOG("Failed to initialise EPDC");
 		return -1;
 	}
+
+#if 0 /* enable during development of new EPDC implementations */
+	assert(epdc->init != NULL);
+	assert(epdc->load_wf_lib != NULL);
+	assert(epdc->update != NULL);
+	assert(epdc->wait_update_end != NULL);
+	assert(epdc->set_power != NULL);
+	assert(epdc->set_temp_mode != NULL);
+	assert(epdc->update_temp != NULL);
+	assert(epdc->fill != NULL);
+#endif
 
 	return 0;
 }
