@@ -74,6 +74,7 @@ enum s1d13541_reg {
 
 enum s1d13541_cmd {
 	S1D13541_CMD_RD_TEMP               = 0x12,
+	S1D13541_CMD_UPD_INIT              = 0x32,
 };
 
 static const struct pl_wfid s1d13541_wf_table[] = {
@@ -93,6 +94,22 @@ static int update_temp_manual(struct s1d135xx *p, int manual_temp);
 static int update_temp_auto(struct s1d135xx *p, uint16_t temp_reg);
 
 /* -- pl_epdc interface -- */
+
+static int s1d13541_init(struct pl_epdc *epdc, uint8_t grey)
+{
+	struct s1d135xx *p = epdc->data;
+
+	if (s1d13541_fill(epdc, NULL, grey))
+		return -1;
+
+	s1d135xx_cmd(p, S1D13541_CMD_UPD_INIT, NULL, 0);
+
+	if (s1d135xx_wait_idle(p))
+		return -1;
+
+	if (s1d135xx_wait_dspe_trig(p))
+		return -1;
+}
 
 static int s1d13541_set_temp_mode(struct pl_epdc *epdc,
 				  enum pl_epdc_temp_mode mode)
@@ -222,6 +239,7 @@ int epson_epdc_init_s1d13541(struct pl_epdc *epdc)
 	epdc->wf_table = s1d13541_wf_table;
 	epdc->xres = s1d135xx_read_reg(p, S1D13541_REG_LINE_DATA_LENGTH);
 	epdc->yres = s1d135xx_read_reg(p, S1D13541_REG_FRAME_DATA_LENGTH);
+	epdc->init = s1d13541_init;
 	epdc->set_temp_mode = s1d13541_set_temp_mode;
 	epdc->update_temp = s1d13541_update_temp;
 	epdc->fill = s1d13541_fill;

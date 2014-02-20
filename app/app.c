@@ -60,6 +60,11 @@ int app_clear(struct platform *plat)
 	struct pl_epdpsu *psu = &plat->psu;
 	struct pl_epdc *epdc = &plat->epdc;
 
+	LOG("Clearing the screen");
+
+	if (epdc->init(epdc, PL_WHITE))
+		return -1;
+
 	if (psu->on(psu))
 		return -1;
 

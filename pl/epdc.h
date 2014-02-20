@@ -38,6 +38,9 @@
 	g16 | g16 << 4;			\
 })
 
+#define PL_WHITE PL_GL16(15)
+#define PL_BLACK PL_GL16(0)
+
 struct pl_area;
 struct pl_disp_data;
 
@@ -60,6 +63,7 @@ enum pl_epdc_temp_mode {
 };
 
 struct pl_epdc{
+	int (*init)(struct pl_epdc *p, uint8_t grey);
 	int (*update)(struct pl_epdc *p, int wfid);
 	int (*update_area)(struct pl_epdc *p, int wfid,
 			   const struct pl_area *area);

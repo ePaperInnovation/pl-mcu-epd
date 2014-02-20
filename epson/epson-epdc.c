@@ -34,7 +34,7 @@
 #define LOG_TAG "epson-epdc"
 #include "utils.h"
 
-#if 0 /* some E-Ink libraries appear to use this convention */
+#if 0 /* some E-Ink waveform libraries appear to use this convention */
 static const struct pl_wfid epson_epdc_wf_table_eink[] = {
 	{ wf_refresh,      2 },
 	{ wf_delta,        3 },
@@ -114,15 +114,5 @@ int epson_epdc_init(struct pl_epdc *epdc, const struct pl_disp_data *disp_data,
 	if (epdc->set_power(epdc, PL_EPDC_RUN))
 		return -1;
 
-	if (epdc->set_temp_mode(epdc, PL_EPDC_TEMP_INTERNAL))
-		return -1;
-
-	if (epdc->fill(epdc, NULL, PL_GL16(15)))
-		return -1;
-
-#if S1D135XX_INTERIM
-	s1d13541_init_display(s1d135xx->epson);
-#endif
-
-	return 0;
+	return epdc->set_temp_mode(epdc, PL_EPDC_TEMP_INTERNAL);
 }
