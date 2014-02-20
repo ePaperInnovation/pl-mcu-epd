@@ -155,8 +155,10 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 				       EPSON_EPDC_S1D13541, s1d135xx);
 		break;
 	case EPDC_NONE:
-		stat = 0;
+#if PL_EPDC_STUB
+		stat = pl_epdc_stub_init(&plat->epdc);
 		break;
+#endif
 	default:
 		abort_msg("Invalid EPDC identifier");
 	}

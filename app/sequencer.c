@@ -289,7 +289,8 @@ static int cmd_power(struct platform *plat, const char *line)
 
 static int cmd_fill(struct platform *plat, const char *line)
 {
-	struct area area;
+	struct pl_epdc *epdc = &plat->epdc;
+	struct pl_area area;
 	const char *opt;
 	int len;
 	int gl;
@@ -311,10 +312,7 @@ static int cmd_fill(struct platform *plat, const char *line)
 		return -1;
 	}
 
-	gl |= (gl << 4);
-	epson_fill_area(0x0030, false, &area, gl);
-
-	return 0;
+	return epdc->fill(epdc, &area, PL_GL16(gl));
 }
 
 static int cmd_image(struct platform *plat, const char *line)
