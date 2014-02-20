@@ -178,6 +178,7 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 	assert(epdc->set_temp_mode != NULL);
 	assert(epdc->update_temp != NULL);
 	assert(epdc->fill != NULL);
+	assert(epdc->load_image != NULL);
 #endif
 
 	return 0;

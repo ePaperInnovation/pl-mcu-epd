@@ -32,7 +32,7 @@
 #include <stdlib.h>
 
 /* Interim implementation */
-#define S1D135XX_INTERIM 1
+#define S1D135XX_INTERIM 0
 
 struct pl_gpio;
 #if S1D135XX_INTERIM
@@ -83,6 +83,9 @@ extern int s1d135xx_init_gate_drv(struct s1d135xx *p);
 extern int s1d135xx_wait_dspe_trig(struct s1d135xx *p);
 extern int s1d135xx_fill(struct s1d135xx *p, uint16_t mode, unsigned bpp,
 			 const struct pl_area *a, uint8_t grey);
+extern int s1d135xx_load_image(struct s1d135xx *p, const char *path,
+			       uint16_t mode, unsigned bpp,
+			       const struct pl_area *area, int left, int top);
 extern int s1d135xx_update(struct s1d135xx *p, int wfid,
 			   const struct pl_area *area);
 extern int s1d135xx_wait_update_end(struct s1d135xx *p);

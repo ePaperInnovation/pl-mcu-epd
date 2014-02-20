@@ -343,6 +343,7 @@ int epson_loadColorConfig(char *path, uint32_t address)
 	return result;
 }
 
+#if 0
 int epson_loadImageFile(FIL *image, uint16_t mode, int pack)
 {
 	/* load complete image, typically 8bpp and no transparency */
@@ -375,7 +376,6 @@ int epson_loadImageFileArea(FIL *image, uint16_t mode, int pack,
 	return 0;
 }
 
-#if 0
 static void do_fill(const struct area *area, uint8_t fill, int pack)
 {
 	uint16_t wfill;

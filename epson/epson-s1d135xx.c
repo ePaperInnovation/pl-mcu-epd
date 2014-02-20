@@ -31,11 +31,16 @@
 #include <stdlib.h>
 #include "assert.h"
 
+/* until the i/o operations are abstracted */
+#include "pnm-utils.h"
+
 #define LOG_TAG "s1d135xx"
 #include "utils.h"
 
 /* Set to 1 to enable verbose update log messages */
 #define VERBOSE_UPDATE 0
+
+#define IMAGE_BUFFER_LENGTH 720
 
 #define S1D135XX_WF_MODE(_wf) (((_wf) << 8) & 0x0F00)
 #define S1D135XX_XMASK 0x01FF
@@ -68,6 +73,8 @@ static int get_hrdy(struct s1d135xx *p);
 static int do_fill(struct s1d135xx *p, const struct pl_area *area,
 		   unsigned bpp, uint8_t g);
 static int transfer_file(FIL *file);
+static int transfer_image(FIL *f, const struct pl_area *area, int left,
+			  int top, int width);
 static void transfer_data(const uint16_t *data, size_t n);
 static void send_cmd_cs(struct s1d135xx *p, uint16_t cmd);
 static void send_cmd(struct s1d135xx *p, uint16_t cmd);
@@ -119,13 +126,13 @@ int s1d135xx_load_init_code(struct s1d135xx *p)
 	set_cs(p, 1);
 	f_close(&init_code_file);
 
-	if (s1d135xx_wait_idle(p))
-		return -1;
-
 	if (stat) {
 		LOG("Failed to transfer init code file");
 		return -1;
 	}
+
+	if (s1d135xx_wait_idle(p))
+		return -1;
 
 	checksum = s1d135xx_read_reg(p, S1D135XX_REG_SEQ_AUTOBOOT_CMD);
 
@@ -145,6 +152,7 @@ int s1d135xx_load_wf_lib(struct s1d135xx *p, const char *path, uint32_t addr)
 	FIL wf_lib_file;
 	uint32_t file_size;
 	uint16_t params[4];
+	int stat;
 
 	if (f_open(&wf_lib_file, path, FA_READ) != FR_OK)
 		return -1;
@@ -171,10 +179,12 @@ int s1d135xx_load_wf_lib(struct s1d135xx *p, const char *path, uint32_t addr)
 	set_cs(p, 0);
 	send_cmd(p, S1D135XX_CMD_WRITE_REG);
 	send_param(S1D135XX_REG_HOST_MEM_PORT);
-	transfer_file(&wf_lib_file);
+	stat = transfer_file(&wf_lib_file);
 	set_cs(p, 1);
-
 	fclose(&wf_lib_file);
+
+	if (stat)
+		return -1;
 
 	if (s1d135xx_wait_idle(p))
 		return -1;
@@ -234,6 +244,66 @@ int s1d135xx_fill(struct s1d135xx *p, uint16_t mode, unsigned bpp,
 	set_cs(p, 1);
 
 	return do_fill(p, fill_area, bpp, grey);
+}
+
+int s1d135xx_load_image(struct s1d135xx *p, const char *path, uint16_t mode,
+			unsigned bpp, const struct pl_area *area, int left,
+			int top)
+{
+	struct pnm_header hdr;
+	FIL img_file;
+	int stat;
+
+	if (f_open(&img_file, path, FA_READ) != FR_OK)
+		return -1;
+
+	if (pnm_read_header(&img_file, &hdr))
+		return -1;
+
+	set_cs(p, 0);
+
+	if (area == NULL) {
+		send_cmd(p, S1D135XX_CMD_LD_IMG);
+		send_param(mode);
+	} else {
+		const uint16_t params[] = {
+			mode,
+			(area->left & S1D135XX_XMASK),
+			(area->top & S1D135XX_YMASK),
+			(area->width & S1D135XX_XMASK),
+			(area->height & S1D135XX_YMASK),
+		};
+
+		send_cmd(p, S1D135XX_CMD_LD_IMG_AREA);
+		send_params(params, ARRAY_SIZE(params));
+	}
+
+	set_cs(p, 1);
+
+	if (s1d135xx_wait_idle(p))
+		return -1;
+
+	set_cs(p, 0);
+	send_cmd(p, S1D135XX_CMD_WRITE_REG);
+	send_param(S1D135XX_REG_HOST_MEM_PORT);
+
+	if (area == NULL)
+		stat = transfer_file(&img_file);
+	else
+		stat = transfer_image(&img_file, area, left, top, hdr.width);
+
+	set_cs(p, 1);
+	f_close(&img_file);
+
+	if (stat)
+		return -1;
+
+	if (s1d135xx_wait_idle(p))
+		return -1;
+
+	send_cmd_cs(p, S1D135XX_CMD_LD_IMG_END);
+
+	return s1d135xx_wait_idle(p);
 }
 
 int s1d135xx_update(struct s1d135xx *p, int wfid, const struct pl_area *area)
@@ -424,7 +494,7 @@ static int do_fill(struct s1d135xx *p, const struct pl_area *area,
 
 static int transfer_file(FIL *file)
 {
-	uint16_t data[64];
+	uint16_t data[IMAGE_BUFFER_LENGTH];
 
 	for (;;) {
 		size_t count;
@@ -437,6 +507,34 @@ static int transfer_file(FIL *file)
 			break;
 
 		transfer_data(data, count);
+	}
+
+	return 0;
+}
+
+static int transfer_image(FIL *f, const struct pl_area *area, int left,
+			  int top, int width)
+{
+	const size_t offset = left / 2;
+	uint16_t data[IMAGE_BUFFER_LENGTH / 2];
+	size_t line;
+
+	/* ToDo: allower buffer to be smaller than line length */
+	if (width > IMAGE_BUFFER_LENGTH) {
+		LOG("Image width is bigger than buffer size: %d, max=%d",
+		    width, IMAGE_BUFFER_LENGTH);
+		return -1;
+	}
+
+	f_lseek(f, f->fptr + ((long)top * (unsigned long)width));
+
+	for (line = area->height; line; --line) {
+		size_t count;
+
+		if (f_read(f, data, width, &count) != FR_OK)
+			return -1;
+
+		transfer_data(&data[offset], area->width);
 	}
 
 	return 0;

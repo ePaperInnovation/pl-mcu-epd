@@ -71,6 +71,8 @@ struct pl_epdc{
 	int (*set_temp_mode)(struct pl_epdc *p, enum pl_epdc_temp_mode mode);
 	int (*update_temp)(struct pl_epdc *p);
 	int (*fill)(struct pl_epdc *p, const struct pl_area *area, uint8_t g);
+	int (*load_image)(struct pl_epdc *p, const char *path,
+			  const struct pl_area *area, int left, int top);
 
 	const struct pl_disp_data *disp_data;
 	const struct pl_wfid *wf_table;
