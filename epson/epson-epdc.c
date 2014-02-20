@@ -45,19 +45,12 @@ static const struct pl_wfid epson_epdc_wf_table_eink[] = {
 };
 #endif
 
-static int epson_epdc_update(struct pl_epdc *epdc, int wfid)
+static int epson_epdc_update(struct pl_epdc *epdc, int wfid,
+			     const struct pl_area *area)
 {
 	struct s1d135xx *p = epdc->data;
 
-	return s1d135xx_update(p, wfid);
-}
-
-static int epson_epdc_update_area(struct pl_epdc *epdc, int wfid,
-				  const struct pl_area *area)
-{
-	struct s1d135xx *p = epdc->data;
-
-	return s1d135xx_update_area(p, wfid, area);
+	return s1d135xx_update(p, wfid, area);
 }
 
 static int epson_epdc_wait_update_end(struct pl_epdc *epdc)
@@ -91,7 +84,6 @@ int epson_epdc_init(struct pl_epdc *epdc, const struct pl_disp_data *disp_data,
 	assert(s1d135xx->data != NULL);
 
 	epdc->update = epson_epdc_update;
-	epdc->update_area = epson_epdc_update_area;
 	epdc->wait_update_end = epson_epdc_wait_update_end;
 	epdc->set_power = epson_epdc_set_power;
 	epdc->data = s1d135xx;

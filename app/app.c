@@ -68,7 +68,7 @@ int app_clear(struct platform *plat)
 	if (psu->on(psu))
 		return -1;
 
-	if (epdc->update(epdc, pl_epdc_get_wfid(epdc, wf_init)))
+	if (epdc->update(epdc, pl_epdc_get_wfid(epdc, wf_init), NULL))
 		return -1;
 
 	if (epdc->wait_update_end(epdc))

@@ -192,40 +192,34 @@ int s1d135xx_fill(struct s1d135xx *p, uint16_t mode, unsigned bpp,
 	return do_fill(p, fill_area, bpp, grey);
 }
 
-int s1d135xx_update(struct s1d135xx *p, int wfid)
+int s1d135xx_update(struct s1d135xx *p, int wfid, const struct pl_area *area)
 {
 #if VERBOSE_UPDATE
-	LOG("update %d", wfid);
+	if (area != NULL)
+		LOG("update area %d (%d, %d) %dx%d", wfid,
+		    area->left, area->top, area->width, area->height);
+	else
+		LOG("update %d", wfid);
 #endif
 
 	set_cs(p, 0);
-	send_cmd(p, S1D135XX_CMD_UPDATE_FULL);
-	send_param(S1D135XX_WF_MODE(wfid));
-	set_cs(p, 1);
 
-	if (s1d135xx_wait_idle(p))
-		return -1;
+	if (area != NULL) {
+		const uint16_t params[] = {
+			S1D135XX_WF_MODE(wfid),
+			(area->left & S1D135XX_XMASK),
+			(area->top & S1D135XX_YMASK),
+			(area->width & S1D135XX_XMASK),
+			(area->height & S1D135XX_YMASK),
+		};
 
-	return s1d135xx_wait_dspe_trig(p);
-}
+		send_cmd(p, S1D135XX_CMD_UPDATE_FULL_AREA);
+		send_params(params, ARRAY_SIZE(params));
+	} else {
+		send_cmd(p, S1D135XX_CMD_UPDATE_FULL);
+		send_param(S1D135XX_WF_MODE(wfid));
+	}
 
-int s1d135xx_update_area(struct s1d135xx *p, int wfid,
-			 const struct pl_area *area)
-{
-	const uint16_t params[] = {
-		S1D135XX_WF_MODE(wfid), (area->left & S1D135XX_XMASK),
-		(area->top & S1D135XX_YMASK), (area->width & S1D135XX_XMASK),
-		(area->height & S1D135XX_YMASK),
-	};
-
-#if VERBOSE_UPDATE
-	LOG("update area %d (%d, %d) %dx%d", wfid,
-	    area->left, area->top, area->width, area->height);
-#endif
-
-	set_cs(p, 0);
-	send_cmd(p, S1D135XX_CMD_UPDATE_FULL_AREA);
-	send_params(params, ARRAY_SIZE(params));
 	set_cs(p, 1);
 
 	if (s1d135xx_wait_idle(p))

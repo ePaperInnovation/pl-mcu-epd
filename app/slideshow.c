@@ -123,7 +123,7 @@ static int show_image(struct platform *plat, const char *dir,
 	if (psu->on(psu))
 		goto exit_close_file;
 
-	if (epdc->update(epdc, wfid))
+	if (epdc->update(epdc, wfid, NULL))
 		goto exit_close_file;
 
 	if (epdc->wait_update_end(epdc))

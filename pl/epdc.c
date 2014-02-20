@@ -77,21 +77,15 @@ static const struct pl_wfid pl_epdc_stub_wf_table[] = {
 	{ NULL,           -1 }
 };
 
-static int pl_epdc_stub_update(struct pl_epdc *p, int wfid)
+static int pl_epdc_stub_update(struct pl_epdc *p, int wfid,
+			       const struct pl_area *area)
 {
 #if PL_EPDC_STUB_VERBOSE
-	LOG("stub update wfid=%d", wfid);
-#endif
-
-	return 0;
-}
-
-static int pl_epdc_stub_update_area(struct pl_epdc *p, int wfid,
-				    const struct pl_area *area)
-{
-#if PL_EPDC_STUB_VERBOSE
-	LOG("stub update wfid=%d, start=(%d, %d), dim=%dx%d",
-	    wfid, area->top, area->left, area->width, area->height);
+	if(area != NULL)
+		LOG("stub update wfid=%d, start=(%d, %d), dim=%dx%d",
+		    wfid, area->top, area->left, area->width, area->height);
+	else
+		LOG("stub update wfid=%d", wfid);
 #endif
 
 	return 0;
@@ -141,7 +135,6 @@ int pl_epdc_stub_init(struct pl_epdc *p)
 	assert(p != NULL);
 
 	p->update = pl_epdc_stub_update;
-	p->update_area = pl_epdc_stub_update_area;
 	p->wait_update_end = pl_epdc_stub_wait_update_end;
 	p->set_power = pl_epdc_stub_set_power;
 	p->set_temp_mode = pl_epdc_stub_set_temp_mode;

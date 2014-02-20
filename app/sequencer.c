@@ -250,7 +250,7 @@ static int cmd_update(struct platform *plat, const char *line)
 		return -1;
 	}
 
-	if (epdc->update_area(epdc, wfid, &area))
+	if (epdc->update(epdc, wfid, &area))
 		return -1;
 
 	mdelay(delay_ms);
