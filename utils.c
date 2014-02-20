@@ -33,6 +33,11 @@
 #include "assert.h"
 #include "utils.h"
 
+int join_path(char *path, size_t n, const char *dir, const char *file)
+{
+	return (snprintf(path, n, "%s/%s", dir, file) >= n) ? -1 : 0;
+}
+
 int open_image(const char *dir, const char *file, FIL *f,
 	       struct pnm_header *hdr)
 {

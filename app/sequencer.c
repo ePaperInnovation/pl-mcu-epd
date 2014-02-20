@@ -29,8 +29,6 @@
 #include <pl/epdc.h>
 #include <pl/types.h>
 #include <stdlib.h>
-#include "FatFs/ff.h"
-#include "pnm-utils.h"
 #include "types.h"
 #include "assert.h"
 
@@ -52,8 +50,8 @@ static const char SEP[] = ", ";
 
 /* -- private functions -- */
 
-static int load_image_area(const struct sequencer_item *item,
-			   const char *dir, uint16_t mode, int pack);
+static int load_image(struct pl_epdc *epdc, const struct sequencer_item *item,
+		      const char *dir);
 static int parse_item(const char *line, struct sequencer_item *item);
 static int cmd_sleep(struct platform *plat, const char *line);
 static int cmd_image(struct platform *plat, const char *line);
@@ -147,14 +145,13 @@ int app_sequencer(struct platform *plat, const char *path)
  * private functions
  */
 
-static int load_image_area(const struct sequencer_item *item,
-			   const char *dir, uint16_t mode, int pack)
+static int load_image(struct pl_epdc *epdc, const struct sequencer_item *item,
+		      const char *dir)
 {
-	FIL image_file;
-	struct pnm_header hdr;
+	char path[MAX_PATH_LEN];
 	int ret;
 
-	if (open_image(dir, item->file, &image_file, &hdr))
+	if (join_path(path, sizeof(path), dir, item->file))
 		return -1;
 
 #if VERBOSE
@@ -163,13 +160,8 @@ static int load_image_area(const struct sequencer_item *item,
 	    item->area.top, item->area.width, item->area.height);
 #endif
 
-	ret = epson_loadImageFileArea(&image_file, mode, pack,
-				      &item->area, item->left_in,
-				      item->top_in, hdr.width);
-
-	f_close(&image_file);
-
-	return ret;
+	return epdc->load_image(epdc, path, &item->area, item->left_in,
+				item->top_in);
 }
 
 static int parse_item(const char *line, struct sequencer_item *item)
@@ -322,7 +314,7 @@ static int cmd_image(struct platform *plat, const char *line)
 	if (parse_item(line, &item))
 		return -1;
 
-	if (load_image_area(&item, "img", 0x0030, 0))
+	if (load_image(&plat->epdc, &item, "img"))
 		return -1;
 
 	return 0;

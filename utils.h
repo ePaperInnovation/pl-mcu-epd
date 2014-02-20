@@ -38,6 +38,8 @@
    paths should be short... */
 #define MAX_PATH_LEN 64
 
+extern int join_path(char *path, size_t n, const char *dir, const char *file);
+
 struct pnm_header;
 extern int open_image(const char *dir, const char *file, FIL *f,
 		      struct pnm_header *hrd);
