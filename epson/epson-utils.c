@@ -375,6 +375,7 @@ int epson_loadImageFileArea(FIL *image, uint16_t mode, int pack,
 	return 0;
 }
 
+#if 0
 static void do_fill(const struct area *area, uint8_t fill, int pack)
 {
 	uint16_t wfill;
@@ -428,3 +429,4 @@ void epson_fill_buffer(uint16_t mode, uint8_t pack, uint16_t height,
 	epson_cmd_p1(LD_IMG_HOST, mode);
 	do_fill(&area, fill, pack);
 }
+#endif

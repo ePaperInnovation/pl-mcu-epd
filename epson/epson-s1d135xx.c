@@ -29,6 +29,7 @@
 #include <pl/endian.h>
 #include <pl/types.h>
 #include <stdlib.h>
+#include "assert.h"
 
 #define LOG_TAG "s1d135xx"
 #include "utils.h"
@@ -50,6 +51,9 @@ enum s1d135xx_cmd {
 	S1D135XX_CMD_INIT_STBY        = 0x06, /* init then standby */
 	S1D135XX_CMD_READ_REG         = 0x10,
 	S1D135XX_CMD_WRITE_REG        = 0x11,
+	S1D135XX_CMD_LD_IMG           = 0x20,
+	S1D135XX_CMD_LD_IMG_AREA      = 0x22,
+	S1D135XX_CMD_LD_IMG_END       = 0x23,
 	S1D135XX_CMD_WAIT_DSPE_TRG    = 0x28,
 	S1D135XX_CMD_WAIT_DSPE_FREND  = 0x29,
 	S1D135XX_CMD_UPDATE_FULL      = 0x33,
@@ -58,6 +62,8 @@ enum s1d135xx_cmd {
 };
 
 static int get_hrdy(struct s1d135xx *p);
+static int do_fill(struct s1d135xx *p, const struct pl_area *area,
+		   unsigned bpp, uint8_t g);
 static void send_cmd(struct s1d135xx *p, uint16_t cmd);
 static void send_params(const uint16_t *params, size_t n);
 static void send_param(uint16_t param);
@@ -149,6 +155,41 @@ int s1d135xx_wait_dspe_trig(struct s1d135xx *p)
 	set_cs(p, 1);
 
 	return s1d135xx_wait_idle(p);
+}
+
+int s1d135xx_fill(struct s1d135xx *p, uint16_t mode, unsigned bpp,
+		  const struct pl_area *a, uint8_t grey)
+{
+	struct pl_area full_area;
+	const struct pl_area *fill_area;
+
+	set_cs(p, 0);
+
+	if (a != NULL) {
+		const uint16_t args[] = {
+			mode,
+			(a->left & S1D135XX_XMASK),
+			(a->top & S1D135XX_YMASK),
+			(a->width & S1D135XX_XMASK),
+			(a->height & S1D135XX_YMASK),
+		};
+
+		send_cmd(p, S1D135XX_CMD_LD_IMG_AREA);
+		send_params(args, ARRAY_SIZE(args));
+		fill_area = a;
+	} else {
+		send_cmd(p, S1D135XX_CMD_LD_IMG);
+		send_param(mode);
+		full_area.top = 0;
+		full_area.left = 0;
+		full_area.width = p->xres;
+		full_area.height = p->yres;
+		fill_area = &full_area;
+	}
+
+	set_cs(p, 1);
+
+	return do_fill(p, fill_area, bpp, grey);
 }
 
 int s1d135xx_update(struct s1d135xx *p, int wfid)
@@ -289,6 +330,64 @@ static int get_hrdy(struct s1d135xx *p)
 	status = s1d135xx_read_reg(p, S1D135XX_REG_SYSTEM_STATUS);
 
 	return ((status & p->hrdy_mask) == p->hrdy_result);
+}
+
+static int do_fill(struct s1d135xx *p, const struct pl_area *area,
+		   unsigned bpp, uint8_t g)
+{
+	uint16_t val16;
+	uint16_t lines;
+	uint16_t pixels;
+
+	/* Only 16-bit transfers for now... */
+	assert(!(area->width % 2));
+
+	switch (bpp) {
+	case 1:
+	case 2:
+		LOG("Unsupported bpp");
+		return -1;
+	case 4:
+		val16 = g & 0xF0;
+		val16 |= val16 >> 4;
+		val16 |= val16 << 8;
+		pixels = area->width / 4;
+		break;
+	case 8:
+		val16 = g | (g << 8);
+		pixels = area->width / 2;
+		break;
+	default:
+		LOG("Invalid bpp");
+		return -1;
+	}
+
+	lines = area->height;
+
+	if (s1d135xx_wait_idle(p))
+		return -1;
+
+	set_cs(p, 0);
+	send_cmd(p, S1D135XX_CMD_WRITE_REG);
+	send_param(S1D135XX_REG_HOST_MEM_PORT);
+
+	while (lines--) {
+		uint16_t x = pixels;
+
+		while (x--)
+			send_param(val16);
+	}
+
+	set_cs(p, 1);
+
+	if (s1d135xx_wait_idle(p))
+		return -1;
+
+	set_cs(p, 0);
+	send_cmd(p, S1D135XX_CMD_LD_IMG_END);
+	set_cs(p, 1);
+
+	return s1d135xx_wait_idle(p);
 }
 
 static void send_cmd(struct s1d135xx *p, uint16_t cmd)

@@ -46,6 +46,7 @@ enum s1d135xx_reg {
 	S1D135XX_REG_SOFTWARE_RESET        = 0x0008,
 	S1D135XX_REG_SYSTEM_STATUS         = 0x000A,
 	S1D135XX_REG_PERIPH_CONFIG         = 0x0020,
+	S1D135XX_REG_HOST_MEM_PORT         = 0x0154,
 	S1D135XX_REG_I2C_TEMP_SENSOR_VALUE = 0x0216,
 	S1D135XX_REG_SEQ_AUTOBOOT_CMD      = 0x02A8,
 	S1D135XX_REG_INT_RAW_STAT          = 0x033A,
@@ -65,6 +66,8 @@ struct s1d135xx {
 	uint16_t hrdy_mask;
 	uint16_t hrdy_result;
 	int measured_temp;
+	unsigned xres;
+	unsigned yres;
 	struct {
 		uint8_t needs_update:1;
 	} flags;
@@ -78,6 +81,8 @@ extern int s1d135xx_soft_reset(struct s1d135xx *p);
 extern int s1d135xx_load_init_code(struct s1d135xx *p);
 extern int s1d135xx_init_gate_drv(struct s1d135xx *p);
 extern int s1d135xx_wait_dspe_trig(struct s1d135xx *p);
+extern int s1d135xx_fill(struct s1d135xx *p, uint16_t mode, unsigned bpp,
+			 const struct pl_area *a, uint8_t grey);
 extern int s1d135xx_update(struct s1d135xx *p, int wfid);
 extern int s1d135xx_update_area(struct s1d135xx *p, int wfid,
 				const struct pl_area *area);

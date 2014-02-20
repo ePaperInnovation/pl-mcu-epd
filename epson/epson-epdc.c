@@ -117,5 +117,12 @@ int epson_epdc_init(struct pl_epdc *epdc, const struct pl_disp_data *disp_data,
 	if (epdc->set_temp_mode(epdc, PL_EPDC_TEMP_INTERNAL))
 		return -1;
 
+	if (epdc->fill(epdc, NULL, 0xff))
+		return -1;
+
+#if S1D135XX_INTERIM
+	s1d13541_init_display(s1d135xx->epson);
+#endif
+
 	return 0;
 }

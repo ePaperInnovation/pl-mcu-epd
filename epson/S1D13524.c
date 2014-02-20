@@ -149,7 +149,9 @@ int s1d13524_init(screen_t screen, struct s1d135xx **controller)
 	epson_reg_read(DISPLAY_PNL_BP_DATA_LG_REG, &epson->yres);
 
 	// fill the image buffer with white data
+#if 0
 	epson_fill_buffer(0x0000, true, epson->yres, epson->xres, 0xff);
+#endif
 	epson_cmd_p1(UPD_INIT, 0x0000);
 	epson_wait_for_idle();
 

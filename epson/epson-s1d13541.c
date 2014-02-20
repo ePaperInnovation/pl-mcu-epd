@@ -55,6 +55,10 @@ extern struct s1d135xx *g_s1d13541_hack;
 #define S1D13541_GENERIC_TEMP_MASK      0x01FF
 #define S1D13541_INT_RAW_WF_UPDATE      (1 << 14)
 #define S1D13541_INT_RAW_OUT_OF_RANGE   (1 << 10)
+#define S1D13541_LD_IMG_1BPP            (0 << 4)
+#define S1D13541_LD_IMG_2BPP            (1 << 4)
+#define S1D13541_LD_IMG_4BPP            (2 << 4)
+#define S1D13541_LD_IMG_8BPP            (3 << 4)
 
 enum s1d13541_reg {
 	S1D13541_REG_CLOCK_CONFIG          = 0x0010,
@@ -162,6 +166,14 @@ static int s1d13541_update_temp(struct pl_epdc *epdc)
 	return 0;
 }
 
+static int s1d13541_fill(struct pl_epdc *epdc, const struct pl_area *area,
+			 uint8_t grey)
+{
+	struct s1d135xx *p = epdc->data;
+
+	return s1d135xx_fill(p, S1D13541_LD_IMG_8BPP, 8, area, grey);
+}
+
 /* -- initialisation -- */
 
 int epson_epdc_init_s1d13541(struct pl_epdc *epdc)
@@ -212,6 +224,10 @@ int epson_epdc_init_s1d13541(struct pl_epdc *epdc)
 	epdc->yres = s1d135xx_read_reg(p, S1D13541_REG_FRAME_DATA_LENGTH);
 	epdc->set_temp_mode = s1d13541_set_temp_mode;
 	epdc->update_temp = s1d13541_update_temp;
+	epdc->fill = s1d13541_fill;
+
+	p->xres = epdc->xres;
+	p->yres = epdc->yres;
 
 #if S1D135XX_INTERIM
 	g_s1d13541_hack = p;
@@ -219,9 +235,6 @@ int epson_epdc_init_s1d13541(struct pl_epdc *epdc)
 
 	if (s1d13541_send_waveform())
 		return -1;
-
-	epson_fill_buffer(0x0030, false, p->epson->yres, p->epson->xres, 0xff);
-	s1d13541_init_display(p->epson);
 #endif
 
 	LOG("Ready %dx%d", epdc->xres, epdc->yres);
