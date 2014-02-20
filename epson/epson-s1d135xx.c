@@ -67,6 +67,8 @@ enum s1d135xx_cmd {
 static int get_hrdy(struct s1d135xx *p);
 static int do_fill(struct s1d135xx *p, const struct pl_area *area,
 		   unsigned bpp, uint8_t g);
+static int transfer_file(FIL *file);
+static void transfer_data(const uint16_t *data, size_t n);
 static void send_cmd_cs(struct s1d135xx *p, uint16_t cmd);
 static void send_cmd(struct s1d135xx *p, uint16_t cmd);
 static void send_params(const uint16_t *params, size_t n);
@@ -113,7 +115,7 @@ int s1d135xx_load_init_code(struct s1d135xx *p)
 
 	set_cs(p, 0);
 	send_cmd(p, S1D135XX_CMD_INIT_SET);
-	stat = transfer_file(&init_code_file, 0, 0);
+	stat = transfer_file(&init_code_file);
 	set_cs(p, 1);
 	f_close(&init_code_file);
 
@@ -169,7 +171,7 @@ int s1d135xx_load_wf_lib(struct s1d135xx *p, const char *path, uint32_t addr)
 	set_cs(p, 0);
 	send_cmd(p, S1D135XX_CMD_WRITE_REG);
 	send_param(S1D135XX_REG_HOST_MEM_PORT);
-	transfer_file(&wf_lib_file, 0, 0);
+	transfer_file(&wf_lib_file);
 	set_cs(p, 1);
 
 	fclose(&wf_lib_file);
@@ -418,6 +420,34 @@ static int do_fill(struct s1d135xx *p, const struct pl_area *area,
 	send_cmd_cs(p, S1D135XX_CMD_LD_IMG_END);
 
 	return s1d135xx_wait_idle(p);
+}
+
+static int transfer_file(FIL *file)
+{
+	uint16_t data[64];
+
+	for (;;) {
+		size_t count;
+		const uint16_t *it;
+
+		if (f_read(file, data, sizeof(data), &count) != FR_OK)
+			return -1;
+
+		if (!count)
+			break;
+
+		transfer_data(data, count);
+	}
+
+	return 0;
+}
+
+static void transfer_data(const uint16_t *data, size_t n)
+{
+	n /= 2;
+
+	while (n--)
+		send_param(*data++);
 }
 
 static void send_cmd_cs(struct s1d135xx *p, uint16_t cmd)

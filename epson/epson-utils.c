@@ -172,7 +172,7 @@ static void transfer_data(const uint16_t *data, size_t n)
 		epson_bulk_transfer_word(data[i]);
 }
 
-int transfer_file(FIL *f, int swap, int pack)
+static int transfer_file(FIL *f, int swap, int pack)
 {
 	uint16_t data[FILE_BUFFER_SIZE];
 	size_t count;
