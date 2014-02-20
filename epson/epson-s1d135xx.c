@@ -76,6 +76,8 @@ static int transfer_file(FIL *file);
 static int transfer_image(FIL *f, const struct pl_area *area, int left,
 			  int top, int width);
 static void transfer_data(const uint16_t *data, size_t n);
+static void send_cmd_area(struct s1d135xx *p, uint16_t cmd, uint16_t mode,
+			  const struct pl_area *area);
 static void send_cmd_cs(struct s1d135xx *p, uint16_t cmd);
 static void send_cmd(struct s1d135xx *p, uint16_t cmd);
 static void send_params(const uint16_t *params, size_t n);
@@ -220,16 +222,7 @@ int s1d135xx_fill(struct s1d135xx *p, uint16_t mode, unsigned bpp,
 	set_cs(p, 0);
 
 	if (a != NULL) {
-		const uint16_t args[] = {
-			mode,
-			(a->left & S1D135XX_XMASK),
-			(a->top & S1D135XX_YMASK),
-			(a->width & S1D135XX_XMASK),
-			(a->height & S1D135XX_YMASK),
-		};
-
-		send_cmd(p, S1D135XX_CMD_LD_IMG_AREA);
-		send_params(args, ARRAY_SIZE(args));
+		send_cmd_area(p, S1D135XX_CMD_LD_IMG_AREA, mode, a);
 		fill_area = a;
 	} else {
 		send_cmd(p, S1D135XX_CMD_LD_IMG);
@@ -262,20 +255,11 @@ int s1d135xx_load_image(struct s1d135xx *p, const char *path, uint16_t mode,
 
 	set_cs(p, 0);
 
-	if (area == NULL) {
+	if (area != NULL) {
+		send_cmd_area(p, S1D135XX_CMD_LD_IMG_AREA, mode, area);
+	} else {
 		send_cmd(p, S1D135XX_CMD_LD_IMG);
 		send_param(mode);
-	} else {
-		const uint16_t params[] = {
-			mode,
-			(area->left & S1D135XX_XMASK),
-			(area->top & S1D135XX_YMASK),
-			(area->width & S1D135XX_XMASK),
-			(area->height & S1D135XX_YMASK),
-		};
-
-		send_cmd(p, S1D135XX_CMD_LD_IMG_AREA);
-		send_params(params, ARRAY_SIZE(params));
 	}
 
 	set_cs(p, 1);
@@ -319,16 +303,8 @@ int s1d135xx_update(struct s1d135xx *p, int wfid, const struct pl_area *area)
 	set_cs(p, 0);
 
 	if (area != NULL) {
-		const uint16_t params[] = {
-			S1D135XX_WF_MODE(wfid),
-			(area->left & S1D135XX_XMASK),
-			(area->top & S1D135XX_YMASK),
-			(area->width & S1D135XX_XMASK),
-			(area->height & S1D135XX_YMASK),
-		};
-
-		send_cmd(p, S1D135XX_CMD_UPDATE_FULL_AREA);
-		send_params(params, ARRAY_SIZE(params));
+		send_cmd_area(p, S1D135XX_CMD_UPDATE_FULL_AREA,
+			      S1D135XX_WF_MODE(wfid), area);
 	} else {
 		send_cmd(p, S1D135XX_CMD_UPDATE_FULL);
 		send_param(S1D135XX_WF_MODE(wfid));
@@ -546,6 +522,21 @@ static void transfer_data(const uint16_t *data, size_t n)
 
 	while (n--)
 		send_param(*data++);
+}
+
+static void send_cmd_area(struct s1d135xx *p, uint16_t cmd, uint16_t mode,
+			  const struct pl_area *area)
+{
+	const uint16_t args[] = {
+		mode,
+		(area->left & S1D135XX_XMASK),
+		(area->top & S1D135XX_YMASK),
+		(area->width & S1D135XX_XMASK),
+		(area->height & S1D135XX_YMASK),
+	};
+
+	send_cmd(p, cmd);
+	send_params(args, ARRAY_SIZE(args));
 }
 
 static void send_cmd_cs(struct s1d135xx *p, uint16_t cmd)
