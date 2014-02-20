@@ -64,6 +64,7 @@ enum pl_epdc_temp_mode {
 
 struct pl_epdc{
 	int (*init)(struct pl_epdc *p, uint8_t grey);
+	int (*load_wf_lib)(struct pl_epdc *p);
 	int (*update)(struct pl_epdc *p, int wfid, const struct pl_area *area);
 	int (*wait_update_end)(struct pl_epdc *p);
 	int (*set_power)(struct pl_epdc *p, enum pl_epdc_power_state state);

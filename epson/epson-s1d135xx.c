@@ -51,6 +51,9 @@ enum s1d135xx_cmd {
 	S1D135XX_CMD_INIT_STBY        = 0x06, /* init then standby */
 	S1D135XX_CMD_READ_REG         = 0x10,
 	S1D135XX_CMD_WRITE_REG        = 0x11,
+	S1D135XX_CMD_BST_RD_SDR       = 0x1C,
+	S1D135XX_CMD_BST_WR_SDR       = 0x1D,
+	S1D135XX_CMD_BST_END_SDR      = 0x1E,
 	S1D135XX_CMD_LD_IMG           = 0x20,
 	S1D135XX_CMD_LD_IMG_AREA      = 0x22,
 	S1D135XX_CMD_LD_IMG_END       = 0x23,
@@ -132,6 +135,52 @@ int s1d135xx_load_init_code(struct s1d135xx *p)
 	send_cmd(p, S1D135XX_CMD_INIT_STBY);
 	set_cs(p, 1);
 	mdelay(100);
+
+	return s1d135xx_wait_idle(p);
+}
+
+int s1d135xx_load_wf_lib(struct s1d135xx *p, const char *path, uint32_t addr)
+{
+	FIL wf_lib_file;
+	uint32_t file_size;
+	uint16_t params[4];
+
+	if (f_open(&wf_lib_file, path, FA_READ) != FR_OK)
+		return -1;
+
+	file_size = f_size(&wf_lib_file);
+
+	if (file_size & 1)
+		file_size++;
+
+	file_size /= 2;
+
+	if (s1d135xx_wait_idle(p))
+		return -1;
+
+	params[0] = addr & 0xFFFF;
+	params[1] = (addr >> 16) & 0xFFFF;
+	params[2] = file_size & 0xFFFF;
+	params[3] = (file_size >> 16) & 0xFFFF;
+	set_cs(p, 0);
+	send_cmd(p, S1D135XX_CMD_BST_WR_SDR);
+	send_params(params, ARRAY_SIZE(params));
+	set_cs(p, 1);
+
+	set_cs(p, 0);
+	send_cmd(p, S1D135XX_CMD_WRITE_REG);
+	send_param(S1D135XX_REG_HOST_MEM_PORT);
+	transfer_file(&wf_lib_file, 0, 0);
+	set_cs(p, 1);
+
+	fclose(&wf_lib_file);
+
+	if (s1d135xx_wait_idle(p))
+		return -1;
+
+	set_cs(p, 0);
+	send_cmd(p, S1D135XX_CMD_BST_END_SDR);
+	set_cs(p, 1);
 
 	return s1d135xx_wait_idle(p);
 }
