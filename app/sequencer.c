@@ -29,6 +29,7 @@
 #include <pl/epdc.h>
 #include <pl/types.h>
 #include <stdlib.h>
+#include <string.h>
 #include "types.h"
 #include "assert.h"
 
@@ -41,7 +42,7 @@
 /** Sequencer item with regions, waveform and timing information */
 struct sequencer_item {
 	char file[32];          /**< path to the image file to open */
-	struct area area;       /**< area coordinates on the display */
+	struct pl_area area;    /**< area coordinates on the display */
 	int left_in;            /**< left coordinate to start reading from */
 	int top_in;             /**< top coordinate to start reading from */
 };
@@ -149,7 +150,6 @@ static int load_image(struct pl_epdc *epdc, const struct sequencer_item *item,
 		      const char *dir)
 {
 	char path[MAX_PATH_LEN];
-	int ret;
 
 	if (join_path(path, sizeof(path), dir, item->file))
 		return -1;

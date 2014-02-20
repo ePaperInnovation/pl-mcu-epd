@@ -39,6 +39,7 @@
 #include "msp430-gpio.h"
 #include "msp430-sdcard.h"
 #include "msp430-uart.h"
+#include "msp430-spi.h"
 
 #define LOG_TAG "main"
 #include "utils.h"
@@ -241,7 +242,6 @@ int main_init(void)
 		&g_s1d135xx_data, &g_plat.gpio,
 	};
 	FATFS sdcard;
-	int platform_type;
 	unsigned i;
 
 	LOG("------------------------");

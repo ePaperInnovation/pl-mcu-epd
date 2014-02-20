@@ -29,6 +29,7 @@
 #include <pl/endian.h>
 #include <pl/types.h>
 #include <stdlib.h>
+#include "msp430-spi.h" /* until this becomse <pl/spi.h> */
 #include "assert.h"
 
 /* until the i/o operations are abstracted */
@@ -82,7 +83,9 @@ static void send_cmd_cs(struct s1d135xx *p, uint16_t cmd);
 static void send_cmd(struct s1d135xx *p, uint16_t cmd);
 static void send_params(const uint16_t *params, size_t n);
 static void send_param(uint16_t param);
+#if 0 /* this should be needed with S1D13524 */
 static void set_hdc(struct s1d135xx *p, int state);
+#endif
 static void set_cs(struct s1d135xx *p, int state);
 
 /* ----------------------------------------------------------------------------
@@ -138,7 +141,7 @@ int s1d135xx_load_init_code(struct s1d135xx *p)
 
 	checksum = s1d135xx_read_reg(p, S1D135XX_REG_SEQ_AUTOBOOT_CMD);
 
-	if (!(checksum & S1D135XX_INIT_CODE_CHECKSUM_OK)) {
+	if (!(checksum & (uint16_t)S1D135XX_INIT_CODE_CHECKSUM_OK)) {
 		LOG("Init code checksum error");
 		return -1;
 	}
@@ -183,7 +186,7 @@ int s1d135xx_load_wf_lib(struct s1d135xx *p, const char *path, uint32_t addr)
 	send_param(S1D135XX_REG_HOST_MEM_PORT);
 	stat = transfer_file(&wf_lib_file);
 	set_cs(p, 1);
-	fclose(&wf_lib_file);
+	f_close(&wf_lib_file);
 
 	if (stat)
 		return -1;
@@ -474,7 +477,6 @@ static int transfer_file(FIL *file)
 
 	for (;;) {
 		size_t count;
-		const uint16_t *it;
 
 		if (f_read(file, data, sizeof(data), &count) != FR_OK)
 			return -1;
@@ -566,11 +568,13 @@ static void send_param(uint16_t param)
 	spi_write_bytes((uint8_t *)&param, sizeof(uint16_t));
 }
 
+#if 0
 static void set_hdc(struct s1d135xx *p, int state)
 {
 	if (p->data->hdc != PL_GPIO_NONE)
 		p->gpio->set(p->data->hdc, state);
 }
+#endif
 
 static void set_cs(struct s1d135xx *p, int state)
 {

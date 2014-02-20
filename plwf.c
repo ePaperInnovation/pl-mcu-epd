@@ -143,7 +143,9 @@ int plwf_data_init(struct pl_disp_data *data, const struct i2c_eeprom *eeprom)
 
 void plwf_log(const struct pl_disp_data *data)
 {
+#if PLWF_VERBOSE_LOG
 	const char *magic = (const char *)&data->vermagic.magic;
+#endif
 
 	LOG("Version: %d", data->vermagic.version);
 

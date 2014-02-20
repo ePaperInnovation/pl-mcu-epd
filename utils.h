@@ -46,6 +46,8 @@ extern int open_image(const char *dir, const char *file, FIL *f,
 
 /* -- Lightweight string parser -- */
 
+struct pl_area;
+
 /** Return the offset of the first occurence of any sep characters in str if
  * skip=0, or the first occurence of any character not in sep if skip=1 */
 extern int parser_find_str(const char *str, const char *sep, int skip);
@@ -62,7 +64,8 @@ extern int parser_read_int(const char *str, const char *sep, int *out);
 extern int parser_read_int_list(const char *str, const char *sep, int **list);
 
 /** Read area coordinates (left, top, width, height) */
-extern int parser_read_area(const char *str, const char *sep, struct area *a);
+extern int parser_read_area(const char *str, const char *sep,
+			    struct pl_area *area);
 
 /** Read one line worth of data from a text file
  *  Return 1 if some data was read, 0 if end of file reached and no data was

@@ -79,6 +79,8 @@ struct s1d135xx {
 extern void s1d135xx_hard_reset(struct s1d135xx *p);
 extern int s1d135xx_soft_reset(struct s1d135xx *p);
 extern int s1d135xx_load_init_code(struct s1d135xx *p);
+extern int s1d135xx_load_wf_lib(struct s1d135xx *p, const char *path,
+				uint32_t addr);
 extern int s1d135xx_init_gate_drv(struct s1d135xx *p);
 extern int s1d135xx_wait_dspe_trig(struct s1d135xx *p);
 extern int s1d135xx_fill(struct s1d135xx *p, uint16_t mode, unsigned bpp,

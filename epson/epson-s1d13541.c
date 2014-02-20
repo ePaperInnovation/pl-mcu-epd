@@ -96,6 +96,9 @@ static int update_temp_auto(struct s1d135xx *p, uint16_t temp_reg);
 
 /* -- pl_epdc interface -- */
 
+static int s1d13541_fill(struct pl_epdc *epdc, const struct pl_area *area,
+			 uint8_t grey);
+
 static int s1d13541_init(struct pl_epdc *epdc, uint8_t grey)
 {
 	struct s1d135xx *p = epdc->data;
@@ -108,8 +111,7 @@ static int s1d13541_init(struct pl_epdc *epdc, uint8_t grey)
 	if (s1d135xx_wait_idle(p))
 		return -1;
 
-	if (s1d135xx_wait_dspe_trig(p))
-		return -1;
+	return s1d135xx_wait_dspe_trig(p);
 }
 
 static int s1d13541_load_wf_lib(struct pl_epdc *epdc)
@@ -162,7 +164,6 @@ static int s1d13541_set_temp_mode(struct pl_epdc *epdc,
 static int s1d13541_update_temp(struct pl_epdc *epdc)
 {
 	struct s1d135xx *p = epdc->data;
-	uint16_t regval;
 	int stat;
 
 	switch (epdc->temp_mode) {
@@ -334,8 +335,6 @@ static int update_temp_manual(struct s1d135xx *p, int manual_temp)
 
 static int update_temp_auto(struct s1d135xx *p, uint16_t temp_reg)
 {
-	uint16_t regval;
-
 	if (s1d135xx_set_power_state(p, PL_EPDC_STANDBY))
 		return -1;
 

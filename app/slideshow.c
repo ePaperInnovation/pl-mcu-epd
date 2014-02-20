@@ -48,7 +48,6 @@ int app_slideshow(struct platform *plat, const char *path)
 {
 	DIR dir;
 	FILINFO f;
-	char full_path[MAX_PATH_LEN];
 	int dir_open = 0;
 
 	assert(plat != NULL);

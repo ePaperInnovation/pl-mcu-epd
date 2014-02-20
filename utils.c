@@ -24,6 +24,7 @@
  *
  */
 
+#include <pl/types.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "types.h"
@@ -136,7 +137,7 @@ int parser_read_int_list(const char *str, const char *sep, int **list)
 	return (opt - str);
 }
 
-int parser_read_area(const char *str, const char *sep, struct area *a)
+int parser_read_area(const char *str, const char *sep, struct pl_area *a)
 {
 	int *coords[] = { &a->left, &a->top, &a->width, &a->height, NULL };
 

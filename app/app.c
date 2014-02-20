@@ -25,15 +25,10 @@
  */
 
 #include <pl/platform.h>
+#include "app.h"
 
 #define LOG_TAG "app"
 #include "utils.h"
-
-/* Interim implementation */
-#include <epson/epson-s1d135xx.h>
-#include <epson/epson-utils.h>
-#include <epson/S1D135xx.h>
-#include <epson/S1D13541.h>
 
 static const char SLIDES_PATH[] = "img/slides.txt";
 
@@ -56,7 +51,6 @@ int app_demo(struct platform *plat)
 
 int app_clear(struct platform *plat)
 {
-	struct s1d135xx *s1d135xx = plat->epdc.data;
 	struct pl_epdpsu *psu = &plat->psu;
 	struct pl_epdc *epdc = &plat->epdc;
 

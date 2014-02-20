@@ -26,6 +26,8 @@
 #ifndef PMIC_TPS65185_H_
 #define PMIC_TPS65185_H_
 
+#include "types.h"
+
 struct tps65185_info;
 
 int tps65185_init(struct pl_i2c *i2c, u8 i2c_addr, struct tps65185_info **pmic);

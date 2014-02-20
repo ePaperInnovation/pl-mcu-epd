@@ -36,6 +36,7 @@
 #include "pnm-utils.h"
 #include "plwf.h"
 #include "vcom.h"
+#include "pmic-tps65185.h"
 
 #define LOG_TAG "probe"
 #include "utils.h"
@@ -77,7 +78,6 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 #else
 	const struct i2c_eeprom *pe = NULL;
 #endif
-	char full_path[10];
 	struct pl_epdc *epdc = &plat->epdc;
 
 	/* ToDo: This should be either in platform or main */
@@ -188,8 +188,6 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 static int load_wf_eeprom(struct platform *plat, struct plwf *plwf)
 {
 	LOG("Loading display data from EEPROM");
-
-	LOG("Not tested that yet.");
 
 	return -1;
 }
