@@ -207,9 +207,14 @@ static const struct s1d135xx_data g_s1d135xx_data = {
 /* --- hardware info --- */
 
 #if CONFIG_HW_INFO_EEPROM
-static struct pl_hw_info g_pl_hw_info;
-#elif CONFIG_HW_INFO_DEFAULT /* ToDo: use default as fall-back solution */
-static const struct pl_hw_info g_pl_hw_info = {
+static struct pl_hw_info g_pl_hw_info_eeprom;
+static const struct i2c_eeprom g_pl_hw_eeprom = {
+	&g_plat.host_i2c, I2C_PSU_EEPROM_ADDR, EEPROM_24LC014,
+};
+#endif
+
+#if CONFIG_HW_INFO_DEFAULT
+static const struct pl_hw_info g_pl_hw_info_default = {
 	/* version */
 	PL_HW_INFO_VERSION,
 	/* vcom */
@@ -233,14 +238,10 @@ static const struct pl_hw_info g_pl_hw_info = {
 
 int main_init(void)
 {
-#if CONFIG_HW_INFO_EEPROM
-	static const struct i2c_eeprom hw_eeprom = {
-		&g_plat.host_i2c, I2C_PSU_EEPROM_ADDR, EEPROM_24LC014;
-	};
-#endif
 	struct s1d135xx s1d135xx = { /* ToDo: static const? */
 		&g_s1d135xx_data, &g_plat.gpio,
 	};
+	const struct pl_hw_info *hw_info;
 	FATFS sdcard;
 	unsigned i;
 
@@ -293,22 +294,34 @@ int main_init(void)
 	if (f_mount(0, &sdcard) != FR_OK)
 		abort_msg("Failed to initialise SD card");
 
-#if CONFIG_HW_INFO_EEPROM
-	if (pl_hw_info_init(&pl_hw_info, &hw_eeprom))
-		abort_msg("Failed to read hardware info EEPROM");
+#if CONFIG_HW_INFO_EEPROM && CONFIG_HW_INFO_DEFAULT
+	if (pl_hw_info_init(&g_pl_hw_info_eeprom, &g_pl_hw_eeprom)) {
+		LOG("WARNING: EEPROM failed, using default HW info");
+		hw_info = &g_pl_hw_info_default;
+	} else {
+		hw_info = &g_pl_hw_info_eeprom;
+	}
+#elif CONFIG_HW_INFO_EEPROM
+	if (pl_hw_info_init(&g_pl_hw_info_eeprom, &g_pl_hw_eeprom))
+		abort_msg("Failed to read HW info EEPROM");
+	hw_info = &g_pl_hw_info_eeprom;
+#elif CONFIG_HW_INFO_DEFAULT
+	LOG("Using hard-coded HW info");
+	hw_info = &g_pl_hw_info_default;
 #else
-	LOG("Using hard-coded hardware info");
+#error "Invalid HW info build configuration, check CONFIG_HW_INFO_ options"
 #endif
-	pl_hw_info_log(&g_pl_hw_info);
+
+	pl_hw_info_log(hw_info);
 
 	/* initialise EPD HV-PSU */
 	if (pl_epdpsu_gpio_init(&g_plat.psu, &g_epdpsu_gpio))
 		abort_msg("Failed to initialise HV-PSU");
 
-	if (probe(&g_plat, &g_pl_hw_info, &s1d135xx))
+	if (probe(&g_plat, hw_info, &s1d135xx))
 		abort_msg("Failed to probe hardware");
 
-#if 0 /* ToDo: make plwf_load_wf work for both EEPROM and SD card */
+#if 0 /* ToDo: make plwf_load_wf work with both EEPROM and SD card */
 	if (plwf_load_wf(&plwf.data, pe, epson, epson_config->wf_addr))
 		return -1;
 #endif
