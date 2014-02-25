@@ -35,9 +35,10 @@
 /* Set to 1 to dump registers */
 #define DO_REG_DUMP 0
 
-#define	HVPMIC_DAC_MAX		((1 << 9)-1)
-#define	HVPMIC_DAC_MIN		0
-#define	HVPMIC_TEMP_DEFAULT	20
+#define HVPMIC_DAC_MAX          ((1 << 9)-1)
+#define HVPMIC_DAC_MIN          0
+#define HVPMIC_TEMP_DEFAULT     20
+#define HVPMIC_VERSION          0x65
 
 #if 0
 #define MV_DIV	33		// Each DAC step is 33mV
@@ -69,7 +70,7 @@ union tps65185_version {
 		char version:4;
 		char minor:2;
 		char major:2;
-	};
+	} v;
 	u8 byte;
 };
 
@@ -116,39 +117,44 @@ static void reg_dump(struct tps65185_info *p)
 }
 #endif
 
-int tps65185_init(struct pl_i2c *i2c, u8 i2c_addr, struct tps65185_info **p)
+int tps65185_init(struct pl_i2c *i2c, u8 i2c_addr, struct tps65185_info **px,
+		  const struct vcom_cal *cal)
 {
+	int i;
+	union tps65185_version ver;
+	struct tps65185_info *p;
+
 	assert(i2c != NULL);
-	assert(p != NULL);
+	assert(px != NULL);
 
 	pmic_info.i2c_addr = i2c_addr;
 	pmic_info.i2c = i2c;
-	*p = &pmic_info;
-
-	return 0;
-}
-
-int tps65185_configure(struct tps65185_info *p, struct vcom_cal *cal)
-{
-	int i;
-	int ret = 0;
-	union tps65185_version ver;
-
-	assert(p != NULL);
+	p = *px = &pmic_info;
 
 	/* Cal may be NULL if not being used */
 	p->cal = cal;
 
-	pl_i2c_reg_read_8(p->i2c, p->i2c_addr, HVPMIC_REG_REV_ID, &ver.byte);
-	printk("TPS65185: Version: %d.%d.%d\n",
-	       ver.major, ver.minor, ver.version);
-
-	for (i = 0; (ret == 0) && (i < ARRAY_SIZE(init_data)); i++) {
-		ret = pl_i2c_reg_write_8(p->i2c, p->i2c_addr,
-					 init_data[i].reg, init_data[i].data);
+	if (pl_i2c_reg_read_8(p->i2c, p->i2c_addr, HVPMIC_REG_REV_ID,
+			      &ver.byte)) {
+		LOG("Failed to read version");
+		return -1;
 	}
 
-	return ret;
+	LOG("Version: %d.%d.%d", ver.v.major, ver.v.minor, ver.v.version);
+
+	if (ver.byte != HVPMIC_VERSION) {
+		LOG("Wrong version: 0x%02X instead of 0x%02X",
+		    ver.byte, HVPMIC_VERSION);
+		return -1;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(init_data); i++) {
+		if (pl_i2c_reg_write_8(p->i2c, p->i2c_addr,
+				       init_data[i].reg, init_data[i].data))
+			return -1;
+	}
+
+	return 0;
 }
 
 /* program the internal VCOM Dac to give us the required voltage */
