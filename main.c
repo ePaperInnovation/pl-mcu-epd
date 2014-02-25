@@ -222,7 +222,7 @@ static const struct pl_hw_info g_pl_hw_info_default = {
 	{ 127, 4172, 381, 12490, 25080, -32300, 56886 },
 	/* board */
 #if CONFIG_PLAT_Z6
-	{ "HB", 6, 3, 0, HV_PMIC_TPS65185, 0, 0, 0, I2C_MODE_DISP,
+	{ "HB", 6, 3, 0, HV_PMIC_TPS65185, 0, 0, 0, I2C_MODE_HOST,
 	  TEMP_SENSOR_LM75, 0, EPDC_S1D13541, 1, 1 },
 #elif CONFIG_PLAT_Z7
 	{ "HB", 7, 2, 0, HV_PMIC_TPS65185, 0, 0, 0, I2C_MODE_DISP,
@@ -334,10 +334,10 @@ int main_init(void)
 	pl_hw_info_log(hw_info);
 
 	/* initialise wflib (interim solution for SD card only) */
+	g_plat.epdc.wflib = &g_wflib;
 #if !CONFIG_DISP_DATA_EEPROM_ONLY
 	if (pl_wflib_init_fatfs(&g_wflib, &g_wflib_fil, g_wflib_path))
 		abort_msg("Failed to initialise wflib");
-	g_plat.epdc.wflib = &g_wflib;
 #endif
 
 	/* initialise EPD HV-PSU */
