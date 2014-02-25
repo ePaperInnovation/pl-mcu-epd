@@ -41,14 +41,6 @@
 #define PL_WHITE PL_GL16(15)
 #define PL_BLACK PL_GL16(0)
 
-struct pl_area;
-struct pl_disp_data;
-
-struct pl_wfid {
-	const char *path;
-	int id;
-};
-
 enum pl_epdc_power_state {
 	PL_EPDC_RUN,
 	PL_EPDC_STANDBY,
@@ -62,9 +54,18 @@ enum pl_epdc_temp_mode {
 	PL_EPDC_TEMP_INTERNAL,
 };
 
+struct pl_area;
+struct pl_disp_data;
+struct pl_wflib;
+
+struct pl_wfid {
+	const char *path;
+	int id;
+};
+
 struct pl_epdc{
 	int (*init)(struct pl_epdc *p, uint8_t grey);
-	int (*load_wf_lib)(struct pl_epdc *p);
+	int (*load_wflib)(struct pl_epdc *p);
 	int (*update)(struct pl_epdc *p, int wfid, const struct pl_area *area);
 	int (*wait_update_end)(struct pl_epdc *p);
 	int (*set_power)(struct pl_epdc *p, enum pl_epdc_power_state state);
@@ -76,6 +77,7 @@ struct pl_epdc{
 
 	const struct pl_disp_data *disp_data;
 	const struct pl_wfid *wf_table;
+	struct pl_wflib *wflib;
 	enum pl_epdc_power_state power_state;
 	enum pl_epdc_temp_mode temp_mode;
 	int manual_temp;
