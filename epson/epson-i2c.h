@@ -31,6 +31,7 @@
 struct s1d135xx;
 struct pl_i2c;
 
-extern int epson_i2c_init(struct s1d135xx *epson, struct pl_i2c *i2c);
+extern int epson_i2c_init(struct s1d135xx *p, struct pl_i2c *i2c,
+			  enum epson_epdc_ref ref);
 
 #endif /* EPSON_I2C_H */

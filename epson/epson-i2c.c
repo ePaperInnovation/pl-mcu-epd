@@ -26,194 +26,186 @@
  */
 
 #include <pl/i2c.h>
-#include <msp430.h>
-#include "types.h"
 #include "assert.h"
-#include "S1D135xx.h"
-#include "epson-i2c.h"
-#include "epson-cmd.h"
+#include "epson-epdc.h"
+#include "epson-s1d135xx.h"
 
-// registers are common to S1D13524, S1D13541
-#define I2C_CLK_CONF_REG 		0x001A // I2C clock Config register
-#define I2C_STAT_REG			0x0218 // I2C status register
-#define I2C_CMD_REG				0x021A // I2C command register
-#define I2C_RD_REG				0x021C // I2C read data register
-#define I2C_WD_REG				0x021E // I2C write data register
+#define LOG_TAG "epson-i2c"
+#include "utils.h"
 
-// Status/Configuration register bits
-#define	I2C_STAT_GO				BIT0	// Busy
-#define	I2C_STAT_NAK			BIT1	// ACK(0)/NAK(1) from slave on write
-#define I2C_STAT_BUSY			BIT2	// I2C Busy when START detected (0 on STOP)
-#define	I2C_STAT_TIP			BIT3	// Transfer in progress
-#define I2C_STAT_ERROR			BIT6	// Transfer/Stop command issued when bus inactive
-#define I2C_STAT_RESET			BITF	// I2C controller reset
-#define I2C_STAT_SAMPLE_AT(_x_)	(((_x_) & 0x7) << 8) // sample point for the read data/ack bit
-
-// Command register bits
-#define	I2C_CMD_GO				BIT0	// initiate i2c transfer
-#define	I2C_CMD_READ			BIT1	// Read (1) or Write (0) to slave
-#define	I2C_CMD_WRITE			0
-#define	I2C_CMD_TX_NAK			BIT2	// Ack (0) or NAK (1) to slave on read
-#define I2C_CMD_GEN_STARTSTOP	BIT4	// Generate Start/Stop (1)
-#define	I2C_CMD_SEL_STARTSTOP	BIT5	// Select Start (1) or Stop (0)
-#define I2C_CMD_NO_DATA			BIT6	// Send no Data (1)
-#define	I2C_CMD_ACTION(_x_)		((_x_) << 4)
-#define	I2C_DO_DATA_TRANSFER		0x00	// Transfer data - in direction specified
-#define	I2C_DO_DATA_TRANSFER_STOP	0x01	// Transfer data then generate STOP
-#define	I2C_DO_START_TRANSFER		0x03	// Generate START then transfer data
-#define	I2C_DO_STOP					0x05	// STOP
-#define	I2C_DO_START				0x07	// START
-
-// Hybrid commands for the actions we need
-#define	I2C_SELECT_DEVICE		(I2C_CMD_ACTION(I2C_DO_START_TRANSFER) | I2C_CMD_WRITE)
-#define	I2C_WRITE_BYTE			(I2C_CMD_ACTION(I2C_DO_DATA_TRANSFER)  | I2C_CMD_WRITE)
-#define	I2C_READ_BYTE			(I2C_CMD_ACTION(I2C_DO_DATA_TRANSFER)  | I2C_CMD_READ)
-#define	I2C_READ_LAST_BYTE		(I2C_CMD_ACTION(I2C_DO_DATA_TRANSFER)  | I2C_CMD_READ | I2C_CMD_TX_NAK)
-#define	I2C_STOP				(I2C_CMD_ACTION(I2C_DO_STOP))
-
-struct epson_i2c {
-	struct pl_i2c i2c;
+enum s1d135xx_i2c_reg {
+	S1D135XX_I2C_REG_STAT             = 0x0218,
+	S1D135XX_I2C_REG_CMD              = 0x021A,
+	S1D135XX_I2C_REG_RD               = 0x021C,
+	S1D135XX_I2C_REG_WD               = 0x021E,
 };
 
-static int epson_i2c_read(struct pl_i2c *i2c, uint8_t i2c_addr,
-			  uint8_t *data, uint8_t count, uint8_t flags);
-static int epson_i2c_write(struct pl_i2c *i2c, uint8_t i2c_addr,
-			   const uint8_t *data, uint8_t count, uint8_t flags);
+enum s1d135xx_i2c_status {
+	/* Busy */
+	S1D135XX_I2C_STAT_GO              = (1 << 0),
+	/* ACK(0)/NAK(1) from slave on write */
+	S1D135XX_I2C_STAT_RX_NAK          = (1 << 1),
+	/* I2C Busy when START detected (0 on STOP) */
+	S1D135XX_I2C_STAT_BUSY            = (1 << 2),
+	/* Transfer in progress */
+	S1D135XX_I2C_STAT_TIP             = (1 << 3),
+	/* Transfer/Stop command issued when bus inactive */
+	S1D135XX_I2C_STAT_ERROR           = (1 << 6),
+	/* I2C controller reset */
+	S1D135XX_I2C_STAT_RESET           = (1 << 15),
+};
 
-static struct epson_i2c epson_i2c;
+enum s1d135xx_i2c_cmd {
+	/* Initiate i2c transfer */
+	S1D135XX_I2C_CMD_GO               = (1 << 0),
+	/* Read (1) or Write (0) to slave */
+	S1D135XX_I2C_CMD_READ             = (1 << 1),
+	/* Ack (0) or NAK (1) to slave on read */
+	S1D135XX_I2C_CMD_TX_NAK           = (1 << 2),
+	/* Generate Start/Stop (1) */
+	S1D135XX_I2C_CMD_GEN              = (1 << 4),
+	/* Select Start (1) or Stop (0) */
+	S1D135XX_I2C_CMD_START            = (1 << 5),
+	/* Send no Data (1) */
+	S1D135XX_I2C_CMD_NO_DATA          = (1 << 6),
+};
+
+#define S1D135XX_I2C_START \
+	(S1D135XX_I2C_CMD_START | S1D135XX_I2C_CMD_GEN | S1D135XX_I2C_CMD_GO)
+#define S1D135XX_I2C_STOP \
+	(S1D135XX_I2C_CMD_GEN | S1D135XX_I2C_CMD_GO)
+/*
+#define S1D135XX_I2C_RX_ERROR \
+	(S1D135XX_I2C_STAT_RX_NAK | S1D135XX_I2C_STAT_ERROR)
+*/
+
+static int epson_s1d135xx_i2c_read(struct pl_i2c *i2c, uint8_t i2c_addr,
+				   uint8_t *data, uint8_t count,
+				   uint8_t flags);
+static int epson_s1d135xx_i2c_write(struct pl_i2c *i2c, uint8_t i2c_addr,
+				    const uint8_t *data, uint8_t count,
+				    uint8_t flags);
+static int s1d135xx_i2c_send_addr(struct s1d135xx *p, uint8_t i2c_addr,
+				  uint8_t read);
+static int s1d135xx_i2c_stop(struct s1d135xx *p);
+static int s1d135xx_i2c_poll(struct s1d135xx *p, int check_nak);
 
 /*
  *   Initialization of the I2C Module
  */
-int epson_i2c_init(struct s1d135xx *epson, struct pl_i2c *i2c)
+int epson_i2c_init(struct s1d135xx *p, struct pl_i2c *i2c,
+		   enum epson_epdc_ref ref)
 {
-	assert(epson);
-	assert(i2c);
+	if (epson_epdc_early_init(p, ref))
+		return -1;
 
-	epson_i2c.i2c.read = epson_i2c_read;
-	epson_i2c.i2c.write = epson_i2c_write;
-
-	/* reset the controller */
-	epson_reg_write(I2C_STAT_REG, I2C_STAT_RESET);
-	epson_wait_for_idle();
-	epson_reg_write(I2C_STAT_REG, I2C_STAT_SAMPLE_AT(3));
-
-#if 0
-	/* set I2C clock divider (0..15) */
-	epson_reg_write(I2C_CLK_CONF_REG, 0x0007);
-#endif
-
-	i2c = &epson_i2c.i2c;
+	i2c->read = epson_s1d135xx_i2c_read;
+	i2c->write = epson_s1d135xx_i2c_write;
+	i2c->priv = p;
 
 	return 0;
 }
 
-/* Send a command to the Epson i2c unit, wait for it to finish
- * and check the outcome.
- */
-static int epson_i2c_command(int cmd, int flags)
+static int epson_s1d135xx_i2c_read(struct pl_i2c *i2c, uint8_t i2c_addr,
+				   uint8_t *data, uint8_t count, uint8_t flags)
 {
-	int result = 0;
-	uint16_t stat;
+	struct s1d135xx *p = i2c->priv;
 
-	epson_reg_write(I2C_CMD_REG, (cmd | I2C_CMD_GO));
-
-	// wait for the command to complete
-	do {
-		epson_reg_read(I2C_STAT_REG, &stat);
-	} while(stat & I2C_STAT_GO);
-
-	// check for requested flags and general error response
-	if(stat & (flags | I2C_STAT_ERROR))
-		result = -EIO;
-
-	return result;
-}
-
-/*
- * Write bytes to specified device - optional start and stop
- */
-static int epson_i2c_write(struct pl_i2c *i2c, uint8_t i2c_addr,
-			   const uint8_t *data, uint8_t count, uint8_t flags)
-{
-	int result = -EIO;
-	struct epson_i2c *p = (struct epson_i2c*)i2c;
-
-	if (count == 0)
-		goto no_data;
+	if (!count) {
+		if (flags & PL_I2C_NO_STOP)
+			return 0;
+		return s1d135xx_i2c_stop(p);
+	}
 
 	if (!(flags & PL_I2C_NO_START))
-	{
-		// send the i2c address of the slave
-		epson_reg_write(I2C_WD_REG, (i2c_addr << 1) | 0);
-		if (epson_i2c_command(I2C_SELECT_DEVICE, I2C_STAT_NAK) < 0)
-			goto error;
+		if (s1d135xx_i2c_send_addr(p, i2c_addr, 1))
+			return -1;
+
+	while (count--) {
+		s1d135xx_write_reg(p, S1D135XX_I2C_REG_CMD,
+				   S1D135XX_I2C_CMD_GO | S1D135XX_I2C_CMD_READ);
+
+		if (s1d135xx_i2c_poll(p, 0))
+			return -1;
+
+		*data++ = s1d135xx_read_reg(p, S1D135XX_I2C_REG_RD);
 	}
 
-	while (count--)
-	{
-		// write the bytes of data out.
-		epson_reg_write(I2C_WD_REG, *data++);
-		if (epson_i2c_command(I2C_WRITE_BYTE, I2C_STAT_NAK) < 0)
-			goto error;
-	}
-
-no_data:
-	result = 0;
-
-	// dont send stop if requested
 	if (!(flags & PL_I2C_NO_STOP))
-	{
-error:
-		epson_i2c_command(I2C_STOP, 0);
-	}
+		return s1d135xx_i2c_stop(p);
 
-	return result;
+	return 0;
 }
 
-/*
- * Read bytes from specified device - optional start and stop
- */
-static int epson_i2c_read(struct pl_i2c *i2c, uint8_t i2c_addr, uint8_t *data,
-			  uint8_t count, uint8_t flags)
+static int epson_s1d135xx_i2c_write(struct pl_i2c *i2c, uint8_t i2c_addr,
+				    const uint8_t *data, uint8_t count,
+				    uint8_t flags)
 {
-	uint16_t stat;
-	uint16_t cmd;
-	int result = -EIO;
-	struct epson_i2c *p = (struct epson_i2c*)i2c;
+	struct s1d135xx *p = i2c->priv;
 
-	if (count == 0)
-		goto no_data;
+	if (!count) {
+		if (flags & PL_I2C_NO_STOP)
+			return 0;
+		return s1d135xx_i2c_stop(p);
+	}
 
 	if (!(flags & PL_I2C_NO_START))
-	{
-		// send the i2c address of the slave
-		epson_reg_write(I2C_WD_REG, (i2c_addr << 1) | 1);
-		if (epson_i2c_command(I2C_SELECT_DEVICE, I2C_STAT_NAK) < 0)
-			goto error;
+		if (s1d135xx_i2c_send_addr(p, i2c_addr, 0))
+			return -1;
+
+	while (count--) {
+		s1d135xx_write_reg(p, S1D135XX_I2C_REG_WD, *data++);
+		s1d135xx_write_reg(p, S1D135XX_I2C_REG_CMD,
+				   S1D135XX_I2C_CMD_GO);
+
+		if (s1d135xx_i2c_poll(p, 1))
+			return -1;
 	}
 
-	// read bytes from the slave, send NAK when reading last byte
-	while (count)
-	{
-		count--;
-		cmd = (count ? I2C_READ_BYTE : I2C_READ_LAST_BYTE);
-		if (epson_i2c_command(cmd, I2C_STAT_NAK) < 0)
-			goto error;
-		epson_reg_read(I2C_RD_REG, &stat);
-		*data++ = (uint8_t)stat;
-	}
-
-no_data:
-	result = 0;
-
-	// dont send stop if requested
 	if (!(flags & PL_I2C_NO_STOP))
-	{
-error:
-		epson_i2c_command(I2C_STOP, 0);
-	}
+		return s1d135xx_i2c_stop(p);
 
-	return result;
+	return 0;
 }
 
+static int s1d135xx_i2c_send_addr(struct s1d135xx *p, uint8_t i2c_addr,
+				  uint8_t read)
+{
+	s1d135xx_write_reg(p, S1D135XX_I2C_REG_WD, ((i2c_addr) << 1) | read);
+	s1d135xx_write_reg(p, S1D135XX_I2C_REG_CMD, S1D135XX_I2C_START);
+
+	return s1d135xx_i2c_poll(p, 1);
+}
+
+static int s1d135xx_i2c_stop(struct s1d135xx *p)
+{
+	s1d135xx_write_reg(p, S1D135XX_I2C_REG_CMD, S1D135XX_I2C_STOP);
+
+	return s1d135xx_i2c_poll(p, 0);
+}
+
+static int s1d135xx_i2c_poll(struct s1d135xx *p, int check_nak)
+{
+	uint16_t status;
+	unsigned i = 50;
+
+	while (--i) {
+		status = s1d135xx_read_reg(p, S1D135XX_I2C_REG_STAT);
+
+		if (!(status & S1D135XX_I2C_STAT_GO))
+			break;
+
+		mdelay(1);
+	}
+
+	if (!i)
+		LOG("TIMEOUT");
+	else  if (status & S1D135XX_I2C_STAT_ERROR)
+		LOG("ERROR");
+	else if (check_nak && (status & S1D135XX_I2C_STAT_RX_NAK))
+		LOG("NAK");
+	else
+		return 0;
+
+	return -1;
+}

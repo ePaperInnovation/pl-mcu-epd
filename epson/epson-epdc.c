@@ -97,7 +97,7 @@ int epson_epdc_init(struct pl_epdc *epdc, const struct pl_disp_data *disp_data,
 		stat = epson_epdc_init_s1d13541(epdc);
 		break;
 	default:
-		abort_msg("Invalid Epson EPDC reference");
+		abort_msg("Invalid Epson ref");
 	}
 
 	if (stat)
@@ -107,4 +107,22 @@ int epson_epdc_init(struct pl_epdc *epdc, const struct pl_disp_data *disp_data,
 		return -1;
 
 	return epdc->set_temp_mode(epdc, PL_EPDC_TEMP_INTERNAL);
+}
+
+int epson_epdc_early_init(struct s1d135xx *p, enum epson_epdc_ref ref)
+{
+	int stat;
+
+	switch (ref) {
+	case EPSON_EPDC_S1D13524:
+		stat = epson_epdc_early_init_s1d13524(p);
+		break;
+	case EPSON_EPDC_S1D13541:
+		stat = epson_epdc_early_init_s1d13541(p);
+		break;
+	default:
+		abort_msg("Invalid Epson ref");
+	}
+
+	return stat;
 }

@@ -28,6 +28,7 @@
 #define INCLUDE_EPSON_EPDC_H 1
 
 struct pl_epdc;
+struct pl_disp_data;
 struct s1d135xx;
 
 enum epson_epdc_ref {
@@ -39,11 +40,11 @@ extern int epson_epdc_init(struct pl_epdc *epdc,
 			   const struct pl_disp_data *disp_data,
 			   enum epson_epdc_ref ref,
 			   struct s1d135xx *s1d135xx);
+extern int epson_epdc_early_init(struct s1d135xx *p, enum epson_epdc_ref ref);
 
-#if 0
-extern int epson_epdc_early_init_s1d13541(void);
-#endif
+extern int epson_epdc_early_init_s1d13541(struct s1d135xx *p);
 extern int epson_epdc_init_s1d13541(struct pl_epdc *epdc);
+extern int epson_epdc_early_init_s1d13524(struct s1d135xx *p);
 extern int epson_epdc_init_s1d13524(struct pl_epdc *epdc);
 
 #endif /* INCLUDE_EPSON_EPDC_H */

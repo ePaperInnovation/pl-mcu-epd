@@ -92,16 +92,17 @@ static void set_cs(struct s1d135xx *p, int state);
  * public functions
  */
 
-void s1d135xx_hard_reset(struct s1d135xx *p)
+void s1d135xx_hard_reset(struct pl_gpio *gpio,
+			 const struct s1d135xx_data *data)
 {
-	if (p->data->reset == PL_GPIO_NONE) {
+	if (data->reset == PL_GPIO_NONE) {
 		LOG("Warning: no hard reset");
 		return;
 	}
 
-	p->gpio->set(p->data->reset, 0);
+	gpio->set(data->reset, 0);
 	mdelay(4);
-	p->gpio->set(p->data->reset, 1);
+	gpio->set(data->reset, 1);
 	mdelay(10);
 }
 

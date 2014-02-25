@@ -76,7 +76,8 @@ struct s1d135xx {
 #endif
 };
 
-extern void s1d135xx_hard_reset(struct s1d135xx *p);
+extern void s1d135xx_hard_reset(struct pl_gpio *gpio,
+				const struct s1d135xx_data *data);
 extern int s1d135xx_soft_reset(struct s1d135xx *p);
 extern int s1d135xx_load_init_code(struct s1d135xx *p);
 extern int s1d135xx_load_wf_lib(struct s1d135xx *p, const char *path,

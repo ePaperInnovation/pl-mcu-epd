@@ -43,6 +43,13 @@ static const struct pl_wfid epson_epdc_wf_table_s1d13524[] = {
 	{ NULL,           -1 }
 };
 
+int epson_epdc_early_init_s1d13524(struct s1d135xx *p)
+{
+	abort_msg("not implemented");
+
+	return -1;
+}
+
 int epson_epdc_init_s1d13524(struct pl_epdc *epdc)
 {
 	struct s1d135xx *s1d135xx = epdc->data;
