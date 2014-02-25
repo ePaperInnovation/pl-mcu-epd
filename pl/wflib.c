@@ -25,34 +25,41 @@
  */
 
 #include <pl/wflib.h>
+#include <i2c-eeprom.h>
 
 #define LOG_TAG "wflib"
 #include "utils.h"
 
-static int pl_wflib_fatfs_rewind(struct pl_wflib *wflib)
+/* --- FatFS -- */
+
+#define DATA_BUFFER_LENGTH 256
+
+static int pl_wflib_fatfs_xfer(struct pl_wflib *wflib, pl_wflib_wr_t wr,
+			       void *ctx)
 {
 	FIL *f = wflib->priv;
+	size_t left = wflib->size;
 
-	return (f_lseek(f, 0) == FR_OK) ? 0 : -1;
-}
+	if (f_lseek(f, 0) != FR_OK)
+		return -1;
 
-static size_t pl_wflib_fatfs_read(struct pl_wflib *wflib, uint8_t *data,
-				  size_t n)
-{
-	FIL *f = wflib->priv;
-	size_t count;
+	while (left) {
+		uint8_t data[DATA_BUFFER_LENGTH];
+		const size_t n = min(left, sizeof(data));
+		size_t count;
 
-	if (f_read(f, data, n, &count) != FR_OK)
-		return (size_t)-1;
+		if ((f_read(f, data, n, &count) != FR_OK) || (count != n)) {
+			LOG("Failed to read from file");
+			return -1;
+		}
 
-	return count;
-}
+		if (wr(wflib, ctx, data, n))
+			return -1;
 
-static void pl_wflib_fatfs_close(struct pl_wflib *wflib)
-{
-	FIL *f = wflib->priv;
+		left -= n;
+	}
 
-	f_close(f);
+	return 0;
 }
 
 int pl_wflib_init_fatfs(struct pl_wflib *wflib, FIL *f, const char *path)
@@ -62,9 +69,7 @@ int pl_wflib_init_fatfs(struct pl_wflib *wflib, FIL *f, const char *path)
 		return -1;
 	}
 
-	wflib->rewind = pl_wflib_fatfs_rewind;
-	wflib->read = pl_wflib_fatfs_read;
-	wflib->close = pl_wflib_fatfs_close;
+	wflib->xfer = pl_wflib_fatfs_xfer;
 	wflib->size = f_size(f);
 	wflib->priv = f;
 

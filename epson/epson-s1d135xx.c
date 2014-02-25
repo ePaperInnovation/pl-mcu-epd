@@ -75,6 +75,8 @@ enum s1d135xx_cmd {
 static int get_hrdy(struct s1d135xx *p);
 static int do_fill(struct s1d135xx *p, const struct pl_area *area,
 		   unsigned bpp, uint8_t g);
+static int wflib_wr(struct pl_wflib *wflib, void *ctx, const uint8_t *data,
+		    size_t n);
 static int transfer_file(FIL *file);
 static int transfer_image(FIL *f, const struct pl_area *area, int left,
 			  int top, int width);
@@ -158,14 +160,10 @@ int s1d135xx_load_init_code(struct s1d135xx *p)
 int s1d135xx_load_wflib(struct s1d135xx *p, struct pl_wflib *wflib,
 			uint32_t addr)
 {
-	size_t left;
 	uint16_t params[4];
 	int stat;
 
 	if (s1d135xx_wait_idle(p))
-		return -1;
-
-	if (wflib->rewind(wflib))
 		return -1;
 
 	params[0] = addr & 0xFFFF;
@@ -180,24 +178,7 @@ int s1d135xx_load_wflib(struct s1d135xx *p, struct pl_wflib *wflib,
 	set_cs(p, 0);
 	send_cmd(p, S1D135XX_CMD_WRITE_REG);
 	send_param(S1D135XX_REG_HOST_MEM_PORT);
-
-	left = wflib->size;
-	stat = 0;
-
-	while (left) {
-		uint8_t data[DATA_BUFFER_LENGTH];
-		const size_t n = min(left, sizeof(data));
-
-		if (wflib->read(wflib, data, n) != n) {
-			LOG("Failed to read wflib");
-			stat = -1;
-			break;
-		}
-
-		transfer_data(data, n);
-		left -= n;
-	}
-
+	stat = wflib->xfer(wflib, wflib_wr, p);
 	set_cs(p, 1);
 
 	if (stat)
@@ -481,6 +462,18 @@ static int do_fill(struct s1d135xx *p, const struct pl_area *area,
 	send_cmd_cs(p, S1D135XX_CMD_LD_IMG_END);
 
 	return s1d135xx_wait_idle(p);
+}
+
+static int wflib_wr(struct pl_wflib *wflib, void *ctx, const uint8_t *data,
+		    size_t n)
+{
+#if 0 /* not used at the moment */
+	struct s1d135xx *p = ctx;
+#endif
+
+	transfer_data(data, n);
+
+	return 0;
 }
 
 static int transfer_file(FIL *file)
