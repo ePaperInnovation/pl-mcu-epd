@@ -33,14 +33,9 @@
 
 struct i2c_eeprom;
 struct s1d135xx;
-
-enum plwf_mode {
-	PLWF_MODE_EEPROM,
-	PLWF_MODE_SD_CARD,
-};
+struct pl_wflib;
 
 struct plwf {
-	enum plwf_mode mode;
 	struct i2c_eeprom *eeprom; /* use with PLWF_MODE_EEPROM */
 	struct pl_disp_data data;  /* initialised by plwf_init */
 };
@@ -52,9 +47,16 @@ extern int plwf_data_init(struct pl_disp_data *data,
 /** Log the display data */
 extern void plwf_log(const struct pl_disp_data *data);
 
-/** Read the waveform from the EEPROM and send it to the EPSON */
-extern int plwf_load_wf(struct pl_disp_data *data,
-			const struct i2c_eeprom *eeprom,
-			struct s1d135xx *epson, uint32_t addr);
+struct pl_wflib_eeprom {
+	const struct i2c_eeprom *eeprom;
+	const struct pl_disp_data *disp_data;
+	uint16_t offset;
+};
+
+/** Initialise a wflib interface for an I2C EEPROM + LZSS */
+extern int pl_wflib_init_eeprom(struct pl_wflib *wflib,
+				struct pl_wflib_eeprom *p,
+				const struct i2c_eeprom *eeprom,
+				const struct pl_disp_data *disp_data);
 
 #endif /* PLWF_H_ */

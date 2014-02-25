@@ -25,12 +25,9 @@
  */
 
 #include <pl/wflib.h>
-#include <i2c-eeprom.h>
 
 #define LOG_TAG "wflib"
 #include "utils.h"
-
-/* --- FatFS -- */
 
 #define DATA_BUFFER_LENGTH 256
 
@@ -53,7 +50,7 @@ static int pl_wflib_fatfs_xfer(struct pl_wflib *wflib, pl_wflib_wr_t wr,
 			return -1;
 		}
 
-		if (wr(wflib, ctx, data, n))
+		if (wr(ctx, data, n))
 			return -1;
 
 		left -= n;

@@ -35,11 +35,10 @@ struct i2c_eeprom;
 struct pl_wflib;
 
 /** Function type to write data to the output (i.e. the EPDC) */
-typedef int (*pl_wflib_wr_t)(struct pl_wflib *p, void *ctx,
-			     const uint8_t *data, size_t n);
+typedef int (*pl_wflib_wr_t)(void *ctx, const uint8_t *data, size_t n);
 
 struct pl_wflib {
-	int (*xfer)(struct pl_wflib *p, pl_wflib_wr_t wr, void *ctx);
+	int (*xfer)(struct pl_wflib *wflib, pl_wflib_wr_t wr, void *ctx);
 	uint32_t size;
 	void *priv;
 };

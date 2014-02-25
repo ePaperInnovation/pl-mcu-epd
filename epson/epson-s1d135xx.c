@@ -75,8 +75,7 @@ enum s1d135xx_cmd {
 static int get_hrdy(struct s1d135xx *p);
 static int do_fill(struct s1d135xx *p, const struct pl_area *area,
 		   unsigned bpp, uint8_t g);
-static int wflib_wr(struct pl_wflib *wflib, void *ctx, const uint8_t *data,
-		    size_t n);
+static int wflib_wr(void *ctx, const uint8_t *data, size_t n);
 static int transfer_file(FIL *file);
 static int transfer_image(FIL *f, const struct pl_area *area, int left,
 			  int top, int width);
@@ -464,8 +463,7 @@ static int do_fill(struct s1d135xx *p, const struct pl_area *area,
 	return s1d135xx_wait_idle(p);
 }
 
-static int wflib_wr(struct pl_wflib *wflib, void *ctx, const uint8_t *data,
-		    size_t n)
+static int wflib_wr(void *ctx, const uint8_t *data, size_t n)
 {
 #if 0 /* not used at the moment */
 	struct s1d135xx *p = ctx;
