@@ -221,10 +221,10 @@ static const struct pl_hw_info g_pl_hw_info_default = {
 	{ 127, 4172, 381, 12490, 25080, -32300, 56886 },
 	/* board */
 #if CONFIG_PLAT_Z6
-	{ "HB", 6, 3, 0, HV_PMIC_TPS65185, 0, 0, 0, I2C_MODE_HOST,
+	{ "HB", 6, 3, 0, HV_PMIC_TPS65185, 0, 0, 0, I2C_MODE_DISP,
 	  TEMP_SENSOR_LM75, 0, EPDC_S1D13541, 1, 1 },
 #elif CONFIG_PLAT_Z7
-	{ "HB", 7, 2, 0, HV_PMIC_TPS65185, 0, 0, 0, I2C_MODE_HOST,
+	{ "HB", 7, 2, 0, HV_PMIC_TPS65185, 0, 0, 0, I2C_MODE_DISP,
 	  TEMP_SENSOR_LM75, 0, EPDC_S1D13541, 1, 1 },
 #else
 # error "Sorry, no default hardware data for this platform yet."
@@ -267,6 +267,9 @@ int main_init(void)
 	if (pl_gpio_config_list(&g_plat.gpio, g_epson_gpios,
 				ARRAY_SIZE(g_epson_gpios)))
 		abort_msg("Failed to initialise Epson GPIOs");
+
+	/* hard-reset Epson controller to avoid errors during soft reset */
+	s1d135xx_hard_reset(&g_plat.gpio, &g_s1d135xx_data);
 
 	/* initialise Epson parallel interface GPIOs */
 	for (i = 0; i < ARRAY_SIZE(g_epson_parallel); ++i) {
@@ -311,7 +314,6 @@ int main_init(void)
 #else
 #error "Invalid HW info build configuration, check CONFIG_HW_INFO_ options"
 #endif
-
 	pl_hw_info_log(hw_info);
 
 	/* initialise EPD HV-PSU */

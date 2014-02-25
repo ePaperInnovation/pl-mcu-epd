@@ -25,6 +25,7 @@
  */
 
 #include <epson/epson-epdc.h>
+#include <epson/epson-i2c.h>
 #include <pl/platform.h>
 #include <pl/hwinfo.h>
 #include <string.h>
@@ -91,22 +92,27 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 
 	switch (pl_hw_info->board.i2c_mode) {
 	case I2C_MODE_HOST: /* MSP430, I2C already initialised */
+		LOG("I2C: Host");
 		stat = 0;
+		plat->i2c = &plat->host_i2c;
 		break;
-	case I2C_MODE_DISP: /* This must be the Epson S1D13541 */
+	case I2C_MODE_DISP: /* This must be the Epson S1D13541... */
+		LOG("I2C: S1D13541");
+		stat = epson_i2c_init(s1d135xx, &plat->disp_i2c,
+				      EPSON_EPDC_S1D13541);
+		plat->i2c = &plat->disp_i2c;
+		break;
 	case I2C_MODE_S1D13524:
-#if 1
-		LOG("Epson I2C master not tested yet.");
-		stat = -1;
-#else
-		stat = epson_i2c_init(epson, &i2c);
-#endif
+		LOG("I2C: S1D13524");
+		stat = epson_i2c_init(s1d135xx, &plat->disp_i2c,
+				      EPSON_EPDC_S1D13524);
+		plat->i2c = &plat->disp_i2c;
 		break;
 	case I2C_MODE_SC18IS6XX:
-	case I2C_MODE_NONE:
-		LOG("I2C_MODE not supported");
+		LOG("I2C: not supported");
 		stat = -1;
 		break;
+	case I2C_MODE_NONE:
 	default:
 		abort_msg("Invalid I2C mode");
 	}
@@ -135,9 +141,33 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 	/* -- Initialise the VCOM and HV-PMIC -- */
 
 	vcom_init(&vcomcal, &pl_hw_info->vcom);
-	tps65185_init(&plat->host_i2c, I2C_PMIC_ADDR, &pmic_info);
-	tps65185_configure(pmic_info, &vcomcal);
-	tps65185_set_vcom_voltage(pmic_info, plwf.data.info.vcom);
+
+	switch (pl_hw_info->board.hv_pmic) {
+	case HV_PMIC_NONE:
+		LOG("HV-PMIC: None");
+		stat = 0;
+		break;
+	case HV_PMIC_MAX17135:
+		LOG("HV-PMIC: MAX17135");
+		abort_msg("Not verified yet");
+		stat = -1;
+		break;
+	case HV_PMIC_TPS65185:
+		LOG("HV-PMIC: TPS65185");
+		stat = tps65185_init(plat->i2c, I2C_PMIC_ADDR, &pmic_info,
+				     &vcomcal);
+		if (!stat) /* ToDo: generalise set_vcom with HV-PMIC API */
+			tps65185_set_vcom_voltage(pmic_info,
+						  plwf.data.info.vcom);
+		break;
+	default:
+		abort_msg("Invalid HV-PMIC id");
+	}
+
+	if (stat) {
+		LOG("Failed to initialise HV-PMIC");
+		return -1;
+	}
 
 #if S1D135XX_INTERIM
 	s1d135xx->epson = &g_epson;
@@ -148,18 +178,21 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 
 	switch (pl_hw_info->board.epdc_ref) {
 	case EPDC_S1D13524:
+		LOG("EPDC: S1D13524");
 		stat = epson_epdc_init(epdc, &plwf.data,
 				       EPSON_EPDC_S1D13524, s1d135xx);
 		break;
 	case EPDC_S1D13541:
+		LOG("EPDC: S1D13541");
 		stat = epson_epdc_init(epdc, &plwf.data,
 				       EPSON_EPDC_S1D13541, s1d135xx);
 		break;
 	case EPDC_NONE:
 #if PL_EPDC_STUB
+		LOG("EPDC: Stub");
 		stat = pl_epdc_stub_init(epdc);
 		break;
-#endif
+#endif /* fall through otherwise */
 	default:
 		abort_msg("Invalid EPDC identifier");
 	}
