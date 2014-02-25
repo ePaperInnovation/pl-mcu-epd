@@ -42,7 +42,6 @@ enum plwf_mode {
 struct plwf {
 	enum plwf_mode mode;
 	struct i2c_eeprom *eeprom; /* use with PLWF_MODE_EEPROM */
-	const char *path;          /* use with PLWF_MODE_SD_CARD */
 	struct pl_disp_data data;  /* initialised by plwf_init */
 };
 

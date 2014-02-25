@@ -27,6 +27,7 @@
 #include <pl/platform.h>
 #include <pl/gpio.h>
 #include <pl/hwinfo.h>
+#include <pl/wflib.h>
 #include <FatFs/ff.h>
 #include <app/app.h>
 #include <stdio.h>
@@ -234,6 +235,20 @@ static const struct pl_hw_info g_pl_hw_info_default = {
 };
 #endif
 
+/* --- waveform library and display info --- */
+
+static struct pl_wflib g_wflib;
+#if !CONFIG_DISP_DATA_EEPROM_ONLY
+static const char g_wflib_path[] = "display/waveform.bin";
+static FIL g_wflib_fil;
+#endif
+
+#define PLATFORM_PATH "0:/"
+#ifdef CONFIG_DISPLAY_TYPE
+#define DISPLAY_PATH PLATFORM_PATH""CONFIG_DISPLAY_TYPE
+static const char g_display_path[] = DISPLAY_PATH;
+#endif
+
 /* --- main --- */
 
 int main_init(void)
@@ -296,6 +311,8 @@ int main_init(void)
 	f_chdrive(0);
 	if (f_mount(0, &sdcard) != FR_OK)
 		abort_msg("Failed to initialise SD card");
+	if (f_chdir(g_display_path) != FR_OK)
+		abort_msg("Failed to change directory");
 
 #if CONFIG_HW_INFO_EEPROM && CONFIG_HW_INFO_DEFAULT
 	if (pl_hw_info_init(&g_pl_hw_info_eeprom, &g_pl_hw_eeprom)) {
@@ -316,7 +333,15 @@ int main_init(void)
 #endif
 	pl_hw_info_log(hw_info);
 
+	/* initialise wflib (interim solution for SD card only) */
+#if !CONFIG_DISP_DATA_EEPROM_ONLY
+	if (pl_wflib_init_fatfs(&g_wflib, &g_wflib_fil, g_wflib_path))
+		abort_msg("Failed to initialise wflib");
+	g_plat.epdc.wflib = &g_wflib;
+#endif
+
 	/* initialise EPD HV-PSU */
+	/* ToDo: group with HV-PMIC API */
 	if (pl_epdpsu_gpio_init(&g_plat.psu, &g_epdpsu_gpio))
 		abort_msg("Failed to initialise HV-PSU");
 

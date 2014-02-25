@@ -29,6 +29,7 @@
 
 struct platform;
 struct pl_hw_info;
+struct pl_wflib;
 struct s1d135xx;
 
 extern int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,

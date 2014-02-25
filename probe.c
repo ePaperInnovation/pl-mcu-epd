@@ -58,12 +58,6 @@ static const struct i2c_eeprom g_disp_eeprom = {
 };
 #endif
 
-#define PLATFORM_PATH "0:/"
-#ifdef CONFIG_DISPLAY_TYPE
-#define DISPLAY_PATH PLATFORM_PATH""CONFIG_DISPLAY_TYPE
-static const char g_display_path[] = DISPLAY_PATH;
-#endif
-
 #if !CONFIG_DISP_DATA_SD_ONLY
 static int load_wf_eeprom(struct platform *plat, struct plwf *plwf);
 #endif
@@ -204,7 +198,7 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 
 #if 0 /* enable during development of new EPDC implementations */
 	assert(epdc->init != NULL);
-	assert(epdc->load_wf_lib != NULL);
+	assert(epdc->load_wflib != NULL);
 	assert(epdc->update != NULL);
 	assert(epdc->wait_update_end != NULL);
 	assert(epdc->set_power != NULL);
@@ -234,12 +228,8 @@ static int load_wf_sdcard(struct platform *plat, struct plwf *plwf)
 
 	LOG("Loading display data from SD card");
 
-	if (f_chdir(g_display_path) != FR_OK)
-		return -1;
-
 	plwf->mode = PLWF_MODE_SD_CARD;
 	plwf->eeprom = NULL;
-	plwf->path = g_display_path;
 
 	plwf->data.vermagic.magic = PL_DATA_MAGIC;
 	plwf->data.vermagic.version = PL_DATA_VERSION;
