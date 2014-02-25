@@ -43,17 +43,8 @@ int pl_hw_info_init(struct pl_hw_info *info, const struct i2c_eeprom *eeprom)
 	struct pl_hw_board_info *board;
 	uint16_t crc;
 
-	assert(info != NULL);
-	assert(eeprom != NULL);
-
 	if (eeprom_read(eeprom, 0, sizeof(*info), (uint8_t *)info)) {
 		LOG("Failed to read EEPROM contents");
-		return -1;
-	}
-
-	if (info->version != PL_HW_INFO_VERSION) {
-		LOG("Unsupported version number: %d, required version is %d",
-		    info->version, PL_HW_INFO_VERSION);
 		return -1;
 	}
 
@@ -64,6 +55,12 @@ int pl_hw_info_init(struct pl_hw_info *info, const struct i2c_eeprom *eeprom)
 
 	if (crc != info->crc) {
 		LOG("CRC mismatch: %04X instead of %04X", crc, info->crc);
+		return -1;
+	}
+
+	if (info->version != PL_HW_INFO_VERSION) {
+		LOG("Unsupported version number: %d, required version is %d",
+		    info->version, PL_HW_INFO_VERSION);
 		return -1;
 	}
 
@@ -89,7 +86,7 @@ void pl_hw_info_log(const struct pl_hw_info *info)
 	const struct pl_hw_vcom_info *vcom = &info->vcom;
 	const struct pl_hw_board_info *board = &info->board;
 
-	LOG("version: %d", info->version);
+	LOG("Version: %d", info->version);
 	LOG("VCOM DAC info: dac[%d]=%d, dac[%d]=%d",
 	    vcom->dac_x1, vcom->dac_y1, vcom->dac_x2, vcom->dac_y2);
 	LOG("Gate PSU info: VGPOS=%ld, VGNEG=%ld, swing=%ld",
