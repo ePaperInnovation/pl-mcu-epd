@@ -30,16 +30,16 @@
 
 #include <stdint.h>
 
-struct __attribute__((__packed__)) pl_disp_data_vermagic {
-	uint32_t magic;
-	uint16_t version;
-};
-
 #define PL_DATA_MAGIC 0x46574C50UL
 #define PL_DATA_VERSION 1
 
 #define PL_DATA_STR_LEN 63
 #define PL_DATA_STR_SIZE (PL_DATA_STR_LEN + 1)
+
+struct __attribute__((__packed__)) pl_disp_data_vermagic {
+	uint32_t magic;
+	uint16_t version;
+};
 
 struct __attribute__((__packed__)) pl_disp_data_info {
 	char panel_id[PL_DATA_STR_SIZE];

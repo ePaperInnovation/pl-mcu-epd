@@ -23,6 +23,7 @@
 #include "types.h"
 #include "FatFs/ff.h"
 #include <stdint.h>
+#include <stdlib.h>
 
 #ifdef LOG_TAG
 #define LOG(msg, ...) \

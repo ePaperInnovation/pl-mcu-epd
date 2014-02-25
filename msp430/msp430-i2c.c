@@ -108,6 +108,7 @@ int msp430_i2c_init(struct pl_gpio *gpio, u8 channel, struct pl_i2c *i2c)
 
 	i2c->read = msp430_i2c_read;
 	i2c->write = msp430_i2c_write;
+	i2c->priv = NULL;
 
 	return 0;
 }
