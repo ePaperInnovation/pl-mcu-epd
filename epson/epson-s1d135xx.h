@@ -35,6 +35,7 @@
 #define S1D135XX_INTERIM 0
 
 struct pl_gpio;
+struct pl_wflib;
 #if S1D135XX_INTERIM
 struct _s1d135xx;
 #endif
@@ -80,8 +81,8 @@ extern void s1d135xx_hard_reset(struct pl_gpio *gpio,
 				const struct s1d135xx_data *data);
 extern int s1d135xx_soft_reset(struct s1d135xx *p);
 extern int s1d135xx_load_init_code(struct s1d135xx *p);
-extern int s1d135xx_load_wf_lib(struct s1d135xx *p, const char *path,
-				uint32_t addr);
+extern int s1d135xx_load_wflib(struct s1d135xx *p, struct pl_wflib *wflib,
+			       uint32_t addr);
 extern int s1d135xx_init_gate_drv(struct s1d135xx *p);
 extern int s1d135xx_wait_dspe_trig(struct s1d135xx *p);
 extern int s1d135xx_fill(struct s1d135xx *p, uint16_t mode, unsigned bpp,

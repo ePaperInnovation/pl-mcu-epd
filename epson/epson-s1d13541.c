@@ -115,12 +115,11 @@ static int s1d13541_init(struct pl_epdc *epdc, uint8_t grey)
 	return s1d135xx_wait_dspe_trig(p);
 }
 
-static int s1d13541_load_wf_lib(struct pl_epdc *epdc)
+static int s1d13541_load_wflib(struct pl_epdc *epdc)
 {
-	static const char wf_lib_path[] = "display/waveform.bin";
 	struct s1d135xx *p = epdc->data;
 
-	return s1d135xx_load_wf_lib(p, wf_lib_path, S1D13541_WF_ADDR);
+	return s1d135xx_load_wflib(p, epdc->wflib, S1D13541_WF_ADDR);
 }
 
 static int s1d13541_set_temp_mode(struct pl_epdc *epdc,
@@ -187,7 +186,7 @@ static int s1d13541_update_temp(struct pl_epdc *epdc)
 		LOG("Updating waveform table");
 #endif
 
-		if (s1d13541_load_wf_lib(epdc))
+		if (s1d13541_load_wflib(epdc))
 			return -1;
 	}
 
@@ -264,7 +263,7 @@ int epson_epdc_init_s1d13541(struct pl_epdc *epdc)
 	epdc->xres = s1d135xx_read_reg(p, S1D13541_REG_LINE_DATA_LENGTH);
 	epdc->yres = s1d135xx_read_reg(p, S1D13541_REG_FRAME_DATA_LENGTH);
 	epdc->init = s1d13541_init;
-	epdc->load_wf_lib = s1d13541_load_wf_lib;
+	epdc->load_wflib = s1d13541_load_wflib;
 	epdc->set_temp_mode = s1d13541_set_temp_mode;
 	epdc->update_temp = s1d13541_update_temp;
 	epdc->fill = s1d13541_fill;
@@ -279,7 +278,7 @@ int epson_epdc_init_s1d13541(struct pl_epdc *epdc)
 	epson_set_idle_mask(0x2000, 0x2000);
 #endif
 
-	if (s1d13541_load_wf_lib(epdc))
+	if (s1d13541_load_wflib(epdc))
 		return -1;
 
 	LOG("Ready %dx%d", epdc->xres, epdc->yres);

@@ -26,6 +26,7 @@
 
 #include "epson-s1d135xx.h"
 #include <pl/gpio.h>
+#include <pl/wflib.h>
 #include <pl/endian.h>
 #include <pl/types.h>
 #include <stdlib.h>
@@ -42,6 +43,7 @@
 #define VERBOSE_UPDATE 0
 
 #define IMAGE_BUFFER_LENGTH 720
+#define DATA_BUFFER_LENGTH 256
 
 #define S1D135XX_WF_MODE(_wf) (((_wf) << 8) & 0x0F00)
 #define S1D135XX_XMASK 0x01FF
@@ -76,7 +78,7 @@ static int do_fill(struct s1d135xx *p, const struct pl_area *area,
 static int transfer_file(FIL *file);
 static int transfer_image(FIL *f, const struct pl_area *area, int left,
 			  int top, int width);
-static void transfer_data(const uint16_t *data, size_t n);
+static void transfer_data(const uint8_t *data, size_t n);
 static void send_cmd_area(struct s1d135xx *p, uint16_t cmd, uint16_t mode,
 			  const struct pl_area *area);
 static void send_cmd_cs(struct s1d135xx *p, uint16_t cmd);
@@ -153,30 +155,23 @@ int s1d135xx_load_init_code(struct s1d135xx *p)
 	return s1d135xx_wait_idle(p);
 }
 
-int s1d135xx_load_wf_lib(struct s1d135xx *p, const char *path, uint32_t addr)
+int s1d135xx_load_wflib(struct s1d135xx *p, struct pl_wflib *wflib,
+			uint32_t addr)
 {
-	FIL wf_lib_file;
-	uint32_t file_size;
+	size_t left;
 	uint16_t params[4];
 	int stat;
-
-	if (f_open(&wf_lib_file, path, FA_READ) != FR_OK)
-		return -1;
-
-	file_size = f_size(&wf_lib_file);
-
-	if (file_size & 1)
-		file_size++;
-
-	file_size /= 2;
 
 	if (s1d135xx_wait_idle(p))
 		return -1;
 
+	if (wflib->rewind(wflib))
+		return -1;
+
 	params[0] = addr & 0xFFFF;
 	params[1] = (addr >> 16) & 0xFFFF;
-	params[2] = file_size & 0xFFFF;
-	params[3] = (file_size >> 16) & 0xFFFF;
+	params[2] = wflib->size & 0xFFFF;
+	params[3] = (wflib->size >> 16) & 0xFFFF;
 	set_cs(p, 0);
 	send_cmd(p, S1D135XX_CMD_BST_WR_SDR);
 	send_params(params, ARRAY_SIZE(params));
@@ -185,9 +180,25 @@ int s1d135xx_load_wf_lib(struct s1d135xx *p, const char *path, uint32_t addr)
 	set_cs(p, 0);
 	send_cmd(p, S1D135XX_CMD_WRITE_REG);
 	send_param(S1D135XX_REG_HOST_MEM_PORT);
-	stat = transfer_file(&wf_lib_file);
+
+	left = wflib->size;
+	stat = 0;
+
+	while (left) {
+		uint8_t data[DATA_BUFFER_LENGTH];
+		const size_t n = min(left, sizeof(data));
+
+		if (wflib->read(wflib, data, n) != n) {
+			LOG("Failed to read wflib");
+			stat = -1;
+			break;
+		}
+
+		transfer_data(data, n);
+		left -= n;
+	}
+
 	set_cs(p, 1);
-	f_close(&wf_lib_file);
 
 	if (stat)
 		return -1;
@@ -474,7 +485,7 @@ static int do_fill(struct s1d135xx *p, const struct pl_area *area,
 
 static int transfer_file(FIL *file)
 {
-	uint16_t data[IMAGE_BUFFER_LENGTH];
+	uint8_t data[IMAGE_BUFFER_LENGTH];
 
 	for (;;) {
 		size_t count;
@@ -494,8 +505,7 @@ static int transfer_file(FIL *file)
 static int transfer_image(FIL *f, const struct pl_area *area, int left,
 			  int top, int width)
 {
-	const size_t offset = left / 2;
-	uint16_t data[IMAGE_BUFFER_LENGTH / 2];
+	uint8_t data[IMAGE_BUFFER_LENGTH];
 	size_t line;
 
 	/* ToDo: allower buffer to be smaller than line length */
@@ -513,18 +523,20 @@ static int transfer_image(FIL *f, const struct pl_area *area, int left,
 		if (f_read(f, data, width, &count) != FR_OK)
 			return -1;
 
-		transfer_data(&data[offset], area->width);
+		transfer_data(&data[left], area->width);
 	}
 
 	return 0;
 }
 
-static void transfer_data(const uint16_t *data, size_t n)
+static void transfer_data(const uint8_t *data, size_t n)
 {
+	const uint16_t *data16 = (const uint16_t *)data;
+
 	n /= 2;
 
 	while (n--)
-		send_param(*data++);
+		send_param(*data16++);
 }
 
 static void send_cmd_area(struct s1d135xx *p, uint16_t cmd, uint16_t mode,
