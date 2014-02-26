@@ -45,7 +45,9 @@
 #define LOG_TAG "main"
 #include "utils.h"
 
+/* I2C EEPROM addresses */
 #define I2C_PSU_EEPROM_ADDR 0x50
+#define I2C_PLWF_EEPROM_ADDR 0x54
 
 /* Navigation buttons */
 #define	SW1         MSP430_GPIO(2,0)
@@ -222,7 +224,7 @@ static const struct pl_hwinfo g_pl_hwinfo_default = {
 	{ "HB", 6, 3, 0, HV_PMIC_TPS65185, 0, 0, 0, I2C_MODE_HOST,
 	  TEMP_SENSOR_LM75, 0, EPDC_S1D13541, 1, 1 },
 #elif CONFIG_PLAT_Z7
-	{ "HB", 7, 2, 0, HV_PMIC_TPS65185, 0, 0, 0, I2C_MODE_DISP,
+	{ "HB", 7, 2, 0, HV_PMIC_TPS65185, 0, 0, 0, I2C_MODE_HOST,
 	  TEMP_SENSOR_LM75, 0, EPDC_S1D13541, 1, 1 },
 #else
 # error "Sorry, no default hardware data for this platform yet."
@@ -234,11 +236,8 @@ static const struct pl_hwinfo g_pl_hwinfo_default = {
 
 /* --- waveform library and display info --- */
 
-static struct pl_wflib g_wflib;
-#if !CONFIG_DISP_DATA_EEPROM_ONLY
-static const char g_wflib_path[] = "display/waveform.bin";
-static FIL g_wflib_fil;
-#endif
+static const char g_wflib_fatfs_path[] = "display/waveform.bin";
+static FIL g_wflib_fatfs_file;
 
 #define PLATFORM_PATH "0:/"
 #ifdef CONFIG_DISPLAY_TYPE
@@ -264,6 +263,11 @@ int main_init(void)
 		&host_i2c, I2C_PSU_EEPROM_ADDR, EEPROM_24LC014,
 	};
 #endif
+	struct i2c_eeprom disp_eeprom = {
+		NULL, I2C_PLWF_EEPROM_ADDR, EEPROM_24AA256
+	};
+	struct pl_wflib_eeprom_ctx wflib_eeprom_ctx;
+	struct pl_dispinfo dispinfo;
 	struct s1d135xx s1d135xx = { &g_s1d135xx_data, &g_plat.gpio };
 	FATFS sdcard;
 	unsigned i;
@@ -325,10 +329,11 @@ int main_init(void)
 	/* load hardware information */
 #if CONFIG_HWINFO_EEPROM
 	if (load_hwinfo(&g_plat, &hw_eeprom))
-		abort_msg("Failed to load hardware info");
+		abort_msg("Failed to load hwinfo");
 #elif !CONFIG_HWINFO_DEFAULT
-#error "Invalid HW info build configuration, check CONFIG_HWINFO_ options"
+#error "Invalid hwinfo build configuration, check CONFIG_HWINFO_ options"
 #else
+	LOG("Using default hwinfo");
 	g_plat.hwinfo = &g_pl_hwinfo_default;
 #endif
 	pl_hwinfo_log(g_plat.hwinfo);
@@ -337,12 +342,14 @@ int main_init(void)
 	if (probe_i2c(&g_plat, &s1d135xx, &host_i2c, &disp_i2c))
 		abort_msg("Failed to initialise platform I2C bus");
 
-	/* initialise wflib (interim solution for SD card only) */
-	g_plat.epdc.wflib = &g_wflib;
-#if !CONFIG_DISP_DATA_EEPROM_ONLY
-	if (pl_wflib_init_fatfs(&g_wflib, &g_wflib_fil, g_wflib_path))
-		abort_msg("Failed to initialise wflib");
-#endif
+	/* load display information */
+	disp_eeprom.i2c = g_plat.i2c;
+	if (probe_dispinfo(&dispinfo, &g_plat.epdc.wflib, &g_wflib_fatfs_file,
+			   g_wflib_fatfs_path, &disp_eeprom,
+			   &wflib_eeprom_ctx))
+		abort_msg("Failed to load display information");
+	g_plat.dispinfo = &dispinfo;
+	pl_dispinfo_log(&dispinfo);
 
 	/* initialise EPD HV-PSU */
 	/* ToDo: group with HV-PMIC API */

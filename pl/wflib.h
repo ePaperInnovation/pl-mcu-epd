@@ -50,7 +50,7 @@ extern int pl_wflib_init_fatfs(struct pl_wflib *wflib, FIL *f,
 			       const char *path);
 
 /** Structure to use to load LZSS-compressed waveform library from EEPROM */
-struct pl_wflib_eeprom {
+struct pl_wflib_eeprom_ctx {
 	const struct i2c_eeprom *eeprom;
 	const struct pl_dispinfo *dispinfo;
 	uint16_t offset;
@@ -58,7 +58,7 @@ struct pl_wflib_eeprom {
 
 /** Initialise a wflib interface for an I2C EEPROM + LZSS */
 extern int pl_wflib_init_eeprom(struct pl_wflib *wflib,
-				struct pl_wflib_eeprom *p,
+				struct pl_wflib_eeprom_ctx *p,
 				const struct i2c_eeprom *eeprom,
 				const struct pl_dispinfo *dispinfo);
 

@@ -71,7 +71,7 @@ int pl_dispinfo_init_eeprom(struct pl_dispinfo *p,
 	}
 
 	if (p->vermagic.version != PL_DISPINFO_VERSION) {
-		LOG("Unsupported format version: %d, requires %d",
+		LOG("Unsupported format version: %d, required: %d",
 		    p->vermagic.version, PL_DISPINFO_VERSION);
 		return -1;
 	}
@@ -111,10 +111,7 @@ int pl_dispinfo_init_fatfs(struct pl_dispinfo *p)
 		return -1;
 	}
 
-	LOG("vcom: %ld", p->info.vcom);
-
 	memset(p->info.waveform_md5, 0xFF, sizeof p->info.waveform_md5);
-
 	p->info.waveform_full_length = 0;
 	p->info.waveform_lzss_length = 0;
 	p->info.waveform_id[0] = '\0';

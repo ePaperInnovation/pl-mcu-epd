@@ -28,6 +28,7 @@
 #define INCLUDE_PL_EPDC_H 1
 
 #include <stdint.h>
+#include <pl/wflib.h>
 
 /* Set to 1 to enable stub EPDC implementation */
 #define PL_EPDC_STUB 0
@@ -56,7 +57,6 @@ enum pl_epdc_temp_mode {
 
 struct pl_area;
 struct pl_dispinfo;
-struct pl_wflib;
 
 struct pl_wfid {
 	const char *path;
@@ -77,7 +77,7 @@ struct pl_epdc{
 
 	const struct pl_dispinfo *dispinfo;
 	const struct pl_wfid *wf_table;
-	struct pl_wflib *wflib;
+	struct pl_wflib wflib;
 	enum pl_epdc_power_state power_state;
 	enum pl_epdc_temp_mode temp_mode;
 	int manual_temp;

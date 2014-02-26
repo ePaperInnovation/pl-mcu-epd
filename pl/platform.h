@@ -32,6 +32,7 @@
 #include <pl/i2c.h>
 #include <pl/epdpsu.h>
 #include <pl/epdc.h>
+#include <pl/dispinfo.h>
 #include "i2c-eeprom.h"
 #include "config.h"
 
@@ -50,6 +51,7 @@ struct platform {
 	struct pl_gpio gpio;
 	const struct pl_system_gpio *sys_gpio;
 	const struct pl_hwinfo *hwinfo;
+	const struct pl_dispinfo *dispinfo;
 	struct pl_i2c *i2c;
 	struct pl_epdpsu psu;
 	struct pl_epdc epdc;

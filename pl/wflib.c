@@ -154,7 +154,7 @@ static int pl_wflib_lzss_wr(int c, struct lzss_wr_ctx *ctx)
 static int pl_wflib_eeprom_xfer(struct pl_wflib *wflib, pl_wflib_wr_t wr,
 				void *ctx)
 {
-	struct pl_wflib_eeprom *p = wflib->priv;
+	struct pl_wflib_eeprom_ctx *p = wflib->priv;
 	struct lzss lzss;
 	struct lzss_io io;
 	struct lzss_rd_ctx rd_ctx;
@@ -213,7 +213,7 @@ static int pl_wflib_eeprom_xfer(struct pl_wflib *wflib, pl_wflib_wr_t wr,
 	return 0;
 }
 
-int pl_wflib_init_eeprom(struct pl_wflib *wflib, struct pl_wflib_eeprom *p,
+int pl_wflib_init_eeprom(struct pl_wflib *wflib, struct pl_wflib_eeprom_ctx *p,
 			 const struct i2c_eeprom *eeprom,
 			 const struct pl_dispinfo *dispinfo)
 {

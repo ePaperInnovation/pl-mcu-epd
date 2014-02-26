@@ -43,7 +43,6 @@
 #define LOG_TAG "probe"
 #include "utils.h"
 
-#define I2C_PLWF_EEPROM_ADDR 0x54
 #define I2C_PMIC_ADDR        0x68
 
 #include "epson/epson-s1d135xx.h"
@@ -51,19 +50,6 @@
 #if S1D135XX_INTERIM
 #include "epson/S1D135xx.h"
 struct _s1d135xx g_epson;
-#endif
-
-#if !CONFIG_DISP_DATA_SD_ONLY
-static struct i2c_eeprom g_disp_eeprom = {
-	NULL, I2C_PLWF_EEPROM_ADDR, EEPROM_24AA256
-};
-#endif
-
-/* ToDo: move to platform or main */
-static struct pl_dispinfo g_dispinfo;
-
-#if !CONFIG_DISP_DATA_SD_ONLY
-static struct pl_wflib_eeprom g_wflib_ctx;
 #endif
 
 int probe_i2c(struct platform *plat, struct s1d135xx *s1d135xx,
@@ -99,6 +85,32 @@ int probe_i2c(struct platform *plat, struct s1d135xx *s1d135xx,
 	return stat;
 }
 
+int probe_dispinfo(struct pl_dispinfo *dispinfo, struct pl_wflib *wflib,
+		   FIL *fatfs_file, const char *fatfs_path,
+		   const struct i2c_eeprom *e,
+		   struct pl_wflib_eeprom_ctx *e_ctx)
+{
+#if CONFIG_DISP_DATA_EEPROM_ONLY
+	return (pl_dispinfo_init_eeprom(dispinfo, e) ||
+		pl_wflib_init_eeprom(wflib, e_ctx, e, dispinfo));
+#elif CONFIG_DISP_DATA_SD_ONLY
+	return (pl_dispinfo_init_fatfs(dispinfo) ||
+		pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path));
+#elif CONFIG_DISP_DATA_EEPROM_SD
+	if (pl_dispinfo_init_eeprom(dispinfo, e))
+		return (pl_dispinfo_init_fatfs(dispinfo) ||
+			pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path));
+	else
+		return pl_wflib_init_eeprom(wflib, e_ctx, e, dispinfo);
+#elif CONFIG_DISP_DATA_SD_EEPROM
+	if (pl_dispinfo_init_fatfs(dispinfo))
+		return (pl_dispinfo_init_eeprom(dispinfo, e) ||
+			pl_wflib_init_eeprom(wflib, e_ctx, e, dispinfo));
+	else
+		return pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path);
+#endif
+}
+
 int probe(struct platform *plat, struct s1d135xx *s1d135xx)
 {
 	const struct pl_hwinfo *hwinfo = plat->hwinfo;
@@ -109,36 +121,6 @@ int probe(struct platform *plat, struct s1d135xx *s1d135xx)
 	static struct tps65185_info *pmic_info;
 
 	int stat;
-
-	/* -- Load the display data -- */
-
-#if !CONFIG_DISP_DATA_SD_ONLY
-	g_disp_eeprom.i2c = plat->i2c;
-#endif
-
-#if CONFIG_DISP_DATA_EEPROM_ONLY
-	stat = pl_dispinfo_init_eeprom(&g_dispinfo, &g_disp_eeprom);
-#elif CONFIG_DISP_DATA_SD_ONLY
-	stat = pl_dispinfo_init_fatfs(&g_dispinfo);
-#elif CONFIG_DISP_DATA_EEPROM_SD
-	stat = (pl_dispinfo_init_eeprom(&g_dispinfo, &g_disp_eeprom) ||
-		pl_dispinfo_init_fatfs(&g_dispinfo));
-#elif CONFIG_DISP_DATA_SD_EEPROM
-	stat = (pl_dispinfo_init_fatfs(&g_dispinfo) ||
-		pl_dispinfo_init_eeprom(&g_dispinfo, &g_disp_eeprom));
-#endif
-	if (stat) {
-		LOG("Failed to load display data");
-		return -1;
-	}
-
-	pl_dispinfo_log(&g_dispinfo);
-
-#if !CONFIG_DISP_DATA_SD_ONLY
-	if (pl_wflib_init_eeprom(plat->epdc.wflib, &g_wflib_ctx,
-				 &g_disp_eeprom, &g_dispinfo))
-		return -1;
-#endif
 
 	/* -- Initialise the VCOM and HV-PMIC -- */
 
@@ -156,19 +138,11 @@ int probe(struct platform *plat, struct s1d135xx *s1d135xx)
 		break;
 	case HV_PMIC_TPS65185:
 		LOG("HV-PMIC: TPS65185");
-#if 1
-		do {
-			stat = tps65185_init(plat->i2c, I2C_PMIC_ADDR,
-					     &pmic_info, &vcomcal);
-			mdelay(10);
-		} while (stat);
-#else
 		stat = tps65185_init(plat->i2c, I2C_PMIC_ADDR, &pmic_info,
 				     &vcomcal);
-#endif
 		if (!stat) /* ToDo: generalise set_vcom with HV-PMIC API */
 			tps65185_set_vcom_voltage(pmic_info,
-						  g_dispinfo.info.vcom);
+						  plat->dispinfo->info.vcom);
 		break;
 	default:
 		abort_msg("Invalid HV-PMIC id");
@@ -189,12 +163,12 @@ int probe(struct platform *plat, struct s1d135xx *s1d135xx)
 	switch (hwinfo->board.epdc_ref) {
 	case EPDC_S1D13524:
 		LOG("EPDC: S1D13524");
-		stat = epson_epdc_init(epdc, &g_dispinfo,
+		stat = epson_epdc_init(epdc, plat->dispinfo,
 				       EPSON_EPDC_S1D13524, s1d135xx);
 		break;
 	case EPDC_S1D13541:
 		LOG("EPDC: S1D13541");
-		stat = epson_epdc_init(epdc, &g_dispinfo,
+		stat = epson_epdc_init(epdc, plat->dispinfo,
 				       EPSON_EPDC_S1D13541, s1d135xx);
 		break;
 	case EPDC_NONE:
