@@ -59,16 +59,15 @@ static struct i2c_eeprom g_disp_eeprom = {
 };
 #endif
 
+/* ToDo: move to platform or main */
+static struct pl_disp_data g_disp_data;
+
 #if !CONFIG_DISP_DATA_SD_ONLY
-static struct pl_wflib_eeprom g_wflib_eeprom;
-static int load_wf_eeprom(struct platform *plat, struct plwf *plwf);
+static struct pl_wflib_eeprom g_wflib_ctx;
 #endif
 #if !CONFIG_DISP_DATA_EEPROM_ONLY
-static int load_wf_sdcard(struct platform *plat, struct plwf *plwf);
+static int load_disp_data_sdcard(struct pl_disp_data *data);
 #endif
-
-/* ToDo: This should be either in platform or main */
-static struct plwf g_plwf;
 
 int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 	  struct s1d135xx *s1d135xx)
@@ -115,30 +114,33 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 
 	/* -- Load the display data -- */
 
+#if !CONFIG_DISP_DATA_SD_ONLY
 	g_disp_eeprom.i2c = plat->i2c;
-	g_plwf.eeprom = &g_disp_eeprom;
+#endif
 
 #if CONFIG_DISP_DATA_EEPROM_ONLY
-	stat = load_wf_eeprom(plat, &g_plwf);
+	stat = plwf_data_init(&g_disp_data, &g_disp_eeprom);
 #elif CONFIG_DISP_DATA_SD_ONLY
-	stat = load_wf_sdcard(plat, &g_plwf);
+	stat = load_disp_data_sdcard(&g_disp_data);
 #elif CONFIG_DISP_DATA_EEPROM_SD
-	stat = load_wf_eeprom(plat, &g_plwf) || load_wf_sdcard(plat, &g_plwf);
+	stat = (plwf_data_init(&g_disp_data, &g_disp_eeprom) ||
+		load_disp_data_sdcard(&g_disp_data));
 #elif CONFIG_DISP_DATA_SD_EEPROM
-	stat = load_wf_sdcard(plat, &g_plwf) || load_wf_eeprom(plat, &g_plwf);
+	stat = (load_disp_data_sdcard(&g_disp_data) ||
+		plwf_data_init(&g_disp_data, &g_disp_eeprom));
 #endif
 	if (stat) {
 		LOG("Failed to load display data");
 		return -1;
 	}
 
+	plwf_log(&g_disp_data);
+
 #if !CONFIG_DISP_DATA_SD_ONLY
-	if (pl_wflib_init_eeprom(plat->epdc.wflib, &g_wflib_eeprom,
-				 &g_disp_eeprom, &g_plwf.data))
+	if (pl_wflib_init_eeprom(plat->epdc.wflib, &g_wflib_ctx,
+				 &g_disp_eeprom, &g_disp_data))
 		return -1;
 #endif
-
-	plwf_log(&g_plwf.data);
 
 	/* -- Initialise the VCOM and HV-PMIC -- */
 
@@ -160,7 +162,7 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 				     &vcomcal);
 		if (!stat) /* ToDo: generalise set_vcom with HV-PMIC API */
 			tps65185_set_vcom_voltage(pmic_info,
-						  g_plwf.data.info.vcom);
+						  g_disp_data.info.vcom);
 		break;
 	default:
 		abort_msg("Invalid HV-PMIC id");
@@ -181,12 +183,12 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 	switch (pl_hw_info->board.epdc_ref) {
 	case EPDC_S1D13524:
 		LOG("EPDC: S1D13524");
-		stat = epson_epdc_init(epdc, &g_plwf.data,
+		stat = epson_epdc_init(epdc, &g_disp_data,
 				       EPSON_EPDC_S1D13524, s1d135xx);
 		break;
 	case EPDC_S1D13541:
 		LOG("EPDC: S1D13541");
-		stat = epson_epdc_init(epdc, &g_plwf.data,
+		stat = epson_epdc_init(epdc, &g_disp_data,
 				       EPSON_EPDC_S1D13541, s1d135xx);
 		break;
 	case EPDC_NONE:
@@ -220,35 +222,33 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 }
 
 #if !CONFIG_DISP_DATA_SD_ONLY
-static int load_wf_eeprom(struct platform *plat, struct plwf *plwf)
+static int load_disp_data_eeprom(struct pl_disp_data *data,
+				 struct i2c_eeprom *eeprom)
 {
-	return plwf_data_init(&plwf->data, plwf->eeprom);
+	return plwf_data_init(data, eeprom);
 }
 #endif
 
 #if !CONFIG_DISP_DATA_EEPROM_ONLY
-static int load_wf_sdcard(struct platform *plat, struct plwf *plwf)
+static int load_disp_data_sdcard(struct pl_disp_data *data)
 {
 	FIL vcom_file;
 	int stat;
 
 	LOG("Loading display data from SD card");
 
-	plwf->mode = PLWF_MODE_SD_CARD;
-	plwf->eeprom = NULL;
-
-	plwf->data.vermagic.magic = PL_DATA_MAGIC;
-	plwf->data.vermagic.version = PL_DATA_VERSION;
-	plwf->data.info.panel_id[0] = '\0';
-	strncpy(plwf->data.info.panel_type, CONFIG_DISPLAY_TYPE,
-		sizeof plwf->data.info.panel_type);
+	data->vermagic.magic = PL_DATA_MAGIC;
+	data->vermagic.version = PL_DATA_VERSION;
+	data->info.panel_id[0] = '\0';
+	strncpy(data->info.panel_type, CONFIG_DISPLAY_TYPE,
+		sizeof data->info.panel_type);
 
 	if (f_open(&vcom_file, "display/vcom", FA_READ) != FR_OK) {
 		LOG("VCOM file not found");
 		return -1;
 	}
 
-	stat = pnm_read_int32(&vcom_file, &plwf->data.info.vcom);
+	stat = pnm_read_int32(&vcom_file, &data->info.vcom);
 	f_close(&vcom_file);
 
 	if (stat) {
@@ -256,16 +256,16 @@ static int load_wf_sdcard(struct platform *plat, struct plwf *plwf)
 		return -1;
 	}
 
-	LOG("vcom: %ld", plwf->data.info.vcom);
+	LOG("vcom: %ld", data->info.vcom);
 
-	memset(plwf->data.info.waveform_md5, 0xFF,
-	       sizeof plwf->data.info.waveform_md5);
+	memset(data->info.waveform_md5, 0xFF,
+	       sizeof data->info.waveform_md5);
 
-	plwf->data.info.waveform_full_length = 0;
-	plwf->data.info.waveform_lzss_length = 0;
-	plwf->data.info.waveform_id[0] = '\0';
-	plwf->data.info.waveform_target[0] = '\0';
-	plwf->data.info_crc = 0xFFFF;
+	data->info.waveform_full_length = 0;
+	data->info.waveform_lzss_length = 0;
+	data->info.waveform_id[0] = '\0';
+	data->info.waveform_target[0] = '\0';
+	data->info_crc = 0xFFFF;
 
 	return 0;
 }
