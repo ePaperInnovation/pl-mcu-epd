@@ -31,6 +31,12 @@
 #include "assert.h"
 #include "types.h" /* min() */
 
+#define LOG_TAG "i2c-eeprom"
+#include "utils.h"
+
+/** Set to 1 to enable verbose log messages */
+#define VERBOSE 0
+
 enum i2c_eeprom_flags {
 	EEPROM_16BIT_ADDRESS = 0x01
 };
@@ -52,41 +58,41 @@ int eeprom_read(const struct i2c_eeprom *eeprom, uint16_t offset,
 	const struct eeprom_data *device;
 	struct pl_i2c *i2c;
 	uint8_t addr[2];
-	int ret;
-
-	assert(eeprom != NULL);
-	assert(data != NULL);
+	const uint8_t *addr_p;
+	uint8_t addr_n;
+	uint8_t i2c_addr;
 
 	i2c = eeprom->i2c;
+	i2c_addr = eeprom->i2c_addr;
 
-#if MCU_DEBUG
-	LOG("eeprom_read (i2c_addr=0x%02x, offset=0x%04X, count=0x%04X)",
-	    eeprom->i2c_addr, offset, count);
+#if VERBOSE
+	LOG("%s (i2c_addr=0x%02x, offset=0x%04X, count=0x%04X)",
+	    __FUNCTION__, i2c_addr, offset, count);
 #endif
 
 	device = &device_data[eeprom->type];
 
-	if (offset + count >= device->size)
+	if ((offset + count) >= device->size)
 		return -1;
 
-	addr[0] = (offset >> 8) & 0x00FF;
 	addr[1] = offset & 0x00FF;
 
 	if (device->flags & EEPROM_16BIT_ADDRESS) {
-		ret = i2c->write(i2c, eeprom->i2c_addr, addr, 2,
-				 PL_I2C_NO_STOP);
+		addr[0] = (offset >> 8) & 0x00FF;
+		addr_p = addr;
+		addr_n = 2;
 	} else {
-		ret = i2c->write(i2c, eeprom->i2c_addr, &addr[1], 1,
-				 PL_I2C_NO_STOP);
+		addr_p = &addr[1];
+		addr_n = 1;
 	}
 
-	if (ret)
+	if (i2c->write(i2c, i2c_addr, addr_p, addr_n, 0))
 		return -1;
 
 	while (count) {
 		const uint8_t n = min(count, 255);
 
-		if (i2c->read(i2c, eeprom->i2c_addr, data, n, 0))
+		if (i2c->read(i2c, i2c_addr, data, n, 0))
 			return -1;
 
 		count -= n;
@@ -96,7 +102,7 @@ int eeprom_read(const struct i2c_eeprom *eeprom, uint16_t offset,
 	return 0;
 }
 
-#if CONFIG_EEPROM_WRITE
+#if CONFIG_EEPROM_WRITE /* DANGER: not tested */
 int eeprom_write(const struct i2c_eeprom *eeprom, uint16_t offset,
 		 uint16_t count, const uint8_t *data)
 {
@@ -110,9 +116,9 @@ int eeprom_write(const struct i2c_eeprom *eeprom, uint16_t offset,
 
 	i2c = eeprom->i2c;
 
-#if MCU_DEBUG
-	LOG("eeprom_write (i2c_addr=0x%02x, offset=0x%04X, count=0x%04X)",
-	    eeprom->i2c_addr, offset, count);
+#if VERBOSE
+	LOG("%s (i2c_addr=0x%02x, offset=0x%04X, count=0x%04X)",
+	    __FUNCTION__, eeprom->i2c_addr, offset, count);
 #endif
 
 	device = &device_data[eeprom->type];
