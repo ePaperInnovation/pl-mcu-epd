@@ -82,8 +82,13 @@ int lzss_encode(struct lzss *lzss, struct lzss_io *io)
 	lzss->out_size = 0;
 
 	for (i = lzss->n - lzss->f; i < lzss->n * 2; i++) {
-		if ((c = io->rd(io->i)) == EOF)
+		c = io->rd(io->i);
+
+		if (c == EOF)
 			break;
+
+		if (c == LZSS_ERROR)
+			return -1;
 
 		lzss->buffer[i] = c;
 		lzss->in_size++;
@@ -132,8 +137,13 @@ int lzss_encode(struct lzss *lzss, struct lzss_io *io)
 			s -= lzss->n;
 
 			while (bufferend < lzss->n * 2) {
-				if ((c = io->rd(io->i)) == EOF)
+				c = io->rd(io->i);
+
+				if (c == EOF)
 					break;
+
+				if (c == LZSS_ERROR)
+					return -1;
 
 				lzss->buffer[bufferend++] = c;
 				lzss->in_size++;
@@ -148,29 +158,63 @@ int lzss_encode(struct lzss *lzss, struct lzss_io *io)
 
 int lzss_decode(struct lzss *lzss, struct lzss_io *io)
 {
-	int i, j, k, r, c;
+	int r;
 
 	memset(lzss->buffer, 0, (lzss->n - lzss->f));
 	r = lzss->n - lzss->f;
 
-	while ((c = getbit(lzss, 1, io)) != EOF) {
+	for (;;) {
+		int c;
+
+		c = getbit(lzss, 1, io);
+
+		if (c == EOF)
+			break;
+
+		if (c == LZSS_ERROR)
+			return -1;
+
 		if (c) {
-			if ((c = getbit(lzss, 8, io)) == EOF)
+			c = getbit(lzss, 8, io);
+
+			if (c == EOF)
 				break;
 
-			io->wr(c, io->o);
+			if (c == LZSS_ERROR)
+				return -1;
+
+			if (io->wr(c, io->o) == LZSS_ERROR)
+				return -1;
+
 			lzss->buffer[r++] = c;
 			r &= (lzss->n - 1);
 		} else {
-			if ((i = getbit(lzss, lzss->ei, io)) == EOF)
+			int i;
+			int j;
+			int k;
+
+			i = getbit(lzss, lzss->ei, io);
+
+			if (i == EOF)
 				break;
 
-			if ((j = getbit(lzss, lzss->ej, io)) == EOF)
+			if (i == LZSS_ERROR)
+				return -1;
+
+			j = getbit(lzss, lzss->ej, io);
+
+			if (j == EOF)
 				break;
+
+			if (j == LZSS_ERROR)
+				return -1;
 
 			for (k = 0; k <= j + 1; k++) {
 				c = lzss->buffer[(i + k) & (lzss->n - 1)];
-				io->wr(c, io->o);
+
+				if (io->wr(c, io->o) == LZSS_ERROR)
+					return -1;
+
 				lzss->buffer[r++] = c;
 				r &= (lzss->n - 1);
 			}
@@ -267,9 +311,12 @@ static int getbit(struct lzss *lzss, int n, struct lzss_io *io)
 
 	for (i = 0; i < n; i++) {
 		if (!lzss->getbit_mask) {
-			if ((lzss->getbit_buffer = io->rd(io->i)) == EOF)
-				return EOF;
+			const int c = io->rd(io->i);
 
+			if ((c == EOF) || (c == LZSS_ERROR))
+				return c;
+
+			lzss->getbit_buffer = c;
 			lzss->getbit_mask = 0x80;
 		}
 

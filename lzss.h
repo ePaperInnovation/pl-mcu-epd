@@ -38,6 +38,9 @@
 /** Size of the lzss dictionary buffer for a given ei value */
 #define LZSS_BUFFER_SIZE(ei) ((size_t)((1 << ei) * 2))
 
+/** To report errors in I/O operations */
+#define LZSS_ERROR (EOF - 1)
+
 /** Standard value for the "ei" parameter */
 #define LZSS_STD_EI 10
 
