@@ -32,7 +32,7 @@
 #include <stdint.h>
 
 /** Version of the VCOM PSU EEPROM format */
-#define PL_HW_INFO_VERSION 1
+#define PL_HWINFO_VERSION 1
 
 /** Calibration information to set the VCOM voltage accurately */
 struct  __attribute__((__packed__)) pl_hw_vcom_info {
@@ -89,19 +89,19 @@ struct __attribute__((__packed__)) pl_hw_board_info {
 };
 
 /** Data used in VCOM PSU EEPROM format v1 */
-struct __attribute__((__packed__)) pl_hw_info {
+struct __attribute__((__packed__)) pl_hwinfo {
 	uint8_t version;
 	struct pl_hw_vcom_info vcom;
 	struct pl_hw_board_info board;
 	uint16_t crc;
 };
 
-#if CONFIG_HW_INFO_EEPROM
+#if CONFIG_HWINFO_EEPROM
 struct i2c_eeprom;
-extern int pl_hw_info_init(struct pl_hw_info *info,
+extern int pl_hwinfo_init(struct pl_hwinfo *info,
 			   const struct i2c_eeprom *eeprom);
 #endif
 
-extern void pl_hw_info_log(const struct pl_hw_info *info);
+extern void pl_hwinfo_log(const struct pl_hwinfo *info);
 
 #endif /* INCLUDE_PL_HWINFO_H */

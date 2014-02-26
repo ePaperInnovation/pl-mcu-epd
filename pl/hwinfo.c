@@ -37,7 +37,7 @@
 #define LOG_TAG "hwinfo"
 #include "utils.h"
 
-int pl_hw_info_init(struct pl_hw_info *info, const struct i2c_eeprom *eeprom)
+int pl_hwinfo_init(struct pl_hwinfo *info, const struct i2c_eeprom *eeprom)
 {
 	struct pl_hw_vcom_info *vcom;
 	struct pl_hw_board_info *board;
@@ -58,9 +58,9 @@ int pl_hw_info_init(struct pl_hw_info *info, const struct i2c_eeprom *eeprom)
 		return -1;
 	}
 
-	if (info->version != PL_HW_INFO_VERSION) {
+	if (info->version != PL_HWINFO_VERSION) {
 		LOG("Unsupported version number: %d, required version is %d",
-		    info->version, PL_HW_INFO_VERSION);
+		    info->version, PL_HWINFO_VERSION);
 		return -1;
 	}
 
@@ -81,7 +81,7 @@ int pl_hw_info_init(struct pl_hw_info *info, const struct i2c_eeprom *eeprom)
 	return 0;
 }
 
-void pl_hw_info_log(const struct pl_hw_info *info)
+void pl_hwinfo_log(const struct pl_hwinfo *info)
 {
 	const struct pl_hw_vcom_info *vcom = &info->vcom;
 	const struct pl_hw_board_info *board = &info->board;

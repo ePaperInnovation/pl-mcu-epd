@@ -66,9 +66,9 @@ static struct pl_dispinfo g_dispinfo;
 static struct pl_wflib_eeprom g_wflib_ctx;
 #endif
 
-int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
-	  struct s1d135xx *s1d135xx)
+int probe(struct platform *plat, struct s1d135xx *s1d135xx)
 {
+	const struct pl_hwinfo *hwinfo = plat->hwinfo;
 	struct pl_epdc *epdc = &plat->epdc;
 
 	/* ToDo: This should be either in platform or main */
@@ -79,7 +79,7 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 
 	/* -- Configure the I2C bus again if we use an external bridge -- */
 
-	switch (pl_hw_info->board.i2c_mode) {
+	switch (hwinfo->board.i2c_mode) {
 	case I2C_MODE_HOST: /* MSP430, I2C already initialised */
 		LOG("I2C: Host");
 		stat = 0;
@@ -141,9 +141,9 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 
 	/* -- Initialise the VCOM and HV-PMIC -- */
 
-	vcom_init(&vcomcal, &pl_hw_info->vcom);
+	vcom_init(&vcomcal, &hwinfo->vcom);
 
-	switch (pl_hw_info->board.hv_pmic) {
+	switch (hwinfo->board.hv_pmic) {
 	case HV_PMIC_NONE:
 		LOG("HV-PMIC: None");
 		stat = 0;
@@ -155,8 +155,16 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 		break;
 	case HV_PMIC_TPS65185:
 		LOG("HV-PMIC: TPS65185");
+#if 1
+		do {
+			stat = tps65185_init(plat->i2c, I2C_PMIC_ADDR,
+					     &pmic_info, &vcomcal);
+			mdelay(10);
+		} while (stat);
+#else
 		stat = tps65185_init(plat->i2c, I2C_PMIC_ADDR, &pmic_info,
 				     &vcomcal);
+#endif
 		if (!stat) /* ToDo: generalise set_vcom with HV-PMIC API */
 			tps65185_set_vcom_voltage(pmic_info,
 						  g_dispinfo.info.vcom);
@@ -177,7 +185,7 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 
 	/* -- Initialise the EPDC controller -- */
 
-	switch (pl_hw_info->board.epdc_ref) {
+	switch (hwinfo->board.epdc_ref) {
 	case EPDC_S1D13524:
 		LOG("EPDC: S1D13524");
 		stat = epson_epdc_init(epdc, &g_dispinfo,

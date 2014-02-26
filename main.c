@@ -130,7 +130,7 @@ static struct pl_epdpsu_gpio g_epdpsu_gpio = {
 /* HRDY indicates controller is ready */
 #define SPI_HRDY_USED     0 /* HRDY pin is used */
 /* HDC required by the 524 controller, optional on others */
-#define SPI_HDC_USED      1 /* HDC pin is used */
+#define SPI_HDC_USED      0 /* HDC pin is used */
 
 /* Basic signals to enable Epson clock and PSU */
 #define EPSON_3V3_EN      MSP430_GPIO(1,7)
@@ -207,17 +207,17 @@ static const struct s1d135xx_data g_s1d135xx_data = {
 
 /* --- hardware info --- */
 
-#if CONFIG_HW_INFO_EEPROM
-static struct pl_hw_info g_pl_hw_info_eeprom;
+#if CONFIG_HWINFO_EEPROM
+static struct pl_hwinfo g_pl_hwinfo_eeprom;
 static const struct i2c_eeprom g_pl_hw_eeprom = {
 	&g_plat.host_i2c, I2C_PSU_EEPROM_ADDR, EEPROM_24LC014,
 };
 #endif
 
-#if CONFIG_HW_INFO_DEFAULT
-static const struct pl_hw_info g_pl_hw_info_default = {
+#if CONFIG_HWINFO_DEFAULT
+static const struct pl_hwinfo g_pl_hwinfo_default = {
 	/* version */
-	PL_HW_INFO_VERSION,
+	PL_HWINFO_VERSION,
 	/* vcom */
 	{ 127, 4172, 381, 12490, 25080, -32300, 56886 },
 	/* board */
@@ -249,14 +249,17 @@ static FIL g_wflib_fil;
 static const char g_display_path[] = DISPLAY_PATH;
 #endif
 
+/* --- static functions --- */
+
+static int load_hwinfo(struct platform *plat);
+
 /* --- main --- */
 
 int main_init(void)
 {
-	struct s1d135xx s1d135xx = { /* ToDo: static const? */
+	struct s1d135xx s1d135xx = {
 		&g_s1d135xx_data, &g_plat.gpio,
 	};
-	const struct pl_hw_info *hw_info;
 	FATFS sdcard;
 	unsigned i;
 
@@ -314,24 +317,9 @@ int main_init(void)
 	if (f_chdir(g_display_path) != FR_OK)
 		abort_msg("Failed to change directory");
 
-#if CONFIG_HW_INFO_EEPROM && CONFIG_HW_INFO_DEFAULT
-	if (pl_hw_info_init(&g_pl_hw_info_eeprom, &g_pl_hw_eeprom)) {
-		LOG("WARNING: EEPROM failed, using default HW info");
-		hw_info = &g_pl_hw_info_default;
-	} else {
-		hw_info = &g_pl_hw_info_eeprom;
-	}
-#elif CONFIG_HW_INFO_EEPROM
-	if (pl_hw_info_init(&g_pl_hw_info_eeprom, &g_pl_hw_eeprom))
-		abort_msg("Failed to read HW info EEPROM");
-	hw_info = &g_pl_hw_info_eeprom;
-#elif CONFIG_HW_INFO_DEFAULT
-	LOG("Using hard-coded HW info");
-	hw_info = &g_pl_hw_info_default;
-#else
-#error "Invalid HW info build configuration, check CONFIG_HW_INFO_ options"
-#endif
-	pl_hw_info_log(hw_info);
+	/* load hardware information */
+	if (load_hwinfo(&g_plat))
+		abort_msg("Failed to load hardware info");
 
 	/* initialise wflib (interim solution for SD card only) */
 	g_plat.epdc.wflib = &g_wflib;
@@ -345,7 +333,7 @@ int main_init(void)
 	if (pl_epdpsu_gpio_init(&g_plat.psu, &g_epdpsu_gpio))
 		abort_msg("Failed to initialise HV-PSU");
 
-	if (probe(&g_plat, hw_info, &s1d135xx))
+	if (probe(&g_plat, &s1d135xx))
 		abort_msg("Failed to probe hardware");
 
 #if 0 /* ToDo: make plwf_load_wf work with both EEPROM and SD card */
@@ -374,4 +362,33 @@ void abort_now(const char *abort_msg)
 		g_plat.gpio.set(g_plat.sys_gpio->assert_led, 0);
 		mdelay(500);
 	}
+}
+
+/* ----------------------------------------------------------------------------
+ * static functions
+ */
+
+static int load_hwinfo(struct platform *plat)
+{
+#if CONFIG_HWINFO_EEPROM && CONFIG_HWINFO_DEFAULT
+	if (pl_hwinfo_init(&g_pl_hwinfo_eeprom, &g_pl_hw_eeprom)) {
+		LOG("WARNING: EEPROM failed, using default HW info");
+		plat->hwinfo = &g_pl_hwinfo_default;
+	} else {
+		plat->hwinfo = &g_pl_hwinfo_eeprom;
+	}
+#elif CONFIG_HWINFO_EEPROM
+	if (pl_hwinfo_init(&g_pl_hwinfo_eeprom, &g_pl_hw_eeprom))
+		return -1;
+
+	plat->hwinfo = &g_pl_hwinfo_eeprom;
+#elif CONFIG_HWINFO_DEFAULT
+	LOG("Using hard-coded HW info");
+	plat->hwinfo = &g_pl_hwinfo_default;
+#else
+#error "Invalid HW info build configuration, check CONFIG_HWINFO_ options"
+#endif
+	pl_hwinfo_log(plat->hwinfo);
+
+	return 0;
 }
