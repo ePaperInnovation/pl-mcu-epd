@@ -28,7 +28,6 @@
 
 // include generic, cross controller definitions
 #include "S1D135xx.h"
-#include "plwf.h"
 #include "types.h"
 
 #define	S1D13541_WF_ADDR 0x00080000L

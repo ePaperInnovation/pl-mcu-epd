@@ -32,7 +32,6 @@
 #include "epson-cmd.h"
 #include "epson-utils.h"
 #include "i2c-eeprom.h"
-#include "plwf.h"
 #include "epson-s1d135xx.h"
 
 #define LOG_TAG "S1D13541"
