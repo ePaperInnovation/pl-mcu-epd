@@ -66,36 +66,26 @@ static struct pl_dispinfo g_dispinfo;
 static struct pl_wflib_eeprom g_wflib_ctx;
 #endif
 
-int probe(struct platform *plat, struct s1d135xx *s1d135xx)
+int probe_i2c(struct platform *plat, struct s1d135xx *s1d135xx,
+	      struct pl_i2c *host_i2c, struct pl_i2c *disp_i2c)
 {
-	const struct pl_hwinfo *hwinfo = plat->hwinfo;
-	struct pl_epdc *epdc = &plat->epdc;
-
-	/* ToDo: This should be either in platform or main */
-	struct vcom_cal vcomcal;
-	static struct tps65185_info *pmic_info;
-
 	int stat;
 
-	/* -- Configure the I2C bus again if we use an external bridge -- */
-
-	switch (hwinfo->board.i2c_mode) {
+	switch (plat->hwinfo->board.i2c_mode) {
 	case I2C_MODE_HOST: /* MSP430, I2C already initialised */
 		LOG("I2C: Host");
 		stat = 0;
-		plat->i2c = &plat->host_i2c;
+		plat->i2c = host_i2c;
 		break;
 	case I2C_MODE_DISP: /* This must be the Epson S1D13541... */
 		LOG("I2C: S1D13541");
-		stat = epson_i2c_init(s1d135xx, &plat->disp_i2c,
-				      EPSON_EPDC_S1D13541);
-		plat->i2c = &plat->disp_i2c;
+		stat = epson_i2c_init(s1d135xx, disp_i2c, EPSON_EPDC_S1D13541);
+		plat->i2c = disp_i2c;
 		break;
 	case I2C_MODE_S1D13524:
 		LOG("I2C: S1D13524");
-		stat = epson_i2c_init(s1d135xx, &plat->disp_i2c,
-				      EPSON_EPDC_S1D13524);
-		plat->i2c = &plat->disp_i2c;
+		stat = epson_i2c_init(s1d135xx, disp_i2c, EPSON_EPDC_S1D13524);
+		plat->i2c = disp_i2c;
 		break;
 	case I2C_MODE_SC18IS6XX:
 		LOG("I2C: not supported");
@@ -106,8 +96,19 @@ int probe(struct platform *plat, struct s1d135xx *s1d135xx)
 		abort_msg("Invalid I2C mode");
 	}
 
-	if (stat)
-		return -1;
+	return stat;
+}
+
+int probe(struct platform *plat, struct s1d135xx *s1d135xx)
+{
+	const struct pl_hwinfo *hwinfo = plat->hwinfo;
+	struct pl_epdc *epdc = &plat->epdc;
+
+	/* ToDo: This should be either in platform or main */
+	struct vcom_cal vcomcal;
+	static struct tps65185_info *pmic_info;
+
+	int stat;
 
 	/* -- Load the display data -- */
 

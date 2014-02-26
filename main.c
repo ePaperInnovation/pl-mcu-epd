@@ -209,9 +209,6 @@ static const struct s1d135xx_data g_s1d135xx_data = {
 
 #if CONFIG_HWINFO_EEPROM
 static struct pl_hwinfo g_pl_hwinfo_eeprom;
-static const struct i2c_eeprom g_pl_hw_eeprom = {
-	&g_plat.host_i2c, I2C_PSU_EEPROM_ADDR, EEPROM_24LC014,
-};
 #endif
 
 #if CONFIG_HWINFO_DEFAULT
@@ -251,15 +248,23 @@ static const char g_display_path[] = DISPLAY_PATH;
 
 /* --- static functions --- */
 
-static int load_hwinfo(struct platform *plat);
+#if CONFIG_HWINFO_EEPROM
+static int load_hwinfo(struct platform *plat,
+		       const struct i2c_eeprom *hw_eeprom);
+#endif
 
 /* --- main --- */
 
 int main_init(void)
 {
-	struct s1d135xx s1d135xx = {
-		&g_s1d135xx_data, &g_plat.gpio,
+	struct pl_i2c host_i2c;
+	struct pl_i2c disp_i2c;
+#if CONFIG_HWINFO_EEPROM
+	const struct i2c_eeprom hw_eeprom = {
+		&host_i2c, I2C_PSU_EEPROM_ADDR, EEPROM_24LC014,
 	};
+#endif
+	struct s1d135xx s1d135xx = { &g_s1d135xx_data, &g_plat.gpio };
 	FATFS sdcard;
 	unsigned i;
 
@@ -302,7 +307,7 @@ int main_init(void)
 		abort_msg("Failed to initialise UART");
 
 	/* initialise MSP430 I2C master 0 */
-	if (msp430_i2c_init(&g_plat.gpio, 0, &g_plat.host_i2c))
+	if (msp430_i2c_init(&g_plat.gpio, 0, &host_i2c))
 		abort_msg("Failed to initialise I2C master");
 
 	/* initialise MSP430 SPI bus */
@@ -318,8 +323,19 @@ int main_init(void)
 		abort_msg("Failed to change directory");
 
 	/* load hardware information */
-	if (load_hwinfo(&g_plat))
+#if CONFIG_HWINFO_EEPROM
+	if (load_hwinfo(&g_plat, &hw_eeprom))
 		abort_msg("Failed to load hardware info");
+#elif !CONFIG_HWINFO_DEFAULT
+#error "Invalid HW info build configuration, check CONFIG_HWINFO_ options"
+#else
+	g_plat.hwinfo = &g_pl_hwinfo_default;
+#endif
+	pl_hwinfo_log(g_plat.hwinfo);
+
+	/* initialise platform I2C bus */
+	if (probe_i2c(&g_plat, &s1d135xx, &host_i2c, &disp_i2c))
+		abort_msg("Failed to initialise platform I2C bus");
 
 	/* initialise wflib (interim solution for SD card only) */
 	g_plat.epdc.wflib = &g_wflib;
@@ -335,11 +351,6 @@ int main_init(void)
 
 	if (probe(&g_plat, &s1d135xx))
 		abort_msg("Failed to probe hardware");
-
-#if 0 /* ToDo: make plwf_load_wf work with both EEPROM and SD card */
-	if (plwf_load_wf(&plwf.data, pe, epson, epson_config->wf_addr))
-		return -1;
-#endif
 
 	/* run the application */
 	if (app_demo(&g_plat))
@@ -368,27 +379,24 @@ void abort_now(const char *abort_msg)
  * static functions
  */
 
-static int load_hwinfo(struct platform *plat)
+#if CONFIG_HWINFO_EEPROM
+static int load_hwinfo(struct platform *plat,
+		       const struct i2c_eeprom *hw_eeprom)
 {
-#if CONFIG_HWINFO_EEPROM && CONFIG_HWINFO_DEFAULT
-	if (pl_hwinfo_init(&g_pl_hwinfo_eeprom, &g_pl_hw_eeprom)) {
+#if CONFIG_HWINFO_DEFAULT
+	if (pl_hwinfo_init(&g_pl_hwinfo_eeprom, hw_eeprom)) {
 		LOG("WARNING: EEPROM failed, using default HW info");
 		plat->hwinfo = &g_pl_hwinfo_default;
 	} else {
 		plat->hwinfo = &g_pl_hwinfo_eeprom;
 	}
-#elif CONFIG_HWINFO_EEPROM
-	if (pl_hwinfo_init(&g_pl_hwinfo_eeprom, &g_pl_hw_eeprom))
+#else
+	if (pl_hwinfo_init(&g_pl_hwinfo_eeprom, hw_eeprom))
 		return -1;
 
 	plat->hwinfo = &g_pl_hwinfo_eeprom;
-#elif CONFIG_HWINFO_DEFAULT
-	LOG("Using hard-coded HW info");
-	plat->hwinfo = &g_pl_hwinfo_default;
-#else
-#error "Invalid HW info build configuration, check CONFIG_HWINFO_ options"
 #endif
-	pl_hwinfo_log(plat->hwinfo);
 
 	return 0;
 }
+#endif

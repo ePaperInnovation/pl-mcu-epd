@@ -50,8 +50,6 @@ struct platform {
 	struct pl_gpio gpio;
 	const struct pl_system_gpio *sys_gpio;
 	const struct pl_hwinfo *hwinfo;
-	struct pl_i2c host_i2c;
-	struct pl_i2c disp_i2c;
 	struct pl_i2c *i2c;
 	struct pl_epdpsu psu;
 	struct pl_epdc epdc;

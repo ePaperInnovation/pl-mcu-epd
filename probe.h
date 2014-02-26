@@ -28,10 +28,11 @@
 #define INCLUDE_PROBE_H 1
 
 struct platform;
-struct pl_hwinfo;
-struct pl_wflib;
 struct s1d135xx;
+struct pl_i2c;
 
+extern int probe_i2c(struct platform *plat, struct s1d135xx *s1d135xx,
+		     struct pl_i2c *host_i2c, struct pl_i2c *disp_i2c);
 extern int probe(struct platform *plat, struct s1d135xx *s1d135xx);
 
 #endif /* INCLUDE_PROBE_H */
