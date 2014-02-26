@@ -55,7 +55,7 @@ enum pl_epdc_temp_mode {
 };
 
 struct pl_area;
-struct pl_disp_data;
+struct pl_dispinfo;
 struct pl_wflib;
 
 struct pl_wfid {
@@ -75,7 +75,7 @@ struct pl_epdc{
 	int (*load_image)(struct pl_epdc *p, const char *path,
 			  const struct pl_area *area, int left, int top);
 
-	const struct pl_disp_data *disp_data;
+	const struct pl_dispinfo *dispinfo;
 	const struct pl_wfid *wf_table;
 	struct pl_wflib *wflib;
 	enum pl_epdc_power_state power_state;

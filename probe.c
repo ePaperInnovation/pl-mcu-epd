@@ -28,6 +28,7 @@
 #include <epson/epson-i2c.h>
 #include <pl/platform.h>
 #include <pl/hwinfo.h>
+#include <pl/dispinfo.h>
 #include <pl/wflib.h>
 #include <string.h>
 #include <stdio.h>
@@ -36,7 +37,6 @@
 #include "config.h"
 #include "i2c-eeprom.h"
 #include "pnm-utils.h"
-#include "plwf.h"
 #include "vcom.h"
 #include "pmic-tps65185.h"
 
@@ -60,13 +60,10 @@ static struct i2c_eeprom g_disp_eeprom = {
 #endif
 
 /* ToDo: move to platform or main */
-static struct pl_disp_data g_disp_data;
+static struct pl_dispinfo g_dispinfo;
 
 #if !CONFIG_DISP_DATA_SD_ONLY
 static struct pl_wflib_eeprom g_wflib_ctx;
-#endif
-#if !CONFIG_DISP_DATA_EEPROM_ONLY
-static int load_disp_data_sdcard(struct pl_disp_data *data);
 #endif
 
 int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
@@ -119,26 +116,26 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 #endif
 
 #if CONFIG_DISP_DATA_EEPROM_ONLY
-	stat = plwf_data_init(&g_disp_data, &g_disp_eeprom);
+	stat = pl_dispinfo_init_eeprom(&g_dispinfo, &g_disp_eeprom);
 #elif CONFIG_DISP_DATA_SD_ONLY
-	stat = load_disp_data_sdcard(&g_disp_data);
+	stat = pl_dispinfo_init_fatfs(&g_dispinfo);
 #elif CONFIG_DISP_DATA_EEPROM_SD
-	stat = (plwf_data_init(&g_disp_data, &g_disp_eeprom) ||
-		load_disp_data_sdcard(&g_disp_data));
+	stat = (pl_dispinfo_init_eeprom(&g_dispinfo, &g_disp_eeprom) ||
+		pl_dispinfo_init_fatfs(&g_dispinfo));
 #elif CONFIG_DISP_DATA_SD_EEPROM
-	stat = (load_disp_data_sdcard(&g_disp_data) ||
-		plwf_data_init(&g_disp_data, &g_disp_eeprom));
+	stat = (pl_dispinfo_init_fatfs(&g_dispinfo) ||
+		pl_dispinfo_init_eeprom(&g_dispinfo, &g_disp_eeprom));
 #endif
 	if (stat) {
 		LOG("Failed to load display data");
 		return -1;
 	}
 
-	plwf_log(&g_disp_data);
+	pl_dispinfo_log(&g_dispinfo);
 
 #if !CONFIG_DISP_DATA_SD_ONLY
 	if (pl_wflib_init_eeprom(plat->epdc.wflib, &g_wflib_ctx,
-				 &g_disp_eeprom, &g_disp_data))
+				 &g_disp_eeprom, &g_dispinfo))
 		return -1;
 #endif
 
@@ -162,7 +159,7 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 				     &vcomcal);
 		if (!stat) /* ToDo: generalise set_vcom with HV-PMIC API */
 			tps65185_set_vcom_voltage(pmic_info,
-						  g_disp_data.info.vcom);
+						  g_dispinfo.info.vcom);
 		break;
 	default:
 		abort_msg("Invalid HV-PMIC id");
@@ -183,12 +180,12 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 	switch (pl_hw_info->board.epdc_ref) {
 	case EPDC_S1D13524:
 		LOG("EPDC: S1D13524");
-		stat = epson_epdc_init(epdc, &g_disp_data,
+		stat = epson_epdc_init(epdc, &g_dispinfo,
 				       EPSON_EPDC_S1D13524, s1d135xx);
 		break;
 	case EPDC_S1D13541:
 		LOG("EPDC: S1D13541");
-		stat = epson_epdc_init(epdc, &g_disp_data,
+		stat = epson_epdc_init(epdc, &g_dispinfo,
 				       EPSON_EPDC_S1D13541, s1d135xx);
 		break;
 	case EPDC_NONE:
@@ -220,53 +217,3 @@ int probe(struct platform *plat, const struct pl_hw_info *pl_hw_info,
 
 	return 0;
 }
-
-#if !CONFIG_DISP_DATA_SD_ONLY
-static int load_disp_data_eeprom(struct pl_disp_data *data,
-				 struct i2c_eeprom *eeprom)
-{
-	return plwf_data_init(data, eeprom);
-}
-#endif
-
-#if !CONFIG_DISP_DATA_EEPROM_ONLY
-static int load_disp_data_sdcard(struct pl_disp_data *data)
-{
-	FIL vcom_file;
-	int stat;
-
-	LOG("Loading display data from SD card");
-
-	data->vermagic.magic = PL_DATA_MAGIC;
-	data->vermagic.version = PL_DATA_VERSION;
-	data->info.panel_id[0] = '\0';
-	strncpy(data->info.panel_type, CONFIG_DISPLAY_TYPE,
-		sizeof data->info.panel_type);
-
-	if (f_open(&vcom_file, "display/vcom", FA_READ) != FR_OK) {
-		LOG("VCOM file not found");
-		return -1;
-	}
-
-	stat = pnm_read_int32(&vcom_file, &data->info.vcom);
-	f_close(&vcom_file);
-
-	if (stat) {
-		LOG("Failed to read VCOM");
-		return -1;
-	}
-
-	LOG("vcom: %ld", data->info.vcom);
-
-	memset(data->info.waveform_md5, 0xFF,
-	       sizeof data->info.waveform_md5);
-
-	data->info.waveform_full_length = 0;
-	data->info.waveform_lzss_length = 0;
-	data->info.waveform_id[0] = '\0';
-	data->info.waveform_target[0] = '\0';
-	data->info_crc = 0xFFFF;
-
-	return 0;
-}
-#endif
