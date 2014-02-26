@@ -70,15 +70,6 @@ enum s1d135xx_i2c_cmd {
 	S1D135XX_I2C_CMD_NO_DATA          = (1 << 6),
 };
 
-#define S1D135XX_I2C_START \
-	(S1D135XX_I2C_CMD_START | S1D135XX_I2C_CMD_GEN | S1D135XX_I2C_CMD_GO)
-#define S1D135XX_I2C_STOP \
-	(S1D135XX_I2C_CMD_GEN | S1D135XX_I2C_CMD_GO)
-/*
-#define S1D135XX_I2C_RX_ERROR \
-	(S1D135XX_I2C_STAT_RX_NAK | S1D135XX_I2C_STAT_ERROR)
-*/
-
 static int epson_s1d135xx_i2c_read(struct pl_i2c *i2c, uint8_t i2c_addr,
 				   uint8_t *data, uint8_t count,
 				   uint8_t flags);
@@ -87,7 +78,6 @@ static int epson_s1d135xx_i2c_write(struct pl_i2c *i2c, uint8_t i2c_addr,
 				    uint8_t flags);
 static int s1d135xx_i2c_send_addr(struct s1d135xx *p, uint8_t i2c_addr,
 				  uint8_t read);
-static int s1d135xx_i2c_stop(struct s1d135xx *p);
 static int s1d135xx_i2c_poll(struct s1d135xx *p, int check_nak);
 
 /*
@@ -111,28 +101,26 @@ static int epson_s1d135xx_i2c_read(struct pl_i2c *i2c, uint8_t i2c_addr,
 {
 	struct s1d135xx *p = i2c->priv;
 
-	if (!count) {
-		if (flags & PL_I2C_NO_STOP)
-			return 0;
-		return s1d135xx_i2c_stop(p);
-	}
-
 	if (!(flags & PL_I2C_NO_START))
 		if (s1d135xx_i2c_send_addr(p, i2c_addr, 1))
 			return -1;
 
 	while (count--) {
-		s1d135xx_write_reg(p, S1D135XX_I2C_REG_CMD,
-				   S1D135XX_I2C_CMD_GO | S1D135XX_I2C_CMD_READ);
+		uint8_t cmd;
+
+		if (!count && !(flags & PL_I2C_NO_STOP))
+			cmd = (S1D135XX_I2C_CMD_GO | S1D135XX_I2C_CMD_READ |
+			       S1D135XX_I2C_CMD_GEN | S1D135XX_I2C_CMD_TX_NAK);
+		else
+			cmd = S1D135XX_I2C_CMD_GO | S1D135XX_I2C_CMD_READ;
+
+		s1d135xx_write_reg(p, S1D135XX_I2C_REG_CMD, cmd);
 
 		if (s1d135xx_i2c_poll(p, 0))
 			return -1;
 
 		*data++ = s1d135xx_read_reg(p, S1D135XX_I2C_REG_RD);
 	}
-
-	if (!(flags & PL_I2C_NO_STOP))
-		return s1d135xx_i2c_stop(p);
 
 	return 0;
 }
@@ -143,27 +131,24 @@ static int epson_s1d135xx_i2c_write(struct pl_i2c *i2c, uint8_t i2c_addr,
 {
 	struct s1d135xx *p = i2c->priv;
 
-	if (!count) {
-		if (flags & PL_I2C_NO_STOP)
-			return 0;
-		return s1d135xx_i2c_stop(p);
-	}
-
 	if (!(flags & PL_I2C_NO_START))
 		if (s1d135xx_i2c_send_addr(p, i2c_addr, 0))
 			return -1;
 
 	while (count--) {
+		uint8_t cmd;
+
+		if (!count && !(flags & PL_I2C_NO_STOP))
+			cmd = S1D135XX_I2C_CMD_GO | S1D135XX_I2C_CMD_GEN;
+		else
+			cmd = S1D135XX_I2C_CMD_GO;
+
 		s1d135xx_write_reg(p, S1D135XX_I2C_REG_WD, *data++);
-		s1d135xx_write_reg(p, S1D135XX_I2C_REG_CMD,
-				   S1D135XX_I2C_CMD_GO);
+		s1d135xx_write_reg(p, S1D135XX_I2C_REG_CMD, cmd);
 
 		if (s1d135xx_i2c_poll(p, 1))
 			return -1;
 	}
-
-	if (!(flags & PL_I2C_NO_STOP))
-		return s1d135xx_i2c_stop(p);
 
 	return 0;
 }
@@ -172,16 +157,11 @@ static int s1d135xx_i2c_send_addr(struct s1d135xx *p, uint8_t i2c_addr,
 				  uint8_t read)
 {
 	s1d135xx_write_reg(p, S1D135XX_I2C_REG_WD, ((i2c_addr) << 1) | read);
-	s1d135xx_write_reg(p, S1D135XX_I2C_REG_CMD, S1D135XX_I2C_START);
+	s1d135xx_write_reg(p, S1D135XX_I2C_REG_CMD, (S1D135XX_I2C_CMD_START |
+						     S1D135XX_I2C_CMD_GEN |
+						     S1D135XX_I2C_CMD_GO));
 
 	return s1d135xx_i2c_poll(p, 1);
-}
-
-static int s1d135xx_i2c_stop(struct s1d135xx *p)
-{
-	s1d135xx_write_reg(p, S1D135XX_I2C_REG_CMD, S1D135XX_I2C_STOP);
-
-	return s1d135xx_i2c_poll(p, 0);
 }
 
 static int s1d135xx_i2c_poll(struct s1d135xx *p, int check_nak)
