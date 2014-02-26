@@ -48,7 +48,6 @@
 #define S1D135XX_WF_MODE(_wf) (((_wf) << 8) & 0x0F00)
 #define S1D135XX_XMASK 0x01FF
 #define S1D135XX_YMASK 0x03FF
-#define S1D135XX_HRDY_TIMEOUT 3000
 #define S1D135XX_INIT_CODE_CHECKSUM_OK (1 << 15)
 
 enum s1d135xx_cmd {
@@ -315,10 +314,9 @@ int s1d135xx_wait_update_end(struct s1d135xx *p)
 
 int s1d135xx_wait_idle(struct s1d135xx *p)
 {
-	unsigned timeout = S1D135XX_HRDY_TIMEOUT;
+	unsigned long timeout = 1000000;
 
-	while (!get_hrdy(p) && --timeout)
-		mdelay(1);
+	while (!get_hrdy(p) && --timeout);
 
 	if (!timeout) {
 		LOG("HRDY timeout");

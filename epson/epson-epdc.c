@@ -28,6 +28,7 @@
 #include <epson/epson-epdc.h>
 #include <pl/types.h>
 #include <pl/epdc.h>
+#include <pl/gpio.h>
 #include <stdlib.h>
 #include "assert.h"
 
@@ -82,6 +83,12 @@ int epson_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo,
 	assert(dispinfo != NULL);
 	assert(s1d135xx != NULL);
 	assert(s1d135xx->data != NULL);
+
+	if (s1d135xx->data->hrdy != PL_GPIO_NONE)
+		LOG("Using HRDY GPIO");
+
+	if (s1d135xx->data->hdc != PL_GPIO_NONE)
+		LOG("Using HDC GPIO");
 
 	s1d135xx->flags.needs_update = 0;
 

@@ -167,15 +167,13 @@ static int s1d135xx_i2c_send_addr(struct s1d135xx *p, uint8_t i2c_addr,
 static int s1d135xx_i2c_poll(struct s1d135xx *p, int check_nak)
 {
 	uint16_t status;
-	unsigned i = 50;
+	unsigned i = 0xFFFF;
 
 	while (--i) {
 		status = s1d135xx_read_reg(p, S1D135XX_I2C_REG_STAT);
 
 		if (!(status & S1D135XX_I2C_STAT_GO))
 			break;
-
-		mdelay(1);
 	}
 
 	if (!i)
