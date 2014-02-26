@@ -163,7 +163,7 @@ static int pl_wflib_lzss_rd(struct lzss_rd_ctx *ctx)
 		if (eeprom_read(ctx->eeprom, ctx->offset, ctx->buflen,
 				ctx->buffer)) {
 			LOG("Failed to read LZSS data from EEPROM");
-			return EOF;
+			return LZSS_ERROR;
 		}
 
 		ctx->crc = crc16_run(ctx->crc, ctx->buffer, ctx->buflen);
@@ -181,7 +181,7 @@ static int pl_wflib_lzss_wr(int c, struct lzss_wr_ctx *ctx)
 	if (ctx->index == ctx->buflen) {
 		if (ctx->wflib_wr(ctx->wflib_ctx, ctx->buffer, ctx->buflen)) {
 			LOG("Failed to write waveform data");
-			return EOF;
+			return LZSS_ERROR;
 		}
 
 		ctx->index = 0;
