@@ -264,7 +264,7 @@ int pl_wflib_init_eeprom(struct pl_wflib *wflib, struct pl_wflib_eeprom *p,
 	wflib->size = disp_data->info.waveform_full_length;
 	wflib->priv = p;
 
-	LOG("EEPROM + LZSS %s", disp_data->info.waveform_id);
+	LOG("EEPROM + LZSS (%s)", disp_data->info.waveform_id);
 
 	return 0;
 }

@@ -25,20 +25,14 @@
  *
  */
 
-#ifndef PLWF_H_
-#define PLWF_H_
+#ifndef INCLUDE_PLWF_H
+#define INCLUDE_PLWF_H 1
 
 #include <pl/disp-data.h>
 #include <stdint.h>
 
 struct i2c_eeprom;
-struct s1d135xx;
 struct pl_wflib;
-
-struct plwf {
-	struct i2c_eeprom *eeprom; /* use with PLWF_MODE_EEPROM */
-	struct pl_disp_data data;  /* initialised by plwf_init */
-};
 
 /** Initialise the pl_disp_data structure from a display EEPROM */
 extern int plwf_data_init(struct pl_disp_data *data,
@@ -59,4 +53,4 @@ extern int pl_wflib_init_eeprom(struct pl_wflib *wflib,
 				const struct i2c_eeprom *eeprom,
 				const struct pl_disp_data *disp_data);
 
-#endif /* PLWF_H_ */
+#endif /* INCLUDE_PLWF_H */
