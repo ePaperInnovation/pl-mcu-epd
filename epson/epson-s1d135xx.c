@@ -160,7 +160,6 @@ int s1d135xx_load_wflib(struct s1d135xx *p, struct pl_wflib *wflib,
 			uint32_t addr)
 {
 	uint16_t params[4];
-	int stat;
 
 	if (s1d135xx_wait_idle(p))
 		return -1;
@@ -174,13 +173,7 @@ int s1d135xx_load_wflib(struct s1d135xx *p, struct pl_wflib *wflib,
 	send_params(params, ARRAY_SIZE(params));
 	set_cs(p, 1);
 
-	set_cs(p, 0);
-	send_cmd(p, S1D135XX_CMD_WRITE_REG);
-	send_param(S1D135XX_REG_HOST_MEM_PORT);
-	stat = wflib->xfer(wflib, wflib_wr, p);
-	set_cs(p, 1);
-
-	if (stat)
+	if (wflib->xfer(wflib, wflib_wr, p))
 		return -1;
 
 	if (s1d135xx_wait_idle(p))
@@ -465,11 +458,13 @@ static int do_fill(struct s1d135xx *p, const struct pl_area *area,
 
 static int wflib_wr(void *ctx, const uint8_t *data, size_t n)
 {
-#if 0 /* not used at the moment */
 	struct s1d135xx *p = ctx;
-#endif
 
+	set_cs(p, 0);
+	send_cmd(p, S1D135XX_CMD_WRITE_REG);
+	send_param(S1D135XX_REG_HOST_MEM_PORT);
 	transfer_data(data, n);
+	set_cs(p, 1);
 
 	return 0;
 }

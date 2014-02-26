@@ -83,6 +83,8 @@ int epson_epdc_init(struct pl_epdc *epdc, const struct pl_disp_data *disp_data,
 	assert(s1d135xx != NULL);
 	assert(s1d135xx->data != NULL);
 
+	s1d135xx->flags.needs_update = 0;
+
 	epdc->update = epson_epdc_update;
 	epdc->wait_update_end = epson_epdc_wait_update_end;
 	epdc->set_power = epson_epdc_set_power;

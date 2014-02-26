@@ -44,7 +44,7 @@ extern struct s1d135xx *g_s1d13541_hack;
 #define S1D13541_PROD_CODE              0x0053
 #define S1D13541_STATUS_HRDY            (1 << 13)
 #define S1D13541_INTERNAL_CLOCK_ENABLE  (1 << 7)
-#define S1D13541_I2C_CLOCK_DIV          7 /* Maybe 4 ? */
+#define S1D13541_I2C_CLOCK_DIV          7 /* 100 kHz */
 #define S1D13541_PROT_KEY_1             0x5678 /* ToDo: add to s1d135xx_data */
 #define S1D13541_PROT_KEY_2             0x1234
 #define S1D13541_TEMP_SENSOR_CONTROL    (1 << 14)
@@ -277,6 +277,8 @@ int epson_epdc_init_s1d13541(struct pl_epdc *epdc)
 	g_s1d13541_hack = p;
 	epson_set_idle_mask(0x2000, 0x2000);
 #endif
+
+	LOG("Loading wflib");
 
 	if (s1d13541_load_wflib(epdc))
 		return -1;
