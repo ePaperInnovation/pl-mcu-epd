@@ -25,10 +25,12 @@
 
 #include <pl/i2c.h>
 #include <stddef.h>
-#include "types.h"
 #include "assert.h"
 #include "vcom.h"
 #include "pmic-max17135.h"
+
+#define LOG_TAG "max17135"
+#include "utils.h"
 
 /* problems with temperature sensor return magic temperature value */
 #define	HVPMIC_TEMP_INVALID	0x7FC0
@@ -99,20 +101,20 @@ union max17135_fault {
 		char ot:1;
 		char pok:1;
 	};
-	u8 byte;
+	uint8_t byte;
 };
 
 struct max17135_hvpmic {
-	u8 prod_id;
-	u8 prod_rev;
-	u8 timings[HVPMIC_NB_TIMINGS];
+	uint8_t prod_id;
+	uint8_t prod_rev;
+	uint8_t timings[HVPMIC_NB_TIMINGS];
 };
 
 union max17135_temp_config {
 	struct {
 		char shutdown:1;
 	};
-	u8 byte;
+	uint8_t byte;
 };
 
 union max17135_temp_status {
@@ -121,7 +123,7 @@ union max17135_temp_status {
 		char isopen:1;
 		char isshort:1;
 	};
-	u8 byte;
+	uint8_t byte;
 };
 
 union max17135_temp_value {
@@ -134,14 +136,15 @@ union max17135_temp_value {
 
 struct max17135_info {
 	struct pl_i2c *i2c;
-	u8 i2c_addr;
+	uint8_t i2c_addr;
 	struct max17135_hvpmic hvpmic;
 	struct vcom_cal *cal;
 };
 
 static struct max17135_info pmic_info;
 
-int max17135_init(struct pl_i2c *i2c, u8 i2c_addr, struct max17135_info **pmic)
+int max17135_init(struct pl_i2c *i2c, uint8_t i2c_addr,
+		  struct max17135_info **pmic)
 {
 	assert(i2c);
 	assert(pmic);
@@ -150,12 +153,13 @@ int max17135_init(struct pl_i2c *i2c, u8 i2c_addr, struct max17135_info **pmic)
 	pmic_info.i2c = i2c;
 	pmic_info.cal = NULL;
 	*pmic = &pmic_info;
+
 	return 0;
 }
 
 static int max17135_load_timings(struct max17135_info *pmic)
 {
-	u8 reg;
+	uint8_t reg;
 	int i;
 
 	assert(pmic);
@@ -171,9 +175,10 @@ static int max17135_load_timings(struct max17135_info *pmic)
 	return 0;
 }
 
-int max17135_configure(struct max17135_info *pmic, struct vcom_cal *cal, int power_sequence)
+int max17135_configure(struct max17135_info *pmic, struct vcom_cal *cal,
+		       int power_sequence)
 {
-	u8 timings[HVPMIC_NB_TIMINGS];
+	uint8_t timings[HVPMIC_NB_TIMINGS];
 
 	assert(pmic);
 
@@ -203,15 +208,17 @@ int max17135_configure(struct max17135_info *pmic, struct vcom_cal *cal, int pow
 		timings[7] = HVPMIC_TIMING_SEQ1_DOWN_VGNEG;
 		break;
 	default:
-		return -EINVAL;
+		return -1;
 	}
 
 	memcpy(pmic->hvpmic.timings, timings, HVPMIC_NB_TIMINGS);
-	printk("MAX17135 timings (seq:%d) on: %d, %d, %d, %d, "
-	       "timings off: %d, %d, %d, %d\n",
-	       power_sequence,
-	       timings[0], timings[1], timings[2], timings[3],
-	       timings[4], timings[5], timings[6], timings[7]);
+	LOG("timings (seq:%d) on: %d, %d, %d, %d, "
+	    "timings off: %d, %d, %d, %d",
+	    power_sequence,
+	    timings[0], timings[1], timings[2], timings[3],
+	    timings[4], timings[5], timings[6], timings[7]);
+
+	LOG("reading regs again");
 
 	if (pl_i2c_reg_read_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_PROD_REV,
 			      &pmic->hvpmic.prod_rev))
@@ -221,8 +228,8 @@ int max17135_configure(struct max17135_info *pmic, struct vcom_cal *cal, int pow
 			      &pmic->hvpmic.prod_id))
 		return -1;
 
-	printk("MAX17135: HVPMIC rev 0x%02X, id 0x%02X\n",
-	       pmic->hvpmic.prod_rev, pmic->hvpmic.prod_id);
+	LOG("rev 0x%02X, id 0x%02X",
+	    pmic->hvpmic.prod_rev, pmic->hvpmic.prod_id);
 
 	if (max17135_temp_disable(pmic))
 		return -1;
@@ -270,7 +277,7 @@ int max17135_wait_pok(struct max17135_info *pmic)
 
 		if (pl_i2c_reg_read_8(pmic->i2c, pmic->i2c_addr,
 				      HVPMIC_REG_FAULT, &fault.byte)) {
-			printk("MAX17135: failed to read HVPMIC POK\n");
+			LOG("Failed to read HVPMIC POK");
 			return -1;
 		}
 
@@ -282,7 +289,7 @@ int max17135_wait_pok(struct max17135_info *pmic)
 			timeout = 0;
 
 			if (!pok) {
-				printk("MAX17135: POK timeout\n");
+				LOG("POK timeout");
 				return -1;
 			}
 		}
@@ -294,13 +301,13 @@ int max17135_wait_pok(struct max17135_info *pmic)
 /* use the i2c interface to power up the PMIC */
 int max17135_enable(struct max17135_info *pmic)
 {
-	return -EPERM;
+	return -1;
 }
 
 /* use the i2c interface to power down the PMIC */
 int max17135_disable(struct max17135_info *pmic)
 {
-	return -EPERM;
+	return -1;
 }
 
 /* enable temperature sensing */
@@ -328,7 +335,7 @@ int max17135_temp_disable(struct max17135_info *pmic)
 }
 
 /* read the temperature from the PMIC */
-int max17135_temperature_measure(struct max17135_info *pmic, short *measured)
+int max17135_temperature_measure(struct max17135_info *pmic, int16_t *measured)
 {
 	union max17135_temp_status status;
 	union max17135_temp_value temp;
@@ -343,17 +350,18 @@ int max17135_temperature_measure(struct max17135_info *pmic, short *measured)
 		goto error;
 
 	if (status.byte & (HVPMIC_TEMP_OPEN | HVPMIC_TEMP_SHORT)) {
-		printk("MAX17135: Temperature sensor error: 0x%02x\n", status.byte);
+		LOG("Temperature sensor error: 0x%02x", status.byte);
 	}
 
 	if (temp.word == HVPMIC_TEMP_INVALID) {
 		*measured = HVPMIC_TEMP_DEFAULT;
-		stat = -EDEFAULT;
+		stat = -1;
 	} else {
 		*measured = (temp.measured >> 1);
 		stat = 0;
 	}
-	printk("MAX17135: Temperature: %d\n", *measured);
+
+	LOG("Temperature: %d", *measured);
 
 error:
 	return stat;

@@ -38,12 +38,14 @@
 #include "i2c-eeprom.h"
 #include "vcom.h"
 #include "pmic-tps65185.h"
+#include "pmic-max17135.h"
 
 #define LOG_TAG "probe"
 #include "utils.h"
 
 /* ToDo: add to generic HV-PMIC interface */
-#define I2C_PMIC_ADDR        0x68
+#define I2C_PMIC_ADDR_TPS65185 0x68
+#define I2C_PMIC_ADDR_MAX17135 0x48
 
 #if S1D135XX_INTERIM
 #include "epson/S1D135xx.h"
@@ -132,6 +134,9 @@ int probe_dispinfo(struct pl_dispinfo *dispinfo, struct pl_wflib *wflib,
 #endif
 }
 
+/* interim solution */
+static struct max17135_info *g_max17135;
+
 int probe_hvpmic(struct pl_platform *plat, struct vcom_cal *vcom_cal,
 		 struct pl_epdpsu_gpio *epdpsu_gpio,
 		 struct tps65185_info *pmic_info)
@@ -151,16 +156,23 @@ int probe_hvpmic(struct pl_platform *plat, struct vcom_cal *vcom_cal,
 		break;
 	case HV_PMIC_MAX17135:
 		LOG("HV-PMIC: MAX17135");
-		abort_msg("Not verified yet");
-		stat = -1;
+		stat = max17135_init(
+			plat->i2c, I2C_PMIC_ADDR_MAX17135, &g_max17135);
+		if (!stat)
+			stat = max17135_configure(
+				g_max17135, vcom_cal, MAX17135_SEQ_1);
+		if (!stat)
+			stat = max17135_set_vcom_voltage(
+				g_max17135, plat->dispinfo->info.vcom);
+
 		break;
 	case HV_PMIC_TPS65185:
 		LOG("HV-PMIC: TPS65185");
-		stat = tps65185_init(pmic_info, plat->i2c, I2C_PMIC_ADDR,
-				     vcom_cal);
+		stat = tps65185_init(pmic_info, plat->i2c,
+				     I2C_PMIC_ADDR_TPS65185, vcom_cal);
 		if (!stat) /* ToDo: generalise set_vcom with HV-PMIC API */
-			tps65185_set_vcom_voltage(pmic_info,
-						  plat->dispinfo->info.vcom);
+			stat = tps65185_set_vcom_voltage(
+				pmic_info, plat->dispinfo->info.vcom);
 		break;
 	default:
 		abort_msg("Invalid HV-PMIC id");
@@ -201,7 +213,7 @@ int probe_epdc(struct pl_platform *plat, struct s1d135xx *s1d135xx)
 		abort_msg("Invalid EPDC identifier");
 	}
 
-#if 0 /* enable during development of new EPDC implementations */
+#if 1 /* enable during development of new EPDC implementations */
 	if (stat)
 		return -1;
 
