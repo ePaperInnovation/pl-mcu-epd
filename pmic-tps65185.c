@@ -1,7 +1,7 @@
 /*
   Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2013 Plastic Logic Limited
+  Copyright (C) 2013, 2014 Plastic Logic Limited
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -19,18 +19,23 @@
 /*
  * pmic-tps65185.c -- Driver for TI TPS65185 PMIC
  *
- * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ * Authors:
+ *  Nick Terry <nick.terry@plasticlogic.com>
+ *  Guillaume Tucker <guillaume.tucker@plasticlogic.com>
  *
  */
 
 #include <pl/i2c.h>
 #include <stdlib.h>
-#include "types.h"
 #include "assert.h"
 #include "vcom.h"
+#include "pmic-tps65185.h"
 
 #define LOG_TAG "tps65185"
 #include "utils.h"
+
+/* Set to 1 to enable verbose log messages */
+#define VERBOSE 0
 
 /* Set to 1 to dump registers */
 #define DO_REG_DUMP 0
@@ -71,20 +76,12 @@ union tps65185_version {
 		char minor:2;
 		char major:2;
 	} v;
-	u8 byte;
+	uint8_t byte;
 };
-
-struct tps65185_info {
-	struct pl_i2c *i2c;
-	u8 i2c_addr;
-	struct vcom_cal *cal;
-};
-
-static struct tps65185_info pmic_info;
 
 struct pmic_data {
-	u8 reg;
-	u8 data;
+	uint8_t reg;
+	uint8_t data;
 };
 
 static const struct pmic_data init_data[] = {
@@ -106,39 +103,28 @@ static const struct pmic_data init_data[] = {
 /* Note: reading some registers will modify the status of the device */
 static void reg_dump(struct tps65185_info *p)
 {
-	u8 data;
-	int reg;
+	uint8_t data;
+	uint8_t reg;
 
-	printk("TPS65185: registers\n");
 	for (reg = HVPMIC_REG_TMST_VALUE; reg < HVPMIC_REG_MAX; reg++) {
 		if (!pl_i2c_reg_read_8(p->i2c, p->i2c_addr, reg, &data))
-			printk(" 0x%02X => 0x%02X\n", reg, data);
+			LOG("reg[0x%02X] = 0x%02X", reg, data);
 	}
 }
 #endif
 
-int tps65185_init(struct pl_i2c *i2c, u8 i2c_addr, struct tps65185_info **px,
-		  const struct vcom_cal *cal)
+int tps65185_init(struct tps65185_info *p, struct pl_i2c *i2c,
+		  uint8_t i2c_addr, const struct vcom_cal *cal)
 {
-	int i;
 	union tps65185_version ver;
-	struct tps65185_info *p;
+	int i;
 
-	assert(i2c != NULL);
-	assert(px != NULL);
+	p->i2c = i2c;
+	p->i2c_addr = i2c_addr;
+	p->cal = cal; /* Cal may be NULL if not being used */
 
-	pmic_info.i2c_addr = i2c_addr;
-	pmic_info.i2c = i2c;
-	p = *px = &pmic_info;
-
-	/* Cal may be NULL if not being used */
-	p->cal = cal;
-
-	if (pl_i2c_reg_read_8(p->i2c, p->i2c_addr, HVPMIC_REG_REV_ID,
-			      &ver.byte)) {
-		LOG("Failed to read version");
+	if (pl_i2c_reg_read_8(i2c, i2c_addr, HVPMIC_REG_REV_ID, &ver.byte))
 		return -1;
-	}
 
 	LOG("Version: %d.%d.%d", ver.v.major, ver.v.minor, ver.v.version);
 
@@ -149,14 +135,15 @@ int tps65185_init(struct pl_i2c *i2c, u8 i2c_addr, struct tps65185_info **px,
 	}
 
 	for (i = 0; i < ARRAY_SIZE(init_data); i++) {
-		if (pl_i2c_reg_write_8(p->i2c, p->i2c_addr,
-				       init_data[i].reg, init_data[i].data))
+		if (pl_i2c_reg_write_8(i2c, i2c_addr, init_data[i].reg,
+				       init_data[i].data))
 			return -1;
 	}
 
 	return 0;
 }
 
+#if 0 /* ToDo: use or remove */
 /* program the internal VCOM Dac to give us the required voltage */
 int tps65185_set_vcom_register(struct tps65185_info *p, int value)
 {
@@ -168,11 +155,9 @@ int tps65185_set_vcom_register(struct tps65185_info *p, int value)
 	if (pl_i2c_reg_write_8(p->i2c, p->i2c_addr, HVPMIC_REG_VCOM1, v1))
 		return -1;
 
-	if (pl_i2c_reg_write_8(p->i2c, p->i2c_addr, HVPMIC_REG_VCOM2, v2))
-		return -1;
-
-	return 0;
+	return pl_i2c_reg_write_8(p->i2c, p->i2c_addr, HVPMIC_REG_VCOM2, v2))
 }
+#endif
 
 /* program the internal VCOM Dac to give us the required voltage */
 int tps65185_set_vcom_voltage(struct tps65185_info *p, int mv)
@@ -194,19 +179,17 @@ int tps65185_set_vcom_voltage(struct tps65185_info *p, int mv)
 	v2 = ((dac_value >> 8) & 0x0001);
 
 	if (pl_i2c_reg_write_8(p->i2c, p->i2c_addr, HVPMIC_REG_VCOM1, v1))
-		return -1;
+	    return -1;
 
-	if (pl_i2c_reg_write_8(p->i2c, p->i2c_addr, HVPMIC_REG_VCOM2, v2))
-		return -1;
-
-	return 0;
+	return pl_i2c_reg_write_8(p->i2c, p->i2c_addr, HVPMIC_REG_VCOM2, v2);
 }
 
+#if 0 /* ToDo: use or remove */
 /* use i2c to determine when power up has completed */
 int tps65185_wait_pok(struct tps65185_info *p)
 {
-	u8 pgstat;
-	u8 int1, int2;
+	uint8_t pgstat;
+	uint8_t int1, int2;
 
 	assert(p != NULL);
 
@@ -214,15 +197,15 @@ int tps65185_wait_pok(struct tps65185_info *p)
 			   &pgstat))
 		return -1;
 
-	if (pl_i2c_reg_read_8(p->i2c, p->i2c_addr, HVPMIC_REG_INT1, &int1))
+	if (pl_i2c_reg_read_8(p->i2c, p->i2c_addr, HVPMIC_REG_INT1, &int1) ||
+	    pl_i2c_reg_read_8(p->i2c, p->i2c_addr, HVPMIC_REG_INT2, &int2))
 		return -1;
 
-	if (pl_i2c_reg_read_8(p->i2c, p->i2c_addr, HVPMIC_REG_INT2, &int2))
-		return -1;
-
+#if VERVBOSE
 	if (int1 || int2)
-		printk("TPS65185: PGSTAT: 0x%02X, INT1: 0x%02X, INT2: 0x%02X\n",
+		LOG("PGSTAT: 0x%02X, INT1: 0x%02X, INT2: 0x%02X",
 		       pgstat, int1, int2);
+#endif
 
 #if DO_REG_DUMP
 	reg_dump(pmic);
@@ -232,6 +215,7 @@ int tps65185_wait_pok(struct tps65185_info *p)
 
 	return 0;
 }
+#endif
 
 /* use the i2c interface to power up the PMIC */
 int tps65185_enable(struct tps65185_info *p)
@@ -245,10 +229,10 @@ int tps65185_disable(struct tps65185_info *p)
 	return -EPERM;
 }
 
-int tps65185_temperature_measure(struct tps65185_info *p, short *measured)
+int tps65185_temperature_measure(struct tps65185_info *p, int16_t *measured)
 {
-	s8 temp;
-	u8 progress;
+	int8_t temp;
+	uint8_t progress;
 
 	/* Trigger conversion */
 	if (pl_i2c_reg_write_8(p->i2c, p->i2c_addr,HVPMIC_REG_TMST1, 0x80))
@@ -270,7 +254,9 @@ int tps65185_temperature_measure(struct tps65185_info *p, short *measured)
 
 	*measured = temp;
 
-	printk("TPS65185: Temperature: %d\n", *measured);
+#if VERBOSE
+	LOG("Temperature: %d", *measured);
+#endif
 
 	return 0;
 }
