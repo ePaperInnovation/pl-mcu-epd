@@ -144,6 +144,8 @@ int probe_hvpmic(struct pl_platform *plat, struct vcom_cal *vcom_cal,
 	const struct pl_hwinfo *hwinfo = plat->hwinfo;
 	int stat;
 
+	/* ToDo: use S1D13524 power up/down */
+
 	if (pl_epdpsu_gpio_init(&plat->psu, epdpsu_gpio))
 		return -1;
 
@@ -217,7 +219,7 @@ int probe_epdc(struct pl_platform *plat, struct s1d135xx *s1d135xx)
 	if (stat)
 		return -1;
 
-	assert(epdc->init != NULL);
+	assert(epdc->clear_init != NULL);
 	assert(epdc->load_wflib != NULL);
 	assert(epdc->update != NULL);
 	assert(epdc->wait_update_end != NULL);

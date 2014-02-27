@@ -64,7 +64,7 @@ struct pl_wfid {
 };
 
 struct pl_epdc{
-	int (*init)(struct pl_epdc *p, uint8_t grey);
+	int (*clear_init)(struct pl_epdc *p);
 	int (*load_wflib)(struct pl_epdc *p);
 	int (*update)(struct pl_epdc *p, int wfid, const struct pl_area *area);
 	int (*wait_update_end)(struct pl_epdc *p);

@@ -56,6 +56,7 @@ enum s1d135xx_cmd {
 	S1D135XX_CMD_STBY             = 0x04,
 	S1D135XX_CMD_SLEEP            = 0x05,
 	S1D135XX_CMD_INIT_STBY        = 0x06, /* init then standby */
+	S1D135XX_CMD_INIT_ROT_MODE    = 0x0B,
 	S1D135XX_CMD_READ_REG         = 0x10,
 	S1D135XX_CMD_WRITE_REG        = 0x11,
 	S1D135XX_CMD_BST_RD_SDR       = 0x1C,
@@ -66,6 +67,7 @@ enum s1d135xx_cmd {
 	S1D135XX_CMD_LD_IMG_END       = 0x23,
 	S1D135XX_CMD_WAIT_DSPE_TRG    = 0x28,
 	S1D135XX_CMD_WAIT_DSPE_FREND  = 0x29,
+	S1D135XX_CMD_UPD_INIT         = 0x32,
 	S1D135XX_CMD_UPDATE_FULL      = 0x33,
 	S1D135XX_CMD_UPDATE_FULL_AREA = 0x34,
 	S1D135XX_CMD_EPD_GDRV_CLR     = 0x37,
@@ -85,9 +87,6 @@ static void send_cmd_cs(struct s1d135xx *p, uint16_t cmd);
 static void send_cmd(struct s1d135xx *p, uint16_t cmd);
 static void send_params(const uint16_t *params, size_t n);
 static void send_param(uint16_t param);
-#if 0 /* this should be needed with S1D13524 */
-static void set_hdc(struct s1d135xx *p, int state);
-#endif
 static void set_cs(struct s1d135xx *p, int state);
 
 /* ----------------------------------------------------------------------------
@@ -113,6 +112,22 @@ int s1d135xx_soft_reset(struct s1d135xx *p)
 	s1d135xx_write_reg(p, S1D135XX_REG_SOFTWARE_RESET, 0);
 
 	return s1d135xx_wait_idle(p);
+}
+
+int s1d135xx_check_prod_code(struct s1d135xx *p, uint16_t ref_code)
+{
+	uint16_t prod_code;
+
+	prod_code = s1d135xx_read_reg(p, S1D135XX_REG_REV_CODE);
+
+	LOG("Product code: 0x%04X", prod_code);
+
+	if (prod_code != ref_code) {
+		LOG("Invalid product code, expected 0x%04X", ref_code);
+		return -1;
+	}
+
+	return 0;
 }
 
 int s1d135xx_load_init_code(struct s1d135xx *p)
@@ -142,6 +157,12 @@ int s1d135xx_load_init_code(struct s1d135xx *p)
 	if (s1d135xx_wait_idle(p))
 		return -1;
 
+	send_cmd_cs(p, S1D135XX_CMD_INIT_STBY);
+	mdelay(100);
+
+	if (s1d135xx_wait_idle(p))
+		return -1;
+
 	checksum = s1d135xx_read_reg(p, S1D135XX_REG_SEQ_AUTOBOOT_CMD);
 
 	if (!(checksum & (uint16_t)S1D135XX_INIT_CODE_CHECKSUM_OK)) {
@@ -149,10 +170,7 @@ int s1d135xx_load_init_code(struct s1d135xx *p)
 		return -1;
 	}
 
-	send_cmd_cs(p, S1D135XX_CMD_INIT_STBY);
-	mdelay(100);
-
-	return s1d135xx_wait_idle(p);
+	return 0;
 }
 
 int s1d135xx_load_wflib(struct s1d135xx *p, struct pl_wflib *wflib,
@@ -198,6 +216,16 @@ int s1d135xx_wait_dspe_trig(struct s1d135xx *p)
 	send_cmd_cs(p, S1D135XX_CMD_WAIT_DSPE_TRG);
 
 	return s1d135xx_wait_idle(p);
+}
+
+int s1d135xx_clear_init(struct s1d135xx *p)
+{
+	send_cmd_cs(p, S1D135XX_CMD_UPD_INIT);
+
+	if (s1d135xx_wait_idle(p))
+		return -1;
+
+	return s1d135xx_wait_dspe_trig(p);
 }
 
 int s1d135xx_fill(struct s1d135xx *p, uint16_t mode, unsigned bpp,
@@ -547,8 +575,18 @@ static void send_cmd_cs(struct s1d135xx *p, uint16_t cmd)
 
 static void send_cmd(struct s1d135xx *p, uint16_t cmd)
 {
+	const unsigned hdc = p->data->hdc;
+	struct pl_gpio *gpio = p->gpio;
+
 	cmd = htobe16(cmd);
+
+	if (hdc != PL_GPIO_NONE)
+		gpio->set(hdc, 0);
+
 	spi_write_bytes((uint8_t *)&cmd, sizeof(uint16_t));
+
+	if (hdc != PL_GPIO_NONE)
+		gpio->set(hdc, 1);
 }
 
 static void send_params(const uint16_t *params, size_t n)
@@ -564,14 +602,6 @@ static void send_param(uint16_t param)
 	param = htobe16(param);
 	spi_write_bytes((uint8_t *)&param, sizeof(uint16_t));
 }
-
-#if 0
-static void set_hdc(struct s1d135xx *p, int state)
-{
-	if (p->data->hdc != PL_GPIO_NONE)
-		p->gpio->set(p->data->hdc, state);
-}
-#endif
 
 static void set_cs(struct s1d135xx *p, int state)
 {

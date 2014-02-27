@@ -46,6 +46,13 @@ static const struct pl_wfid epson_epdc_wf_table_eink[] = {
 };
 #endif
 
+static int epson_epdc_clear_init(struct pl_epdc *epdc)
+{
+	struct s1d135xx *p = epdc->data;
+
+	return s1d135xx_clear_init(p);
+}
+
 static int epson_epdc_update(struct pl_epdc *epdc, int wfid,
 			     const struct pl_area *area)
 {
@@ -92,6 +99,7 @@ int epson_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo,
 
 	s1d135xx->flags.needs_update = 0;
 
+	epdc->clear_init = epson_epdc_clear_init;
 	epdc->update = epson_epdc_update;
 	epdc->wait_update_end = epson_epdc_wait_update_end;
 	epdc->set_power = epson_epdc_set_power;
@@ -112,10 +120,20 @@ int epson_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo,
 	if (stat)
 		return -1;
 
+	LOG("Loading wflib");
+
+	if (epdc->load_wflib(epdc))
+		return -1;
+
 	if (epdc->set_power(epdc, PL_EPDC_RUN))
 		return -1;
 
-	return epdc->set_temp_mode(epdc, PL_EPDC_TEMP_INTERNAL);
+	s1d135xx->xres = epdc->xres;
+	s1d135xx->yres = epdc->yres;
+
+	LOG("Ready %dx%d", epdc->xres, epdc->yres);
+
+	return 0;
 }
 
 int epson_epdc_early_init(struct s1d135xx *p, enum epson_epdc_ref ref)

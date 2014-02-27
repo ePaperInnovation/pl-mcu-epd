@@ -46,11 +46,21 @@ enum s1d135xx_reg {
 	S1D135XX_REG_REV_CODE              = 0x0002,
 	S1D135XX_REG_SOFTWARE_RESET        = 0x0008,
 	S1D135XX_REG_SYSTEM_STATUS         = 0x000A,
+	S1D135XX_REG_I2C_CLOCK             = 0x001A,
 	S1D135XX_REG_PERIPH_CONFIG         = 0x0020,
 	S1D135XX_REG_HOST_MEM_PORT         = 0x0154,
 	S1D135XX_REG_I2C_TEMP_SENSOR_VALUE = 0x0216,
+	S1D135XX_REG_PWR_CTRL              = 0x0230,
 	S1D135XX_REG_SEQ_AUTOBOOT_CMD      = 0x02A8,
+	S1D135XX_REG_DISPLAY_BUSY          = 0x0338,
 	S1D135XX_REG_INT_RAW_STAT          = 0x033A,
+};
+
+enum s1d135xx_rot_mode {
+	S1D135XX_ROT_MODE_0   = 0,
+	S1D135XX_ROT_MODE_90  = 1,
+	S1D135XX_ROT_MODE_180 = 2,
+	S1D135XX_ROT_MODE_270 = 3,
 };
 
 struct s1d135xx_data {
@@ -80,11 +90,13 @@ struct s1d135xx {
 extern void s1d135xx_hard_reset(struct pl_gpio *gpio,
 				const struct s1d135xx_data *data);
 extern int s1d135xx_soft_reset(struct s1d135xx *p);
+extern int s1d135xx_check_prod_code(struct s1d135xx *p, uint16_t code);
 extern int s1d135xx_load_init_code(struct s1d135xx *p);
 extern int s1d135xx_load_wflib(struct s1d135xx *p, struct pl_wflib *wflib,
 			       uint32_t addr);
 extern int s1d135xx_init_gate_drv(struct s1d135xx *p);
 extern int s1d135xx_wait_dspe_trig(struct s1d135xx *p);
+extern int s1d135xx_clear_init(struct s1d135xx *p);
 extern int s1d135xx_fill(struct s1d135xx *p, uint16_t mode, unsigned bpp,
 			 const struct pl_area *a, uint8_t grey);
 extern int s1d135xx_load_image(struct s1d135xx *p, const char *path,

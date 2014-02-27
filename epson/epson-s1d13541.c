@@ -63,7 +63,6 @@ extern struct s1d135xx *g_s1d13541_hack;
 
 enum s1d13541_reg {
 	S1D13541_REG_CLOCK_CONFIG          = 0x0010,
-	S1D13541_REG_I2C_CLOCK             = 0x001A,
 	S1D13541_REG_PROT_KEY_1            = 0x042C,
 	S1D13541_REG_PROT_KEY_2            = 0x042E,
 	S1D13541_REG_FRAME_DATA_LENGTH     = 0x0400,
@@ -75,7 +74,6 @@ enum s1d13541_reg {
 
 enum s1d13541_cmd {
 	S1D13541_CMD_RD_TEMP               = 0x12,
-	S1D13541_CMD_UPD_INIT              = 0x32,
 };
 
 static const struct pl_wfid s1d13541_wf_table[] = {
@@ -89,7 +87,6 @@ static const struct pl_wfid s1d13541_wf_table[] = {
 
 /* -- private functions -- */
 
-static int s1d13541_check_product_code(struct s1d135xx *p);
 static int s1d13541_init_clocks(struct s1d135xx *p);
 static void update_temp(struct s1d135xx *p, uint16_t reg);
 static int update_temp_manual(struct s1d135xx *p, int manual_temp);
@@ -99,21 +96,6 @@ static int update_temp_auto(struct s1d135xx *p, uint16_t temp_reg);
 
 static int s1d13541_fill(struct pl_epdc *epdc, const struct pl_area *area,
 			 uint8_t grey);
-
-static int s1d13541_init(struct pl_epdc *epdc, uint8_t grey)
-{
-	struct s1d135xx *p = epdc->data;
-
-	if (s1d13541_fill(epdc, NULL, grey))
-		return -1;
-
-	s1d135xx_cmd(p, S1D13541_CMD_UPD_INIT, NULL, 0);
-
-	if (s1d135xx_wait_idle(p))
-		return -1;
-
-	return s1d135xx_wait_dspe_trig(p);
-}
 
 static int s1d13541_load_wflib(struct pl_epdc *epdc)
 {
@@ -215,9 +197,11 @@ static int s1d13541_load_image(struct pl_epdc *epdc, const char *path,
 
 int epson_epdc_early_init_s1d13541(struct s1d135xx *p)
 {
+	p->hrdy_mask = S1D13541_STATUS_HRDY;
+	p->hrdy_result = S1D13541_STATUS_HRDY;
 	s1d135xx_hard_reset(p->gpio, p->data);
 
-	if (s1d13541_check_product_code(p))
+	if (s1d135xx_check_prod_code(p, S1D13541_PROD_CODE))
 		return -1;
 
 	return s1d13541_init_clocks(p);
@@ -239,7 +223,7 @@ int epson_epdc_init_s1d13541(struct pl_epdc *epdc)
 	if (s1d13541_init_clocks(p))
 		return -1;
 
-	if (s1d13541_check_product_code(p))
+	if (s1d135xx_check_prod_code(p, S1D13541_PROD_CODE))
 		return -1;
 
 	if (s1d135xx_load_init_code(p)) {
@@ -262,15 +246,11 @@ int epson_epdc_init_s1d13541(struct pl_epdc *epdc)
 	epdc->wf_table = s1d13541_wf_table;
 	epdc->xres = s1d135xx_read_reg(p, S1D13541_REG_LINE_DATA_LENGTH);
 	epdc->yres = s1d135xx_read_reg(p, S1D13541_REG_FRAME_DATA_LENGTH);
-	epdc->init = s1d13541_init;
 	epdc->load_wflib = s1d13541_load_wflib;
 	epdc->set_temp_mode = s1d13541_set_temp_mode;
 	epdc->update_temp = s1d13541_update_temp;
 	epdc->fill = s1d13541_fill;
 	epdc->load_image = s1d13541_load_image;
-
-	p->xres = epdc->xres;
-	p->yres = epdc->yres;
 
 #if S1D135XX_INTERIM
 # warning "INTERIM"
@@ -278,39 +258,16 @@ int epson_epdc_init_s1d13541(struct pl_epdc *epdc)
 	epson_set_idle_mask(0x2000, 0x2000);
 #endif
 
-	LOG("Loading wflib");
-
-	if (s1d13541_load_wflib(epdc))
-		return -1;
-
-	LOG("Ready %dx%d", epdc->xres, epdc->yres);
-
-	return 0;
+	return epdc->set_temp_mode(epdc, PL_EPDC_TEMP_INTERNAL);
 }
 
 /* ----------------------------------------------------------------------------
  * private functions
  */
 
-static int s1d13541_check_product_code(struct s1d135xx *p)
-{
-	uint16_t prod_code;
-
-	prod_code = s1d135xx_read_reg(p, S1D135XX_REG_REV_CODE);
-
-	LOG("Product code: 0x%04X", prod_code);
-
-	if (prod_code != S1D13541_PROD_CODE) {
-		LOG("Invalid product code");
-		return -1;
-	}
-
-	return 0;
-}
-
 static int s1d13541_init_clocks(struct s1d135xx *p)
 {
-	s1d135xx_write_reg(p, S1D13541_REG_I2C_CLOCK, S1D13541_I2C_CLOCK_DIV);
+	s1d135xx_write_reg(p, S1D135XX_REG_I2C_CLOCK, S1D13541_I2C_CLOCK_DIV);
 	s1d135xx_write_reg(p, S1D13541_REG_CLOCK_CONFIG,
 			   S1D13541_INTERNAL_CLOCK_ENABLE);
 
