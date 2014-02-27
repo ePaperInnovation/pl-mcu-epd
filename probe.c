@@ -36,16 +36,14 @@
 #include "assert.h"
 #include "config.h"
 #include "i2c-eeprom.h"
-#include "pnm-utils.h"
 #include "vcom.h"
 #include "pmic-tps65185.h"
 
 #define LOG_TAG "probe"
 #include "utils.h"
 
+/* ToDo: add to generic HV-PMIC interface */
 #define I2C_PMIC_ADDR        0x68
-
-#include "epson/epson-s1d135xx.h"
 
 #if S1D135XX_INTERIM
 #include "epson/S1D135xx.h"
@@ -111,20 +109,17 @@ int probe_dispinfo(struct pl_dispinfo *dispinfo, struct pl_wflib *wflib,
 #endif
 }
 
-int probe(struct platform *plat, struct s1d135xx *s1d135xx)
+int probe_hvpmic(struct platform *plat, struct vcom_cal *vcom_cal,
+		 struct pl_epdpsu_gpio *epdpsu_gpio,
+		 struct tps65185_info *pmic_info)
 {
 	const struct pl_hwinfo *hwinfo = plat->hwinfo;
-	struct pl_epdc *epdc = &plat->epdc;
-
-	/* ToDo: This should be either in platform or main */
-	struct vcom_cal vcomcal;
-	static struct tps65185_info *pmic_info;
-
 	int stat;
 
-	/* -- Initialise the VCOM and HV-PMIC -- */
+	if (pl_epdpsu_gpio_init(&plat->psu, epdpsu_gpio))
+		return -1;
 
-	vcom_init(&vcomcal, &hwinfo->vcom);
+	vcom_init(vcom_cal, &hwinfo->vcom);
 
 	switch (hwinfo->board.hv_pmic) {
 	case HV_PMIC_NONE:
@@ -138,8 +133,8 @@ int probe(struct platform *plat, struct s1d135xx *s1d135xx)
 		break;
 	case HV_PMIC_TPS65185:
 		LOG("HV-PMIC: TPS65185");
-		stat = tps65185_init(plat->i2c, I2C_PMIC_ADDR, &pmic_info,
-				     &vcomcal);
+		stat = tps65185_init(pmic_info, plat->i2c, I2C_PMIC_ADDR,
+				     vcom_cal);
 		if (!stat) /* ToDo: generalise set_vcom with HV-PMIC API */
 			tps65185_set_vcom_voltage(pmic_info,
 						  plat->dispinfo->info.vcom);
@@ -148,17 +143,19 @@ int probe(struct platform *plat, struct s1d135xx *s1d135xx)
 		abort_msg("Invalid HV-PMIC id");
 	}
 
-	if (stat) {
-		LOG("Failed to initialise HV-PMIC");
-		return -1;
-	}
+	return stat;
+}
+
+int probe_epdc(struct platform *plat, struct s1d135xx *s1d135xx)
+{
+	const struct pl_hwinfo *hwinfo = plat->hwinfo;
+	struct pl_epdc *epdc = &plat->epdc;
+	int stat;
 
 #if S1D135XX_INTERIM
 	s1d135xx->epson = &g_epson;
 	epsonif_hack(&plat->gpio, s1d135xx->data);
 #endif
-
-	/* -- Initialise the EPDC controller -- */
 
 	switch (hwinfo->board.epdc_ref) {
 	case EPDC_S1D13524:
@@ -181,12 +178,10 @@ int probe(struct platform *plat, struct s1d135xx *s1d135xx)
 		abort_msg("Invalid EPDC identifier");
 	}
 
-	if (stat) {
-		LOG("Failed to initialise EPDC");
-		return -1;
-	}
-
 #if 0 /* enable during development of new EPDC implementations */
+	if (stat)
+		return -1;
+
 	assert(epdc->init != NULL);
 	assert(epdc->load_wflib != NULL);
 	assert(epdc->update != NULL);
@@ -198,5 +193,5 @@ int probe(struct platform *plat, struct s1d135xx *s1d135xx)
 	assert(epdc->load_image != NULL);
 #endif
 
-	return 0;
+	return stat;
 }

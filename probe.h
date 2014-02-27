@@ -35,6 +35,9 @@ struct pl_i2c;
 struct pl_dispinfo;
 struct i2c_eeprom;
 struct pl_wflib_eeprom_ctx;
+struct vcom_cal;
+struct pl_epdpsu_gpio;
+struct tps65185_info;
 
 extern int probe_i2c(struct platform *plat, struct s1d135xx *s1d135xx,
 		     struct pl_i2c *host_i2c, struct pl_i2c *disp_i2c);
@@ -42,6 +45,9 @@ extern int probe_dispinfo(struct pl_dispinfo *dispinfo, struct pl_wflib *wflib,
 			  FIL *fatfs_file, const char *fatfs_path,
 			  const struct i2c_eeprom *e,
 			  struct pl_wflib_eeprom_ctx *e_ctx);
-extern int probe(struct platform *plat, struct s1d135xx *s1d135xx);
+extern int probe_hvpmic(struct platform *plat, struct vcom_cal *vcom_cal,
+			struct pl_epdpsu_gpio *epdpsu_gpio,
+			struct tps65185_info *pmic_info);
+extern int probe_epdc(struct platform *plat, struct s1d135xx *s1d135xx);
 
 #endif /* INCLUDE_PROBE_H */

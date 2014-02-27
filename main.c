@@ -1,7 +1,7 @@
 /*
   Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2013 Plastic Logic Limited
+  Copyright (C) 2013, 2014 Plastic Logic Limited
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -19,7 +19,9 @@
 /*
  * main.c -- main entry point for code.
  *
- * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ * Authors:
+ *  Nick Terry <nick.terry@plasticlogic.com>
+ *  Guillaume Tucker <guillaume.tucker@plasticlogic.com>
  *
  */
 
@@ -28,10 +30,12 @@
 #include <pl/gpio.h>
 #include <pl/hwinfo.h>
 #include <pl/wflib.h>
-#include <FatFs/ff.h>
 #include <app/app.h>
+#include <FatFs/ff.h>
 #include <stdio.h>
 #include "i2c-eeprom.h"
+#include "vcom.h"
+#include "pmic-tps65185.h"
 #include "assert.h"
 #include "types.h"
 #include "config.h"
@@ -45,9 +49,9 @@
 #define LOG_TAG "main"
 #include "utils.h"
 
-/* I2C EEPROM addresses */
-#define I2C_PSU_EEPROM_ADDR 0x50
-#define I2C_PLWF_EEPROM_ADDR 0x54
+/* I2C addresses */
+#define I2C_HWINFO_EEPROM_ADDR 0x50
+#define I2C_DISPINFO_EEPROM_ADDR 0x54
 
 /* Navigation buttons */
 #define	SW1         MSP430_GPIO(2,0)
@@ -200,6 +204,8 @@ static const struct s1d135xx_data g_s1d135xx_data = {
 #endif
 };
 
+/* --- SPI bus --- */
+
 #define SPI_CHANNEL 0
 #if CONFIG_PLAT_CUCKOO
 #define SPI_DIVISOR 2
@@ -260,14 +266,16 @@ int main_init(void)
 	struct pl_i2c disp_i2c;
 #if CONFIG_HWINFO_EEPROM
 	const struct i2c_eeprom hw_eeprom = {
-		&host_i2c, I2C_PSU_EEPROM_ADDR, EEPROM_24LC014,
+		&host_i2c, I2C_HWINFO_EEPROM_ADDR, EEPROM_24LC014,
 	};
 #endif
 	struct i2c_eeprom disp_eeprom = {
-		NULL, I2C_PLWF_EEPROM_ADDR, EEPROM_24AA256
+		NULL, I2C_DISPINFO_EEPROM_ADDR, EEPROM_24AA256
 	};
 	struct pl_wflib_eeprom_ctx wflib_eeprom_ctx;
 	struct pl_dispinfo dispinfo;
+	struct vcom_cal vcom_cal;
+	struct tps65185_info pmic_info;
 	struct s1d135xx s1d135xx = { &g_s1d135xx_data, &g_plat.gpio };
 	FATFS sdcard;
 	unsigned i;
@@ -312,7 +320,7 @@ int main_init(void)
 
 	/* initialise MSP430 I2C master 0 */
 	if (msp430_i2c_init(&g_plat.gpio, 0, &host_i2c))
-		abort_msg("Failed to initialise I2C master");
+		abort_msg("Failed to initialise I2C bus");
 
 	/* initialise MSP430 SPI bus */
 	if (spi_init(&g_plat.gpio, SPI_CHANNEL, SPI_DIVISOR))
@@ -330,11 +338,11 @@ int main_init(void)
 #if CONFIG_HWINFO_EEPROM
 	if (load_hwinfo(&g_plat, &hw_eeprom))
 		abort_msg("Failed to load hwinfo");
-#elif !CONFIG_HWINFO_DEFAULT
-#error "Invalid hwinfo build configuration, check CONFIG_HWINFO_ options"
-#else
+#elif CONFIG_HWINFO_DEFAULT
 	LOG("Using default hwinfo");
 	g_plat.hwinfo = &g_pl_hwinfo_default;
+#else
+#error "Invalid hwinfo build configuration, check CONFIG_HWINFO_ options"
 #endif
 	pl_hwinfo_log(g_plat.hwinfo);
 
@@ -347,17 +355,17 @@ int main_init(void)
 	if (probe_dispinfo(&dispinfo, &g_plat.epdc.wflib, &g_wflib_fatfs_file,
 			   g_wflib_fatfs_path, &disp_eeprom,
 			   &wflib_eeprom_ctx))
-		abort_msg("Failed to load display information");
+		abort_msg("Failed to load dispinfo");
 	g_plat.dispinfo = &dispinfo;
 	pl_dispinfo_log(&dispinfo);
 
-	/* initialise EPD HV-PSU */
-	/* ToDo: group with HV-PMIC API */
-	if (pl_epdpsu_gpio_init(&g_plat.psu, &g_epdpsu_gpio))
-		abort_msg("Failed to initialise HV-PSU");
+	/* initialise EPD HV-PSU and HV-PMIC */
+	if (probe_hvpmic(&g_plat, &vcom_cal, &g_epdpsu_gpio, &pmic_info))
+		abort_msg("Failed to initialise HV-PMIC and EPD PSU");
 
-	if (probe(&g_plat, &s1d135xx))
-		abort_msg("Failed to probe hardware");
+	/* initialise EPDC */
+	if (probe_epdc(&g_plat, &s1d135xx))
+		abort_msg("Failed to initialise EPDC");
 
 	/* run the application */
 	if (app_demo(&g_plat))
