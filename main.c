@@ -79,7 +79,7 @@
 static const char VERSION[] = "v006";
 
 /* Platform instance, to be passed to other modules */
-static struct platform g_plat;
+static struct pl_platform g_plat;
 
 /* --- System GPIOs --- */
 
@@ -254,7 +254,7 @@ static const char g_display_path[] = DISPLAY_PATH;
 /* --- static functions --- */
 
 #if CONFIG_HWINFO_EEPROM
-static int load_hwinfo(struct platform *plat,
+static int load_hwinfo(struct pl_platform *plat,
 		       const struct i2c_eeprom *hw_eeprom);
 #endif
 
@@ -395,7 +395,7 @@ void abort_now(const char *abort_msg)
  */
 
 #if CONFIG_HWINFO_EEPROM
-static int load_hwinfo(struct platform *plat,
+static int load_hwinfo(struct pl_platform *plat,
 		       const struct i2c_eeprom *hw_eeprom)
 {
 #if CONFIG_HWINFO_DEFAULT

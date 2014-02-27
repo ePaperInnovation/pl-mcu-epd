@@ -47,14 +47,14 @@ struct pl_system_gpio {
 	unsigned assert_led;
 };
 
-struct platform {
+struct pl_platform {
 	struct pl_gpio gpio;
+	struct pl_epdpsu psu;
+	struct pl_epdc epdc;
+	struct pl_i2c *i2c;
 	const struct pl_system_gpio *sys_gpio;
 	const struct pl_hwinfo *hwinfo;
 	const struct pl_dispinfo *dispinfo;
-	struct pl_i2c *i2c;
-	struct pl_epdpsu psu;
-	struct pl_epdc epdc;
 };
 
 #endif /* INCLUDE_PL_PLATFORM_H */

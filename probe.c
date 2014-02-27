@@ -50,7 +50,7 @@
 struct _s1d135xx g_epson;
 #endif
 
-int probe_i2c(struct platform *plat, struct s1d135xx *s1d135xx,
+int probe_i2c(struct pl_platform *plat, struct s1d135xx *s1d135xx,
 	      struct pl_i2c *host_i2c, struct pl_i2c *disp_i2c)
 {
 	int stat;
@@ -109,7 +109,7 @@ int probe_dispinfo(struct pl_dispinfo *dispinfo, struct pl_wflib *wflib,
 #endif
 }
 
-int probe_hvpmic(struct platform *plat, struct vcom_cal *vcom_cal,
+int probe_hvpmic(struct pl_platform *plat, struct vcom_cal *vcom_cal,
 		 struct pl_epdpsu_gpio *epdpsu_gpio,
 		 struct tps65185_info *pmic_info)
 {
@@ -146,7 +146,7 @@ int probe_hvpmic(struct platform *plat, struct vcom_cal *vcom_cal,
 	return stat;
 }
 
-int probe_epdc(struct platform *plat, struct s1d135xx *s1d135xx)
+int probe_epdc(struct pl_platform *plat, struct s1d135xx *s1d135xx)
 {
 	const struct pl_hwinfo *hwinfo = plat->hwinfo;
 	struct pl_epdc *epdc = &plat->epdc;
