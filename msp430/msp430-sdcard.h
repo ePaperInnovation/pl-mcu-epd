@@ -27,17 +27,16 @@
 #define MSP430_SDCARD_H
 
 #include <stdint.h>
-#include "types.h"
 
-struct platform;
-extern struct platform *SDCard_plat;
+struct pl_platform;
+extern struct pl_platform *SDCard_plat;
 
-extern void SDCard_init (void);
-extern void SDCard_fastMode (void);
-extern void SDCard_readFrame (u8 *pBuffer, u16 size);
-extern void SDCard_sendFrame (u8 *pBuffer, u16 size);
-extern void SDCard_setCSHigh (void);
-extern void SDCard_setCSLow (void);
-extern void SDCard_uDelay(u16 usecs);
+extern void SDCard_init(void);
+extern void SDCard_fastMode(void);
+extern void SDCard_readFrame(uint8_t *pBuffer, uint16_t size);
+extern void SDCard_sendFrame(uint8_t *pBuffer, uint16_t size);
+extern void SDCard_setCSHigh(void);
+extern void SDCard_setCSLow(void);
+extern void SDCard_uDelay(uint16_t usecs);
 
 #endif  /* MSP430_SDCARD_H */

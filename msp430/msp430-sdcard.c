@@ -27,14 +27,11 @@
 #include <pl/gpio.h>
 #include "msp430.h"
 #include "msp430-defs.h"
-#include "types.h"
+#include "types.h" /* ARRAY_SIZE */
 #include "assert.h"
 #include "msp430-gpio.h"
 #include "msp430-sdcard.h"
 
-#define CONFIG_PLAT_RUDDOCK2	1
-
-#if CONFIG_PLAT_RUDDOCK2
 #define USCI_UNIT	B
 #define USCI_CHAN	0
 // Pins from MSP430 connected to the SD Card
@@ -43,13 +40,9 @@
 #define	SD_SOMI                 MSP430_GPIO(3,2)
 #define	SD_CLK                  MSP430_GPIO(3,3)
 
-#else
+struct pl_platform *SDCard_plat = NULL;
 
-#endif
-
-struct platform *SDCard_plat = NULL;
-
-void SDCard_uDelay(u16 usecs)
+void SDCard_uDelay(uint16_t usecs)
 {
 	udelay(usecs);
 }
@@ -80,7 +73,7 @@ void SDCard_init(void)
 	UCxnCTL1 &= ~UCSWRST;                     	// **Release state machine from reset**
 }
 
-void SDCard_fastMode (void)
+void SDCard_fastMode(void)
 {
     UCxnCTL1 |= UCSWRST;                        // Put state machine in reset
     UCxnBR0 = 1;                                // f_UCxCLK = 20MHz/1 = 20MHz
@@ -88,7 +81,7 @@ void SDCard_fastMode (void)
     UCxnCTL1 &= ~UCSWRST;                       // Release USCI state machine
 }
 
-void SDCard_readFrame (u8 *pBuffer, u16 size)
+void SDCard_readFrame(uint8_t *pBuffer, uint16_t size)
 {
     uint16_t gie = __get_SR_register() & GIE;   // Store current GIE state
 
@@ -107,7 +100,7 @@ void SDCard_readFrame (u8 *pBuffer, u16 size)
     __bis_SR_register(gie);                     // Restore original GIE state
 }
 
-void SDCard_sendFrame (u8 *pBuffer, u16 size)
+void SDCard_sendFrame(uint8_t *pBuffer, uint16_t size)
 {
     uint16_t gie = __get_SR_register() & GIE;   // Store current GIE state
 
@@ -129,12 +122,12 @@ void SDCard_sendFrame (u8 *pBuffer, u16 size)
     __bis_SR_register(gie);                     // Restore original GIE state
 }
 
-void SDCard_setCSHigh (void)
+void SDCard_setCSHigh(void)
 {
 	SDCard_plat->gpio.set(SD_CS, 1);
 }
 
-void SDCard_setCSLow (void)
+void SDCard_setCSLow(void)
 {
 	SDCard_plat->gpio.set(SD_CS, 0);
 }
