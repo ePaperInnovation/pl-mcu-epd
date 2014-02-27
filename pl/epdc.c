@@ -66,9 +66,15 @@ int pl_epdc_get_wfid(struct pl_epdc *p, const char *wf_path)
  */
 
 /* Set to 1 to enable verbose log messages */
-#define PL_EPDC_STUB_VERBOSE 1
+#define STUB_VERBOSE 1
 
-static const struct pl_wfid pl_epdc_stub_wf_table[] = {
+#if STUB_VERBOSE
+#define STUB_LOG(msg, ...) LOG("stub "msg, ##__VA_ARGS__)
+#else
+#define STUB_LOG(msg, ...)
+#endif
+
+static const struct pl_wfid stub_wf_table[] = {
 	{ wf_refresh,      0 },
 	{ wf_delta,        1 },
 	{ wf_delta_mono,   2 },
@@ -77,71 +83,119 @@ static const struct pl_wfid pl_epdc_stub_wf_table[] = {
 	{ NULL,           -1 }
 };
 
-static int pl_epdc_stub_update(struct pl_epdc *p, int wfid,
-			       const struct pl_area *area)
+static int stub_init(struct pl_epdc *p, uint8_t grey)
 {
-#if PL_EPDC_STUB_VERBOSE
-	if(area != NULL)
-		LOG("stub update wfid=%d, start=(%d, %d), dim=%dx%d",
-		    wfid, area->top, area->left, area->width, area->height);
-	else
-		LOG("stub update wfid=%d", wfid);
-#endif
-
-	return 0;
-}
-
-static int pl_epdc_stub_wait_update_end(struct pl_epdc *p)
-{
-#if PL_EPDC_STUB_VERBOSE
-	LOG("stub wait_update_end");
-#endif
+	STUB_LOG("init grey=0x%02X", grey);
 
 	mdelay(1000);
 
 	return 0;
 }
 
-static int pl_epdc_stub_set_power(struct pl_epdc *p,
-				  enum pl_epdc_power_state state)
+static int stub_load_wflib(struct pl_epdc *p)
 {
-#if PL_EPDC_STUB_VERBOSE
-	LOG("stub set_power state=%d", state);
+	STUB_LOG("load_wflib");
+
+	return 0;
+}
+
+static int stub_update(struct pl_epdc *p, int wfid, const struct pl_area *area)
+{
+#if STUB_VERBOSE
+	if(area != NULL)
+		STUB_LOG("update wfid=%d, start=(%d, %d), dim=%dx%d",
+		    wfid, area->left, area->top, area->width, area->height);
+	else
+		STUB_LOG("update wfid=%d", wfid);
 #endif
+
+	return 0;
+}
+
+static int stub_wait_update_end(struct pl_epdc *p)
+{
+	STUB_LOG("wait_update_end");
+
+	mdelay(500);
+
+	return 0;
+}
+
+static int stub_set_power(struct pl_epdc *p, enum pl_epdc_power_state state)
+{
+	STUB_LOG("set_power state=%d", state);
 
 	p->power_state = state;
 
 	return 0;
 }
 
-static int pl_epdc_stub_set_temp_mode(struct pl_epdc *p,
-				      enum pl_epdc_temp_mode mode)
+static int stub_set_temp_mode(struct pl_epdc *p, enum pl_epdc_temp_mode mode)
 {
-#if PL_EPDC_STUB_VERBOSE
-	LOG("stub set_temp_mode mode=%d", mode);
-#endif
+	STUB_LOG("set_temp_mode mode=%d", mode);
 
 	p->temp_mode = mode;
 
 	return 0;
 }
 
+static int stub_update_temp(struct pl_epdc *p)
+{
+	STUB_LOG("update_temp");
+
+	return 0;
+}
+
+static int stub_fill(struct pl_epdc *p, const struct pl_area *area, uint8_t g)
+{
+#if STUB_VERBOSE
+	if (area != NULL)
+		STUB_LOG("fill grey=0x%02X, start=(%d, %d), dim=%dx%d",
+			 g, area->left, area->top, area->width, area->height);
+	else
+		STUB_LOG("fill grey=%0x%02X");
+#endif
+
+	return 0;
+}
+
+static int stub_load_image(struct pl_epdc *p, const char *path,
+			   const struct pl_area *area, int left, int top)
+{
+#if STUB_VERBOSE
+	if (area != NULL)
+		STUB_LOG("fill_image path=%s, start=(%d, %d), dim=%dx%d, "
+			 "left=%d, top=%d", path, area->left, area->top,
+			 area->width, area->height, left, top);
+	else
+		STUB_LOG("fill_image path=%s, left=%d, top=%d",
+			 path, left, top);
+#endif
+
+	return 0;
+}
+
 int pl_epdc_stub_init(struct pl_epdc *p)
 {
-#if PL_EPDC_STUB_VERBOSE
-	LOG("stub init");
-#endif
+	STUB_LOG("stub init");
 
 	assert(p != NULL);
 
-	p->update = pl_epdc_stub_update;
-	p->wait_update_end = pl_epdc_stub_wait_update_end;
-	p->set_power = pl_epdc_stub_set_power;
-	p->set_temp_mode = pl_epdc_stub_set_temp_mode;
-	p->wf_table = pl_epdc_stub_wf_table;
+	p->init = stub_init;
+	p->load_wflib = stub_load_wflib;
+	p->update = stub_update;
+	p->wait_update_end = stub_wait_update_end;
+	p->set_power = stub_set_power;
+	p->set_temp_mode = stub_set_temp_mode;
+	p->update_temp = stub_update_temp;
+	p->fill = stub_fill;
+	p->load_image = stub_load_image;
+	p->wf_table = stub_wf_table;
 	p->xres = 640;
 	p->yres = 480;
 	p->data = NULL;
+
+	LOG("Stub ready");
 
 	return 0;
 }

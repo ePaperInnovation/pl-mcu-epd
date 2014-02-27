@@ -75,8 +75,8 @@ struct pl_epdc{
 	int (*load_image)(struct pl_epdc *p, const char *path,
 			  const struct pl_area *area, int left, int top);
 
-	const struct pl_dispinfo *dispinfo;
 	const struct pl_wfid *wf_table;
+	const struct pl_dispinfo *dispinfo;
 	struct pl_wflib wflib;
 	enum pl_epdc_power_state power_state;
 	enum pl_epdc_temp_mode temp_mode;

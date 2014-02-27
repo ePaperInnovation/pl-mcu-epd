@@ -191,6 +191,9 @@ int probe_epdc(struct pl_platform *plat, struct s1d135xx *s1d135xx)
 	assert(epdc->update_temp != NULL);
 	assert(epdc->fill != NULL);
 	assert(epdc->load_image != NULL);
+	assert(epdc->wf_table != NULL);
+	assert(epdc->xres != 0);
+	assert(epdc->yres != 0);
 #endif
 
 	return stat;
