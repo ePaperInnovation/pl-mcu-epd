@@ -25,19 +25,19 @@
  */
 
 /** Set to 1 if this CPU is little-endian */
-#define CONFIG_LITTLE_ENDIAN 1
+#define CONFIG_LITTLE_ENDIAN    1
 
 /** Set to 1 to use the VCOM and hardware info stored in board EEPROM **/
-#define CONFIG_HW_INFO_EEPROM   1
+#define CONFIG_HWINFO_EEPROM    0
 
 /** Set to 1 to use default VCOM calibration settings if HW info EEPROM data
  * cannot be used (either not programmed, or hardware fault, or
- * CONFIG_HW_INFO_EEPROM is not defined).  If set to 0, the system will not be
+ * CONFIG_HWINFO_EEPROM is not defined).  If set to 0, the system will not be
  * able to work without valid EEPROM data.  */
-#define CONFIG_HW_INFO_DEFAULT  1
+#define CONFIG_HWINFO_DEFAULT   1
 
 /** Set to 1 to enable automatic platform detection, which typically uses
- * CONFIG_HW_INFO_EEPROM */
+ * CONFIG_HWINFO_EEPROM */
 #define CONFIG_PLAT_AUTO        1
 
 /** Set one of the following to 1 to manually select te platform.  This will be
@@ -57,8 +57,8 @@
  * Set one of the following values to 1 in order to choose where the data
  * should be read from: */
 #define CONFIG_DISP_DATA_EEPROM_ONLY  0 /**< Only use display EEPROM */
-#define CONFIG_DISP_DATA_SD_ONLY      1 /**< Only use SD card */
-#define CONFIG_DISP_DATA_EEPROM_SD    0 /**< Try EEPROM first, then SD card */
+#define CONFIG_DISP_DATA_SD_ONLY      0 /**< Only use SD card */
+#define CONFIG_DISP_DATA_EEPROM_SD    1 /**< Try EEPROM first, then SD card */
 #define CONFIG_DISP_DATA_SD_EEPROM    0 /**< Try SD card first, then EEPROM */
 
 /** Set this to manually specify the display type when it could not be detected
