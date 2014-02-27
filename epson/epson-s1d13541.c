@@ -119,7 +119,7 @@ static int s1d13541_load_wflib(struct pl_epdc *epdc)
 {
 	struct s1d135xx *p = epdc->data;
 
-	return s1d135xx_load_wflib(p, epdc->wflib, S1D13541_WF_ADDR);
+	return s1d135xx_load_wflib(p, &epdc->wflib, S1D13541_WF_ADDR);
 }
 
 static int s1d13541_set_temp_mode(struct pl_epdc *epdc,
