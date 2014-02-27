@@ -39,6 +39,10 @@ struct vcom_cal;
 struct pl_epdpsu_gpio;
 struct tps65185_info;
 
+extern int probe_hwinfo(struct pl_platform *plat,
+			const struct i2c_eeprom *hw_eeprom,
+			struct pl_hwinfo *hwinfo_eeprom,
+			const struct pl_hwinfo *hwinfo_default);
 extern int probe_i2c(struct pl_platform *plat, struct s1d135xx *s1d135xx,
 		     struct pl_i2c *host_i2c, struct pl_i2c *disp_i2c);
 extern int probe_dispinfo(struct pl_dispinfo *dispinfo, struct pl_wflib *wflib,

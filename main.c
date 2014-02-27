@@ -211,12 +211,8 @@ static const struct s1d135xx_data g_s1d135xx_data = {
 
 /* --- hardware info --- */
 
-#if CONFIG_HWINFO_EEPROM
-static struct pl_hwinfo g_pl_hwinfo_eeprom;
-#endif
-
 #if CONFIG_HWINFO_DEFAULT
-static const struct pl_hwinfo g_pl_hwinfo_default = {
+static const struct pl_hwinfo g_hwinfo_default = {
 	/* version */
 	PL_HWINFO_VERSION,
 	/* vcom */
@@ -247,13 +243,6 @@ static FIL g_wflib_fatfs_file;
 static const char g_display_path[] = DISPLAY_PATH;
 #endif
 
-/* --- static functions --- */
-
-#if CONFIG_HWINFO_EEPROM
-static int load_hwinfo(struct pl_platform *plat,
-		       const struct i2c_eeprom *hw_eeprom);
-#endif
-
 /* --- main --- */
 
 int main_init(void)
@@ -268,6 +257,9 @@ int main_init(void)
 	struct i2c_eeprom disp_eeprom = {
 		NULL, I2C_DISPINFO_EEPROM_ADDR, EEPROM_24AA256
 	};
+#if CONFIG_HWINFO_EEPROM
+	struct pl_hwinfo hwinfo_eeprom;
+#endif
 	struct pl_wflib_eeprom_ctx wflib_eeprom_ctx;
 	struct pl_dispinfo dispinfo;
 	struct vcom_cal vcom_cal;
@@ -332,11 +324,12 @@ int main_init(void)
 
 	/* load hardware information */
 #if CONFIG_HWINFO_EEPROM
-	if (load_hwinfo(&g_plat, &hw_eeprom))
-		abort_msg("Failed to load hwinfo");
+	if (probe_hwinfo(&g_plat, &hw_eeprom, &hwinfo_eeprom,
+			 &g_hwinfo_default))
+		abort_msg("Failed to probe hwinfo");
 #elif CONFIG_HWINFO_DEFAULT
 	LOG("Using default hwinfo");
-	g_plat.hwinfo = &g_pl_hwinfo_default;
+	g_plat.hwinfo = &g_hwinfo_default;
 #else
 #error "Invalid hwinfo build configuration, check CONFIG_HWINFO_ options"
 #endif
@@ -385,29 +378,3 @@ void abort_now(const char *abort_msg)
 		mdelay(500);
 	}
 }
-
-/* ----------------------------------------------------------------------------
- * static functions
- */
-
-#if CONFIG_HWINFO_EEPROM
-static int load_hwinfo(struct pl_platform *plat,
-		       const struct i2c_eeprom *hw_eeprom)
-{
-#if CONFIG_HWINFO_DEFAULT
-	if (pl_hwinfo_init(&g_pl_hwinfo_eeprom, hw_eeprom)) {
-		LOG("WARNING: EEPROM failed, using default HW info");
-		plat->hwinfo = &g_pl_hwinfo_default;
-	} else {
-		plat->hwinfo = &g_pl_hwinfo_eeprom;
-	}
-#else
-	if (pl_hwinfo_init(&g_pl_hwinfo_eeprom, hw_eeprom))
-		return -1;
-
-	plat->hwinfo = &g_pl_hwinfo_eeprom;
-#endif
-
-	return 0;
-}
-#endif

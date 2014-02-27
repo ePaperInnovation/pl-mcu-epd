@@ -50,6 +50,29 @@
 struct _s1d135xx g_epson;
 #endif
 
+#if CONFIG_HWINFO_EEPROM
+int probe_hwinfo(struct pl_platform *plat, const struct i2c_eeprom *hw_eeprom,
+		 struct pl_hwinfo *hwinfo_eeprom,
+		 const struct pl_hwinfo *hwinfo_default)
+{
+#if CONFIG_HWINFO_DEFAULT
+	if (pl_hwinfo_init(hwinfo_eeprom, hw_eeprom)) {
+		LOG("WARNING: EEPROM failed, using default HW info");
+		plat->hwinfo = hwinfo_default;
+	} else {
+		plat->hwinfo = hwinfo_eeprom;
+	}
+#else
+	if (pl_hwinfo_init(hwinfo_eeprom, hw_eeprom))
+		return -1;
+
+	plat->hwinfo = hwinfo_eeprom;
+#endif
+
+	return 0;
+}
+#endif
+
 int probe_i2c(struct pl_platform *plat, struct s1d135xx *s1d135xx,
 	      struct pl_i2c *host_i2c, struct pl_i2c *disp_i2c)
 {
