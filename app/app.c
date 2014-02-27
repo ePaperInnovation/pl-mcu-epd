@@ -34,7 +34,7 @@ static const char SLIDES_PATH[] = "img/slides.txt";
 
 int app_stop = 0;
 
-int app_demo(struct platform *plat)
+int app_demo(struct pl_platform *plat)
 {
 	int stat;
 
@@ -49,7 +49,7 @@ int app_demo(struct platform *plat)
 	return stat;
 }
 
-int app_clear(struct platform *plat)
+int app_clear(struct pl_platform *plat)
 {
 	struct pl_epdpsu *psu = &plat->psu;
 	struct pl_epdc *epdc = &plat->epdc;

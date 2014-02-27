@@ -27,13 +27,13 @@
 #ifndef INCLUDE_APP_H
 #define INCLUDE_APP_H 1
 
-struct platform;
+struct pl_platform;
 
 extern int app_stop;
 
-extern int app_demo(struct platform *plat);
-extern int app_clear(struct platform *plat);
-extern int app_slideshow(struct platform *plat, const char *path);
-extern int app_sequencer(struct platform *plat, const char *path);
+extern int app_demo(struct pl_platform *plat);
+extern int app_clear(struct pl_platform *plat);
+extern int app_slideshow(struct pl_platform *plat, const char *path);
+extern int app_sequencer(struct pl_platform *plat, const char *path);
 
 #endif /* INCLUDE_APP_H */

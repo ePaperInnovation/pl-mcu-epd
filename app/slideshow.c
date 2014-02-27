@@ -39,12 +39,12 @@
 
 /* -- private functions -- */
 
-static int show_image(struct platform *plat, const char *dir,
+static int show_image(struct pl_platform *plat, const char *dir,
 		      const char *file);
 
 /* -- public entry point -- */
 
-int app_slideshow(struct platform *plat, const char *path)
+int app_slideshow(struct pl_platform *plat, const char *path)
 {
 	DIR dir;
 	FILINFO f;
@@ -93,7 +93,7 @@ int app_slideshow(struct platform *plat, const char *path)
 	return 0;
 }
 
-static int show_image(struct platform *plat, const char *dir,
+static int show_image(struct pl_platform *plat, const char *dir,
 		      const char *file)
 {
 	struct pl_epdc *epdc = &plat->epdc;

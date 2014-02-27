@@ -54,15 +54,15 @@ static const char SEP[] = ", ";
 static int load_image(struct pl_epdc *epdc, const struct sequencer_item *item,
 		      const char *dir);
 static int parse_item(const char *line, struct sequencer_item *item);
-static int cmd_sleep(struct platform *plat, const char *line);
-static int cmd_image(struct platform *plat, const char *line);
-static int cmd_fill(struct platform *plat, const char *line);
-static int cmd_power(struct platform *plat, const char *line);
-static int cmd_update(struct platform *plat, const char *line);
+static int cmd_sleep(struct pl_platform *plat, const char *line);
+static int cmd_image(struct pl_platform *plat, const char *line);
+static int cmd_fill(struct pl_platform *plat, const char *line);
+static int cmd_power(struct pl_platform *plat, const char *line);
+static int cmd_update(struct pl_platform *plat, const char *line);
 
 /* -- public entry point -- */
 
-int app_sequencer(struct platform *plat, const char *path)
+int app_sequencer(struct pl_platform *plat, const char *path)
 {
 	FIL slides;
 	int stat;
@@ -81,7 +81,7 @@ int app_sequencer(struct platform *plat, const char *path)
 	while (!stat) {
 		struct cmd {
 			const char *name;
-			int (*func)(struct platform *plat, const char *str);
+			int (*func)(struct pl_platform *plat, const char *str);
 		};
 		static const struct cmd cmd_table[] = {
 			{ "update", cmd_update },
@@ -206,7 +206,7 @@ exit_now:
 	return -1;
 }
 
-static int cmd_update(struct platform *plat, const char *line)
+static int cmd_update(struct pl_platform *plat, const char *line)
 {
 	struct pl_epdc *epdc = &plat->epdc;
 	char waveform[16];
@@ -250,7 +250,7 @@ static int cmd_update(struct platform *plat, const char *line)
 	return stat;
 }
 
-static int cmd_power(struct platform *plat, const char *line)
+static int cmd_power(struct pl_platform *plat, const char *line)
 {
 	struct pl_epdc *epdc = &plat->epdc;
 	struct pl_epdpsu *psu = &plat->psu;
@@ -279,7 +279,7 @@ static int cmd_power(struct platform *plat, const char *line)
 	return 0;
 }
 
-static int cmd_fill(struct platform *plat, const char *line)
+static int cmd_fill(struct pl_platform *plat, const char *line)
 {
 	struct pl_epdc *epdc = &plat->epdc;
 	struct pl_area area;
@@ -307,7 +307,7 @@ static int cmd_fill(struct platform *plat, const char *line)
 	return epdc->fill(epdc, &area, PL_GL16(gl));
 }
 
-static int cmd_image(struct platform *plat, const char *line)
+static int cmd_image(struct pl_platform *plat, const char *line)
 {
 	struct sequencer_item item;
 
@@ -320,7 +320,7 @@ static int cmd_image(struct platform *plat, const char *line)
 	return 0;
 }
 
-static int cmd_sleep(struct platform *plat, const char *line)
+static int cmd_sleep(struct pl_platform *plat, const char *line)
 {
 	int sleep_ms;
 	int len;
