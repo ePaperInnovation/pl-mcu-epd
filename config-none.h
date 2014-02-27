@@ -26,7 +26,6 @@
 
 /* Select one of the platforms below for 10.7" (Type4 or Type11) displays and
  * the S1D13524 Epson controller. */
-#define PLAT_CUCKOO             0       /**< Cuckoo board (Type4) */
 #define PLAT_RAVEN              0       /**< Raven board (Type11) */
 
 /* These platforms can drive a range of small displays as defined below using

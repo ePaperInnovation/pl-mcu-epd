@@ -28,7 +28,7 @@
 #define CONFIG_LITTLE_ENDIAN    1
 
 /** Set to 1 to use the VCOM and hardware info stored in board EEPROM **/
-#define CONFIG_HWINFO_EEPROM    0
+#define CONFIG_HWINFO_EEPROM    1
 
 /** Set to 1 to use default VCOM calibration settings if HW info EEPROM data
  * cannot be used (either not programmed, or hardware fault, or
@@ -43,7 +43,6 @@
 /** Set one of the following to 1 to manually select te platform.  This will be
  * used if CONFIG_PLAT_AUTO is not defined, or if no platform can be discovered
  * at runtime.  */
-#define CONFIG_PLAT_CUCKOO      0       /**< Cuckoo board (Type4) */
 #define CONFIG_PLAT_RAVEN       0       /**< Raven board (Type11) */
 #define	CONFIG_PLAT_Z13         0       /**< Hummingbird Z1.3 */
 #define CONFIG_PLAT_Z6          0       /**< Hummingbird Z6.x */

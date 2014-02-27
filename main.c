@@ -204,14 +204,10 @@ static const struct s1d135xx_data g_s1d135xx_data = {
 #endif
 };
 
-/* --- SPI bus --- */
+/* --- SPI bus configuration --- */
 
 #define SPI_CHANNEL 0
-#if CONFIG_PLAT_CUCKOO
-#define SPI_DIVISOR 2
-#else
 #define SPI_DIVISOR 1
-#endif
 
 /* --- hardware info --- */
 

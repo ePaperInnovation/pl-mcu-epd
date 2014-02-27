@@ -36,14 +36,9 @@
  * able to work without valid EEPROM data.  */
 #define CONFIG_HWINFO_DEFAULT   1
 
-/** Set to 1 to enable automatic platform detection, which typically uses
- * CONFIG_HWINFO_EEPROM */
-#define CONFIG_PLAT_AUTO        1
-
 /** Set one of the following to 1 to manually select te platform.  This will be
  * used if CONFIG_PLAT_AUTO is not defined, or if no platform can be discovered
  * at runtime.  */
-#define CONFIG_PLAT_CUCKOO      0       /**< Cuckoo board (Type4) */
 #define CONFIG_PLAT_RAVEN       0       /**< Raven board (Type11) */
 #define	CONFIG_PLAT_Z13         0       /**< Hummingbird Z1.3 */
 #define CONFIG_PLAT_Z6          1       /**< Hummingbird Z6.x */
