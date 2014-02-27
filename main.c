@@ -136,7 +136,7 @@ static struct pl_epdpsu_gpio g_epdpsu_gpio = {
 /* HRDY indicates controller is ready */
 #define SPI_HRDY_USED     0 /* HRDY pin is used */
 /* HDC required by the 524 controller, optional on others */
-#define SPI_HDC_USED      0 /* HDC pin is used */
+#define SPI_HDC_USED      1 /* HDC pin is used */
 
 /* Basic signals to enable Epson clock and PSU */
 #define EPSON_3V3_EN      MSP430_GPIO(1,7)
@@ -178,7 +178,7 @@ static const struct pl_gpio_config g_epson_gpios[] = {
 	{ EPSON_CLK_EN,  PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
 	{ EPSON_HIRQ,    PL_GPIO_INPUT  | PL_GPIO_PU     },
 	{ EPSON_HRDY,    PL_GPIO_INPUT                   },
-	{ EPSON_HDC,     PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
+	{ EPSON_HDC,     PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
 	{ EPSON_RESET,   PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
 	{ EPSON_CS_0,    PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
 };
@@ -215,15 +215,24 @@ static const struct s1d135xx_data g_s1d135xx_data = {
 static const struct pl_hwinfo g_hwinfo_default = {
 	/* version */
 	PL_HWINFO_VERSION,
+#if CONFIG_PLAT_Z6
 	/* vcom */
 	{ 127, 4172, 381, 12490, 25080, -32300, 56886 },
 	/* board */
-#if CONFIG_PLAT_Z6
 	{ "HB", 6, 3, 0, HV_PMIC_TPS65185, 0, 0, 0, I2C_MODE_HOST,
 	  TEMP_SENSOR_LM75, 0, EPDC_S1D13541, 1, 1 },
 #elif CONFIG_PLAT_Z7
+	/* vcom */
+	{ 127, 4172, 381, 12490, 25080, -32300, 56886 },
+	/* board */
 	{ "HB", 7, 2, 0, HV_PMIC_TPS65185, 0, 0, 0, I2C_MODE_HOST,
 	  TEMP_SENSOR_LM75, 0, EPDC_S1D13541, 1, 1 },
+#elif CONFIG_PLAT_RAVEN
+	/* vcom */
+	{ 63, 4586, 189, 9800, 27770, -41520, 70000 },
+	/* board */
+	{ "Raven", 1, 0, 0, HV_PMIC_MAX17135, 0, 0, 0, I2C_MODE_HOST,
+	  TEMP_SENSOR_LM75, 0, EPDC_S1D13524, 1, 1 },
 #else
 # error "Sorry, no default hardware data for this platform yet."
 #endif
