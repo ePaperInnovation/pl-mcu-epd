@@ -34,7 +34,9 @@
 */
 
 /** Set to 1 to enable stub  */
-#define PL_EPDPSU_STUB 1
+#define PL_EPDPSU_STUB 0
+
+struct pl_epdc;
 
 /** Interface */
 struct pl_epdpsu {
@@ -77,6 +79,15 @@ struct pl_epdpsu_gpio {
 */
 extern int pl_epdpsu_gpio_init(struct pl_epdpsu *psu,
 			       struct pl_epdpsu_gpio *p);
+
+/**
+   Initialise a pl_epdpsu instance to use the generic epdc->set_epd_power
+
+   @param[in] psu pl_epdpsu instance
+   @param[in] epdc pl_epdc instance
+   @return -1 if an error occured, 0 otherwise
+ */
+extern int pl_epdpsu_epdc_init(struct pl_epdpsu *psu, struct pl_epdc *epdc);
 
 #if PL_EPDPSU_STUB
 /** Initialise an pl_epdpsu instance with stub implementation.

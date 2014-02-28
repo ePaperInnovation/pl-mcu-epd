@@ -26,6 +26,7 @@
 
 #include <pl/epdpsu.h>
 #include <pl/gpio.h>
+#include <pl/epdc.h>
 #include "assert.h"
 
 #define LOG_TAG "epdpsu"
@@ -33,6 +34,8 @@
 
 /* Set to 1 to enable verbose logging */
 #define LOG_VERBOSE 0
+
+/* --- GPIO --- */
 
 static int pl_epdpsu_gpio_on(struct pl_epdpsu *psu)
 {
@@ -99,7 +102,50 @@ int pl_epdpsu_gpio_init(struct pl_epdpsu *psu, struct pl_epdpsu_gpio *p)
 	return 0;
 }
 
+/* --- EPDC --- */
+
+static int pl_epdpsu_epdc_on(struct pl_epdpsu *psu)
+{
+	struct pl_epdc *epdc = psu->data;
+
+	if (!psu->state) {
+		if (epdc->set_epd_power(epdc, 1))
+			return -1;
+
+		psu->state = 1;
+	}
+
+	return 0;
+}
+
+static int pl_epdpsu_epdc_off(struct pl_epdpsu *psu)
+{
+	struct pl_epdc *epdc = psu->data;
+
+	if (psu->state) {
+		if (epdc->set_epd_power(epdc, 0))
+			return -1;
+
+		psu->state = 0;
+	}
+
+	return 0;
+}
+
+int pl_epdpsu_epdc_init(struct pl_epdpsu *psu, struct pl_epdc *epdc)
+{
+	psu->on = pl_epdpsu_epdc_on;
+	psu->off = pl_epdpsu_epdc_off;
+	psu->state = 0;
+	psu->data = epdc;
+
+	return 0;
+}
+
 #if PL_EPDPSU_STUB
+
+/* --- Stub --- */
+
 static int pl_epdpsu_stub_on(struct pl_epdpsu *psu)
 {
 #if LOG_VERBOSE
@@ -133,4 +179,5 @@ int pl_epdpsu_stub_init(struct pl_epdpsu *psu)
 
 	return 0;
 }
+
 #endif /* PL_EPDPSU_STUB */
