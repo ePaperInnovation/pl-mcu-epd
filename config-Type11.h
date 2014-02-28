@@ -36,17 +36,13 @@
  * able to work without valid EEPROM data.  */
 #define CONFIG_HWINFO_DEFAULT   1
 
-/** Set to 1 to enable automatic platform detection, which typically uses
- * CONFIG_HWINFO_EEPROM */
-#define CONFIG_PLAT_AUTO        1
-
 /** Set one of the following to 1 to manually select te platform.  This will be
  * used if CONFIG_PLAT_AUTO is not defined, or if no platform can be discovered
  * at runtime.  */
-#define CONFIG_PLAT_RAVEN       0       /**< Raven board (Type11) */
+#define CONFIG_PLAT_RAVEN       1       /**< Raven board (Type11) */
 #define CONFIG_PLAT_Z13         0       /**< Hummingbird Z1.3 */
 #define CONFIG_PLAT_Z6          0       /**< Hummingbird Z6.x */
-#define CONFIG_PLAT_Z7          1       /**< Hummingbird Z7.x */
+#define CONFIG_PLAT_Z7          0       /**< Hummingbird Z7.x */
 
 /** Each display has a type and some associated data such as a VCOM voltage and
  * waveform library.  This can either be stored in the display EEPROM or on the
@@ -63,7 +59,7 @@
 /** Set this to manually specify the display type when it could not be detected
  * at run-time.  This is especially useful for displays without an EEPROM such
  * as Type19.  */
-#define CONFIG_DISPLAY_TYPE     "Type19"
+#define CONFIG_DISPLAY_TYPE     "Type11"
 
 /** Set to 1 to use the power state transition demo rather than the slideshow */
 #define CONFIG_DEMO_POWERMODES  0

@@ -40,7 +40,7 @@
  * used if CONFIG_PLAT_AUTO is not defined, or if no platform can be discovered
  * at runtime.  */
 #define CONFIG_PLAT_RAVEN       0       /**< Raven board (Type11) */
-#define	CONFIG_PLAT_Z13         0       /**< Hummingbird Z1.3 */
+#define CONFIG_PLAT_Z13         0       /**< Hummingbird Z1.3 */
 #define CONFIG_PLAT_Z6          1       /**< Hummingbird Z6.x */
 #define CONFIG_PLAT_Z7          0       /**< Hummingbird Z7.x */
 
@@ -61,19 +61,7 @@
  * as Type19.  */
 #define CONFIG_DISPLAY_TYPE     "Type18"
 
-/** Use the I2C master bus from the Epson controller (either -524 or -541).
- * Otherwise, use the host I2C master.  */
-#define	CONFIG_I2C_ON_EPSON     0
-
 /** Set to 1 to use the power state transition demo rather than the slideshow */
 #define CONFIG_DEMO_POWERMODES  0
 
 #endif /* INCLUDE_CONFIG_H */
-
-/** Load the display data from either the display EEPROM or SD card
- * Available options:
- * 		PLWF_EEPROM_SD - Try EEPROM first, then SD card
- *  	PLWF_EEPROM_ONLY - Try EEPROM only
- *  	PLWF_SD_ONLY - Try SD card only
- *  	PLWF_SD_EEPROM - Try SD card first, then EEPROM */
-/*#define CONFIG_PLWF_MODE	PLWF_EEPROM_SD*/
