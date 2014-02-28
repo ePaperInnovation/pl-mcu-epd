@@ -144,10 +144,20 @@ int probe_hvpmic(struct pl_platform *plat, struct vcom_cal *vcom_cal,
 	const struct pl_hwinfo *hwinfo = plat->hwinfo;
 	int stat;
 
-	/* ToDo: use S1D13524 power up/down */
+	/* ToDo: use hwinfo->board.io_config instead */
+	if (!strcmp(hwinfo->board.board_type, "Raven")) {
+		/* Warning: This must not call the epdc functions yet... */
+		LOG("EPD PSU: EPDC");
+		stat = pl_epdpsu_epdc_init(&plat->psu, &plat->epdc);
+	} else {
+		LOG("EPD PSU: GPIO");
+		stat = pl_epdpsu_gpio_init(&plat->psu, epdpsu_gpio);
+	}
 
-	if (pl_epdpsu_gpio_init(&plat->psu, epdpsu_gpio))
+	if (stat) {
+		LOG("Failed to initialise EPD PSU");
 		return -1;
+	}
 
 	vcom_init(vcom_cal, &hwinfo->vcom);
 
@@ -228,6 +238,7 @@ int probe_epdc(struct pl_platform *plat, struct s1d135xx *s1d135xx)
 	assert(epdc->update_temp != NULL);
 	assert(epdc->fill != NULL);
 	assert(epdc->load_image != NULL);
+	assert(epdc->set_epd_power != NULL);
 	assert(epdc->wf_table != NULL);
 	assert(epdc->xres != 0);
 	assert(epdc->yres != 0);
