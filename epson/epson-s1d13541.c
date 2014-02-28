@@ -29,12 +29,6 @@
 #include <stdlib.h>
 #include "assert.h"
 
-#if S1D135XX_INTERIM
-#include "epson-cmd.h"
-#include "S1D135xx.h"
-extern struct s1d135xx *g_s1d13541_hack;
-#endif
-
 #define LOG_TAG "s1d13541"
 #include "utils.h"
 
@@ -243,12 +237,6 @@ int epson_epdc_init_s1d13541(struct pl_epdc *epdc)
 	epdc->wf_table = s1d13541_wf_table;
 	epdc->xres = s1d135xx_read_reg(p, S1D13541_REG_LINE_DATA_LENGTH);
 	epdc->yres = s1d135xx_read_reg(p, S1D13541_REG_FRAME_DATA_LENGTH);
-
-#if S1D135XX_INTERIM
-# warning "INTERIM"
-	g_s1d13541_hack = p;
-	epson_set_idle_mask(0x2000, 0x2000);
-#endif
 
 	return epdc->set_temp_mode(epdc, PL_EPDC_TEMP_INTERNAL);
 }

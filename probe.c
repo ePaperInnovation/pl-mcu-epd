@@ -47,11 +47,6 @@
 #define I2C_PMIC_ADDR_TPS65185 0x68
 #define I2C_PMIC_ADDR_MAX17135 0x48
 
-#if S1D135XX_INTERIM
-#include "epson/S1D135xx.h"
-struct _s1d135xx g_epson;
-#endif
-
 #if CONFIG_HWINFO_EEPROM
 int probe_hwinfo(struct pl_platform *plat, const struct i2c_eeprom *hw_eeprom,
 		 struct pl_hwinfo *hwinfo_eeprom,
@@ -198,11 +193,6 @@ int probe_epdc(struct pl_platform *plat, struct s1d135xx *s1d135xx)
 	const struct pl_hwinfo *hwinfo = plat->hwinfo;
 	struct pl_epdc *epdc = &plat->epdc;
 	int stat;
-
-#if S1D135XX_INTERIM
-	s1d135xx->epson = &g_epson;
-	epsonif_hack(&plat->gpio, s1d135xx->data);
-#endif
 
 	switch (hwinfo->board.epdc_ref) {
 	case EPDC_S1D13524:

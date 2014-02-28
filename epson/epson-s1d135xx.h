@@ -31,14 +31,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-/* Interim implementation */
-#define S1D135XX_INTERIM 0
-
 struct pl_gpio;
 struct pl_wflib;
-#if S1D135XX_INTERIM
-struct _s1d135xx;
-#endif
 
 #define S1D135XX_TEMP_MASK                   0x00FF
 
@@ -82,9 +76,6 @@ struct s1d135xx {
 	struct {
 		uint8_t needs_update:1;
 	} flags;
-#if S1D135XX_INTERIM
-	struct _s1d135xx *epson;
-#endif
 };
 
 extern void s1d135xx_hard_reset(struct pl_gpio *gpio,
