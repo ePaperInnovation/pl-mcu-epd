@@ -133,9 +133,6 @@ int epson_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo,
 	if (epdc->load_wflib(epdc))
 		return -1;
 
-	if (epdc->set_power(epdc, PL_EPDC_RUN))
-		return -1;
-
 	s1d135xx->xres = epdc->xres;
 	s1d135xx->yres = epdc->yres;
 

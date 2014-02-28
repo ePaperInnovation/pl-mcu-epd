@@ -43,7 +43,7 @@
 #define VERBOSE 0
 
 #define IMAGE_BUFFER_LENGTH             720
-#define DATA_BUFFER_LENGTH              256
+#define DATA_BUFFER_LENGTH              512
 
 #define S1D135XX_WF_MODE(_wf)           (((_wf) << 8) & 0x0F00)
 #define S1D135XX_XMASK                  0x01FF
@@ -113,7 +113,7 @@ void s1d135xx_hard_reset(struct pl_gpio *gpio,
 
 int s1d135xx_soft_reset(struct s1d135xx *p)
 {
-	s1d135xx_write_reg(p, S1D135XX_REG_SOFTWARE_RESET, 0);
+	s1d135xx_write_reg(p, S1D135XX_REG_SOFTWARE_RESET, 0xFF);
 
 	return s1d135xx_wait_idle(p);
 }
@@ -144,6 +144,7 @@ int s1d135xx_load_init_code(struct s1d135xx *p)
 	if (f_open(&init_code_file, init_code_path, FA_READ) != FR_OK)
 		return -1;
 
+
 	if (s1d135xx_wait_idle(p))
 		return -1;
 
@@ -161,7 +162,10 @@ int s1d135xx_load_init_code(struct s1d135xx *p)
 	if (s1d135xx_wait_idle(p))
 		return -1;
 
-	send_cmd_cs(p, S1D135XX_CMD_INIT_STBY);
+	set_cs(p, 0);
+	send_cmd(p, S1D135XX_CMD_INIT_STBY);
+	send_param(0);
+	set_cs(p, 1);
 	mdelay(100);
 
 	if (s1d135xx_wait_idle(p))
@@ -181,14 +185,15 @@ int s1d135xx_load_wflib(struct s1d135xx *p, struct pl_wflib *wflib,
 			uint32_t addr)
 {
 	uint16_t params[4];
+	uint32_t size2 = wflib->size / 2;
 
 	if (s1d135xx_wait_idle(p))
 		return -1;
 
 	params[0] = addr & 0xFFFF;
 	params[1] = (addr >> 16) & 0xFFFF;
-	params[2] = wflib->size & 0xFFFF;
-	params[3] = (wflib->size >> 16) & 0xFFFF;
+	params[2] = size2 & 0xFFFF;
+	params[3] = (size2 >> 16) & 0xFFFF;
 	set_cs(p, 0);
 	send_cmd(p, S1D135XX_CMD_BST_WR_SDR);
 	send_params(params, ARRAY_SIZE(params));
@@ -207,9 +212,6 @@ int s1d135xx_load_wflib(struct s1d135xx *p, struct pl_wflib *wflib,
 
 int s1d135xx_init_gate_drv(struct s1d135xx *p)
 {
-	if (s1d135xx_set_power_state(p, PL_EPDC_RUN))
-		return -1;
-
 	send_cmd_cs(p, S1D135XX_CMD_EPD_GDRV_CLR);
 
 	return s1d135xx_wait_idle(p);
@@ -321,6 +323,8 @@ int s1d135xx_update(struct s1d135xx *p, int wfid, const struct pl_area *area)
 
 	set_cs(p, 0);
 
+	/* wfid = S1D135XX_WF_MODE(wfid); */
+
 	if (area != NULL) {
 		send_cmd_area(p, S1D135XX_CMD_UPDATE_FULL_AREA,
 			      S1D135XX_WF_MODE(wfid), area);
@@ -390,6 +394,9 @@ int s1d135xx_set_epd_power(struct s1d135xx *p, int on)
 	LOG("EPD power o%s", on ? "n" : "ff");
 #endif
 
+	if (s1d135xx_wait_idle(p))
+		return -1;
+
 	s1d135xx_write_reg(p, S1D135XX_REG_PWR_CTRL, arg);
 
 	do {
@@ -399,7 +406,7 @@ int s1d135xx_set_epd_power(struct s1d135xx *p, int on)
 	if (on && ((tmp & S1D135XX_PWR_CTRL_CHECK_ON) !=
 		   S1D135XX_PWR_CTRL_CHECK_ON)) {
 		LOG("Failed to turn the EPDC power on");
-		/*return -1;*/
+		return -1;
 	}
 
 	return 0;
@@ -525,7 +532,7 @@ static int wflib_wr(void *ctx, const uint8_t *data, size_t n)
 
 static int transfer_file(FIL *file)
 {
-	uint8_t data[IMAGE_BUFFER_LENGTH];
+	uint8_t data[DATA_BUFFER_LENGTH];
 
 	for (;;) {
 		size_t count;

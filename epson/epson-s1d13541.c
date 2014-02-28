@@ -94,9 +94,6 @@ static int update_temp_auto(struct s1d135xx *p, uint16_t temp_reg);
 
 /* -- pl_epdc interface -- */
 
-static int s1d13541_fill(struct pl_epdc *epdc, const struct pl_area *area,
-			 uint8_t grey);
-
 static int s1d13541_load_wflib(struct pl_epdc *epdc)
 {
 	struct s1d135xx *p = epdc->data;
@@ -199,7 +196,11 @@ int epson_epdc_early_init_s1d13541(struct s1d135xx *p)
 {
 	p->hrdy_mask = S1D13541_STATUS_HRDY;
 	p->hrdy_result = S1D13541_STATUS_HRDY;
+	p->measured_temp = -127;
 	s1d135xx_hard_reset(p->gpio, p->data);
+
+	if (s1d135xx_soft_reset(p))
+		return -1;
 
 	if (s1d135xx_check_prod_code(p, S1D13541_PROD_CODE))
 		return -1;
@@ -211,19 +212,7 @@ int epson_epdc_init_s1d13541(struct pl_epdc *epdc)
 {
 	struct s1d135xx *p = epdc->data;
 
-	p->hrdy_mask = S1D13541_STATUS_HRDY;
-	p->hrdy_result = S1D13541_STATUS_HRDY;
-	p->measured_temp = -127;
-
-	s1d135xx_hard_reset(p->gpio, p->data);
-
-	if (s1d135xx_soft_reset(p))
-		return -1;
-
-	if (s1d13541_init_clocks(p))
-		return -1;
-
-	if (s1d135xx_check_prod_code(p, S1D13541_PROD_CODE))
+	if (epson_epdc_early_init_s1d13541(p))
 		return -1;
 
 	if (s1d135xx_load_init_code(p)) {
@@ -237,20 +226,23 @@ int epson_epdc_init_s1d13541(struct pl_epdc *epdc)
 	if (s1d135xx_wait_idle(p))
 		return -1;
 
+	if (epdc->set_power(epdc, PL_EPDC_RUN))
+		return -1;
+
 	if (s1d135xx_init_gate_drv(p))
 		return -1;
 
 	if (s1d135xx_wait_dspe_trig(p))
 		return -1;
 
-	epdc->wf_table = s1d13541_wf_table;
-	epdc->xres = s1d135xx_read_reg(p, S1D13541_REG_LINE_DATA_LENGTH);
-	epdc->yres = s1d135xx_read_reg(p, S1D13541_REG_FRAME_DATA_LENGTH);
 	epdc->load_wflib = s1d13541_load_wflib;
 	epdc->set_temp_mode = s1d13541_set_temp_mode;
 	epdc->update_temp = s1d13541_update_temp;
 	epdc->fill = s1d13541_fill;
 	epdc->load_image = s1d13541_load_image;
+	epdc->wf_table = s1d13541_wf_table;
+	epdc->xres = s1d135xx_read_reg(p, S1D13541_REG_LINE_DATA_LENGTH);
+	epdc->yres = s1d135xx_read_reg(p, S1D13541_REG_FRAME_DATA_LENGTH);
 
 #if S1D135XX_INTERIM
 # warning "INTERIM"

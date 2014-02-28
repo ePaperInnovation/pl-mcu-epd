@@ -42,8 +42,13 @@
 #define S1D13524_I2C_CLOCK_DIV          7 /* 100 kHz */
 #define S1D13524_AUTO_RETRIEVE_ON       0x0000
 #define S1D13524_AUTO_RETRIEVE_OFF      0x0001
-#define S1D13524_LD_IMG_8BPP            0x0010
+#define S1D13524_LD_IMG_4BPP            (0 << 4)
+#define S1D13524_LD_IMG_8BPP            (1 << 4)
+#define S1D13524_LD_IMG_16BPP           (2 << 4)
 #define S1D13541_WF_CHECKSUM_ERROR      0x1F00
+#define S1D13524_CTLR_AUTO_WFID         0x0200
+#define S1D13524_CTLR_NEW_AREA_PRIORITY 0x4000
+#define S1D13524_CTLR_PROCESSED_TRIPLE  0x0002
 
 enum s1d13524_reg {
 	S1D13524_REG_FRAME_DATA_LENGTH  = 0x0300,
@@ -56,6 +61,7 @@ enum s1d13524_reg {
 
 enum s1d13524_cmd {
 	S1D13524_CMD_INIT_PLL           = 0x01,
+	S1D13524_CMD_INIT_CTLR_MODE     = 0x0E,
 	S1D13524_CMD_RD_WF_INFO         = 0x30,
 };
 
@@ -70,10 +76,32 @@ static const struct pl_wfid epson_epdc_wf_table_s1d13524[] = {
 
 /* -- private functions -- */
 
+static int s1d13524_check_rev(struct s1d135xx *p);
 static int s1d13524_init_clocks(struct s1d135xx *p);
-static int s1d13524_load_init_code(struct s1d135xx *p);
+static int s1d13524_init_ctlr_mode(struct s1d135xx *p);
 
 /* -- pl_epdc interface -- */
+
+static int s1d13524_clear_init(struct pl_epdc *epdc)
+{
+	static const uint16_t params[] = { 0x0000 };
+	struct s1d135xx *p = epdc->data;
+
+	s1d135xx_cmd(p, 0x32, params, ARRAY_SIZE(params));
+
+	if (s1d135xx_wait_idle(p))
+		return -1;
+
+	if (s1d13524_init_ctlr_mode(p))
+		return -1;
+
+#if 1 /* ToDo: find out why the first image state goes away */
+	if (s1d135xx_fill(p, S1D13524_LD_IMG_4BPP, 4, NULL, 0xFF))
+		return -1;
+#endif
+
+	return 0;
+}
 
 static int s1d13524_load_wflib(struct pl_epdc *epdc)
 {
@@ -87,6 +115,8 @@ static int s1d13524_load_wflib(struct pl_epdc *epdc)
 	addr32 = addr16[1];
 	addr32 <<= 16;
 	addr32 |= addr16[0];
+
+	s1d135xx_write_reg(p, 0x0260, 0x8001);
 
 	if (s1d135xx_load_wflib(p, &epdc->wflib, addr32))
 		return -1;
@@ -110,12 +140,7 @@ static int s1d13524_set_temp_mode(struct pl_epdc *epdc,
 				  enum pl_epdc_temp_mode mode)
 {
 	struct s1d135xx *p = epdc->data;
-	int stat;
-
-	if (mode == epdc->temp_mode)
-		return 0;
-
-	stat = 0;
+	int stat = 0;
 
 	switch (mode) {
 	case PL_EPDC_TEMP_MANUAL:
@@ -176,7 +201,7 @@ static int s1d13524_fill(struct pl_epdc *epdc, const struct pl_area *area,
 {
 	struct s1d135xx *p = epdc->data;
 
-	return s1d135xx_fill(p, S1D13524_LD_IMG_8BPP, 8, area, grey);
+	return s1d135xx_fill(p, S1D13524_LD_IMG_4BPP, 4, area, grey);
 }
 
 static int s1d13524_load_image(struct pl_epdc *epdc, const char *path,
@@ -192,33 +217,38 @@ static int s1d13524_load_image(struct pl_epdc *epdc, const char *path,
 
 int epson_epdc_early_init_s1d13524(struct s1d135xx *p)
 {
-	abort_msg("not implemented");
+	p->hrdy_mask = S1D13524_STATUS_HRDY;
+	p->hrdy_result = 0;
+	p->measured_temp = -127;
+	s1d135xx_hard_reset(p->gpio, p->data);
 
-	return -1;
+	if (s1d135xx_soft_reset(p))
+		return -1;
+
+	if (s1d13524_check_rev(p))
+		return -1;
+
+	return s1d13524_init_clocks(p);
 }
 
 int epson_epdc_init_s1d13524(struct pl_epdc *epdc)
 {
 	struct s1d135xx *p = epdc->data;
 
-	p->hrdy_mask = S1D13524_STATUS_HRDY;
-	p->hrdy_result = 0;
-
-	s1d135xx_hard_reset(p->gpio, p->data);
-
-	if (s1d135xx_soft_reset(p))
+	if (epson_epdc_early_init_s1d13524(p))
 		return -1;
 
-	if (s1d13524_init_clocks(p))
-		return -1;
-
-	if (s1d135xx_check_prod_code(p, S1D13524_PROD_CODE))
-		return -1;
-
-	if (s1d13524_load_init_code(p)) {
+	if (s1d135xx_load_init_code(p)) {
 		LOG("Failed to load init code");
 		return -1;
 	}
+
+	/* Loading the init code turns the EPD power on as a side effect... */
+	if (s1d135xx_set_epd_power(p, 0))
+		return -1;
+
+	if (s1d135xx_set_power_state(p, PL_EPDC_RUN))
+		return -1;
 
 	if (s1d135xx_init_gate_drv(p))
 		return -1;
@@ -226,14 +256,18 @@ int epson_epdc_init_s1d13524(struct pl_epdc *epdc)
 	if (s1d135xx_wait_dspe_trig(p))
 		return -1;
 
-	epdc->wf_table = epson_epdc_wf_table_s1d13524;
-	epdc->xres = s1d135xx_read_reg(p, S1D13524_REG_FRAME_DATA_LENGTH);
-	epdc->yres = s1d135xx_read_reg(p, S1D13524_REG_LINE_DATA_LENGTH);
+	if (s1d13524_init_ctlr_mode(p))
+		return -1;
+
+	epdc->clear_init = s1d13524_clear_init;
 	epdc->load_wflib = s1d13524_load_wflib;
 	epdc->set_temp_mode = s1d13524_set_temp_mode;
 	epdc->update_temp = s1d13524_update_temp;
 	epdc->fill = s1d13524_fill;
 	epdc->load_image = s1d13524_load_image;
+	epdc->wf_table = epson_epdc_wf_table_s1d13524;
+	epdc->xres = s1d135xx_read_reg(p, S1D13524_REG_FRAME_DATA_LENGTH);
+	epdc->yres = s1d135xx_read_reg(p, S1D13524_REG_LINE_DATA_LENGTH);
 
 	return epdc->set_temp_mode(epdc, PL_EPDC_TEMP_MANUAL);
 }
@@ -241,6 +275,27 @@ int epson_epdc_init_s1d13524(struct pl_epdc *epdc)
 /* ----------------------------------------------------------------------------
  * private functions
  */
+
+static int s1d13524_check_rev(struct s1d135xx *p)
+{
+	uint16_t rev;
+	uint16_t conf;
+
+	if (s1d135xx_check_prod_code(p, S1D13524_PROD_CODE))
+		return -1;
+
+	rev = s1d135xx_read_reg(p, 0x0000);
+	conf = s1d135xx_read_reg(p, 0x0004);
+
+	LOG("Rev: %04X, conf: %04X", rev, conf);
+
+	if ((rev != 0x0100) || (conf != 0x001F)) {
+		LOG("Invalid rev/conf values");
+		return -1;
+	}
+
+	return 0;
+}
 
 static int s1d13524_init_clocks(struct s1d135xx *p)
 {
@@ -259,12 +314,15 @@ static int s1d13524_init_clocks(struct s1d135xx *p)
 	return s1d135xx_wait_idle(p);
 }
 
-static int s1d13524_load_init_code(struct s1d135xx *p)
+static int s1d13524_init_ctlr_mode(struct s1d135xx *p)
 {
-	if (s1d135xx_load_init_code(p))
-		return -1;
+	static const uint16_t par[] = {
+		S1D13524_CTLR_AUTO_WFID,
+		(S1D13524_CTLR_NEW_AREA_PRIORITY |
+		 S1D13524_CTLR_PROCESSED_TRIPLE),
+	};
 
-	/* A side effect of the CMD_INIT_STBY is that the power up sequence
-	   runs. For now run power down sequence here. */
-	return s1d135xx_set_epd_power(p, 0);
+	s1d135xx_cmd(p, S1D13524_CMD_INIT_CTLR_MODE, par, ARRAY_SIZE(par));
+
+	return s1d135xx_wait_idle(p);
 }
