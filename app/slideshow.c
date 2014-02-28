@@ -53,6 +53,8 @@ int app_slideshow(struct pl_platform *plat, const char *path)
 	assert(plat != NULL);
 	assert(path != NULL);
 
+	LOG("Running slideshow");
+
 	while (!app_stop) {
 		if (!dir_open) {
 			/* (re-)open the directory */

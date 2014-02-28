@@ -69,13 +69,13 @@ struct pl_gpio {
 	 */
 	int (*config)(unsigned gpio, uint16_t flags);
 
-	/** Get the value of a GPIO
+	/** Get the state of a GPIO
 	    @param[in] gpio GPIO number
 	    @return 1 if the GPIO state is high, 0 if low
 	 */
 	int (*get)(unsigned gpio);
 
-	/** Set the value of a GPIO
+	/** Set the state of a GPIO
 	    @param[in] gpio GPIO number
 	    @param[in] value value to set the GPIO state
 	 */

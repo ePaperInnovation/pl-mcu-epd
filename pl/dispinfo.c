@@ -65,7 +65,7 @@ int pl_dispinfo_init_eeprom(struct pl_dispinfo *p,
 	p->info_crc = be16toh(p->info_crc);
 
 	if (p->vermagic.magic != PL_DISPINFO_MAGIC) {
-		LOG("Invalid magic number: %lX instead of %lX",
+		LOG("Invalid magic number: 0x%08lX instead of 0x%08lX",
 		    p->vermagic.magic, PL_DISPINFO_MAGIC);
 		return -1;
 	}

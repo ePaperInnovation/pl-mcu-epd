@@ -211,15 +211,6 @@ int max17135_configure(struct max17135_info *pmic, struct vcom_cal *cal,
 		return -1;
 	}
 
-	memcpy(pmic->hvpmic.timings, timings, HVPMIC_NB_TIMINGS);
-	LOG("timings (seq:%d) on: %d, %d, %d, %d, "
-	    "timings off: %d, %d, %d, %d",
-	    power_sequence,
-	    timings[0], timings[1], timings[2], timings[3],
-	    timings[4], timings[5], timings[6], timings[7]);
-
-	LOG("reading regs again");
-
 	if (pl_i2c_reg_read_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_PROD_REV,
 			      &pmic->hvpmic.prod_rev))
 		return -1;
@@ -233,6 +224,14 @@ int max17135_configure(struct max17135_info *pmic, struct vcom_cal *cal,
 
 	if (max17135_temp_disable(pmic))
 		return -1;
+
+	memcpy(pmic->hvpmic.timings, timings, HVPMIC_NB_TIMINGS);
+
+	LOG("timings (seq:%d) on: %d, %d, %d, %d, "
+	    "timings off: %d, %d, %d, %d",
+	    power_sequence,
+	    timings[0], timings[1], timings[2], timings[3],
+	    timings[4], timings[5], timings[6], timings[7]);
 
 	return max17135_load_timings(pmic);
 }
