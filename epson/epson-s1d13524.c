@@ -40,10 +40,6 @@
 #define S1D13524_PLLCFG2                0x1680
 #define S1D13524_PLLCFG3                0x1880
 #define S1D13524_I2C_CLOCK_DIV          7 /* 100 kHz */
-#define S1D13524_PWR_CTRL_UP            0x8001
-#define S1D13524_PWR_CTRL_DOWN          0x8002
-#define S1D13524_PWR_CTRL_BUSY          0x0080
-#define S1D13524_PWR_CTRL_CHECK_ON      0x2200
 #define S1D13524_AUTO_RETRIEVE_ON       0x0000
 #define S1D13524_AUTO_RETRIEVE_OFF      0x0001
 #define S1D13524_LD_IMG_8BPP            0x0010
@@ -76,7 +72,6 @@ static const struct pl_wfid epson_epdc_wf_table_s1d13524[] = {
 
 static int s1d13524_init_clocks(struct s1d135xx *p);
 static int s1d13524_load_init_code(struct s1d135xx *p);
-static int s1d13524_set_pwr_ctrl(struct s1d135xx *p, int state);
 
 /* -- pl_epdc interface -- */
 
@@ -271,25 +266,5 @@ static int s1d13524_load_init_code(struct s1d135xx *p)
 
 	/* A side effect of the CMD_INIT_STBY is that the power up sequence
 	   runs. For now run power down sequence here. */
-	return s1d13524_set_pwr_ctrl(p, 0);
-}
-
-static int s1d13524_set_pwr_ctrl(struct s1d135xx *p, int state)
-{
-	uint16_t tmp;
-	uint16_t arg = state ? S1D13524_PWR_CTRL_UP : S1D13524_PWR_CTRL_DOWN;
-
-	s1d135xx_write_reg(p, S1D135XX_REG_PWR_CTRL, arg);
-
-	do {
-		tmp = s1d135xx_read_reg(p, S1D135XX_REG_PWR_CTRL);
-	} while (tmp & S1D13524_PWR_CTRL_BUSY);
-
-	if (state && ((tmp & S1D13524_PWR_CTRL_CHECK_ON) !=
-		      S1D13524_PWR_CTRL_CHECK_ON)) {
-		LOG("Failed to turn the EPDC power on");
-		return -1;
-	}
-
-	return 0;
+	return s1d135xx_set_epd_power(p, 0);
 }

@@ -74,6 +74,7 @@ struct pl_epdc{
 	int (*fill)(struct pl_epdc *p, const struct pl_area *area, uint8_t g);
 	int (*load_image)(struct pl_epdc *p, const char *path,
 			  const struct pl_area *area, int left, int top);
+	int (*set_epd_power)(struct pl_epdc *p, int on);
 
 	const struct pl_wfid *wf_table;
 	const struct pl_dispinfo *dispinfo;

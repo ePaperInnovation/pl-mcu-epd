@@ -42,13 +42,17 @@
 /* Set to 1 to enable verbose update log messages */
 #define VERBOSE_UPDATE 0
 
-#define IMAGE_BUFFER_LENGTH 720
-#define DATA_BUFFER_LENGTH 256
+#define IMAGE_BUFFER_LENGTH            720
+#define DATA_BUFFER_LENGTH             256
 
-#define S1D135XX_WF_MODE(_wf) (((_wf) << 8) & 0x0F00)
-#define S1D135XX_XMASK 0x01FF
-#define S1D135XX_YMASK 0x03FF
+#define S1D135XX_WF_MODE(_wf)          (((_wf) << 8) & 0x0F00)
+#define S1D135XX_XMASK                 0x01FF
+#define S1D135XX_YMASK                 0x03FF
 #define S1D135XX_INIT_CODE_CHECKSUM_OK (1 << 15)
+#define S1D135XX_PWR_CTRL_UP            0x8001
+#define S1D135XX_PWR_CTRL_DOWN          0x8002
+#define S1D135XX_PWR_CTRL_BUSY          0x0080
+#define S1D135XX_PWR_CTRL_CHECK_ON      0x2200
 
 enum s1d135xx_cmd {
 	S1D135XX_CMD_INIT_SET         = 0x00, /* to load init code */
@@ -370,11 +374,33 @@ int s1d135xx_set_power_state(struct s1d135xx *p,
 		return -1;
 
 	send_cmd_cs(p, pwr_cmds[state]);
-#if 0
+#if 0 /* ToDo: needed? */
 	mdelay(100);
 #endif
 
 	return s1d135xx_wait_idle(p);
+}
+
+int s1d135xx_set_epd_power(struct s1d135xx *p, int on)
+{
+	uint16_t arg = on ? S1D135XX_PWR_CTRL_UP : S1D135XX_PWR_CTRL_DOWN;
+	uint16_t tmp;
+
+	LOG("%s %s", __FUNCTION__, on ? "on" : "off");
+
+	s1d135xx_write_reg(p, S1D135XX_REG_PWR_CTRL, arg);
+
+	do {
+		tmp = s1d135xx_read_reg(p, S1D135XX_REG_PWR_CTRL);
+	} while (tmp & S1D135XX_PWR_CTRL_BUSY);
+
+	if (on && ((tmp & S1D135XX_PWR_CTRL_CHECK_ON) !=
+		   S1D135XX_PWR_CTRL_CHECK_ON)) {
+		LOG("Failed to turn the EPDC power on");
+		/*return -1;*/
+	}
+
+	return 0;
 }
 
 void s1d135xx_cmd(struct s1d135xx *p, uint16_t cmd, const uint16_t *params,

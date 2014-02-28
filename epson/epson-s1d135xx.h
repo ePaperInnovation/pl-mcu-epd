@@ -108,6 +108,7 @@ extern int s1d135xx_wait_update_end(struct s1d135xx *p);
 extern int s1d135xx_wait_idle(struct s1d135xx *p);
 extern int s1d135xx_set_power_state(struct s1d135xx *p,
 				    enum pl_epdc_power_state state);
+extern int s1d135xx_set_epd_power(struct s1d135xx *p, int on);
 extern void s1d135xx_cmd(struct s1d135xx *p, uint16_t cmd,
 			 const uint16_t *params, size_t n);
 extern uint16_t s1d135xx_read_reg(struct s1d135xx *p, uint16_t reg);

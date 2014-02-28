@@ -81,6 +81,13 @@ static int epson_epdc_set_power(struct pl_epdc *epdc,
 	return 0;
 }
 
+static int epson_epdc_set_epd_power(struct pl_epdc *epdc, int on)
+{
+	struct s1d135xx *p = epdc->data;
+
+	return s1d135xx_set_epd_power(p, on);
+}
+
 int epson_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo,
 		    enum epson_epdc_ref ref, struct s1d135xx *s1d135xx)
 {
@@ -103,6 +110,7 @@ int epson_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo,
 	epdc->update = epson_epdc_update;
 	epdc->wait_update_end = epson_epdc_wait_update_end;
 	epdc->set_power = epson_epdc_set_power;
+	epdc->set_epd_power = epson_epdc_set_epd_power;
 	epdc->data = s1d135xx;
 	epdc->dispinfo = dispinfo;
 
