@@ -39,16 +39,16 @@
 #define LOG_TAG "s1d135xx"
 #include "utils.h"
 
-/* Set to 1 to enable verbose update log messages */
-#define VERBOSE_UPDATE 0
+/* Set to 1 to enable verbose update and EPD power on/off log messages */
+#define VERBOSE 0
 
-#define IMAGE_BUFFER_LENGTH            720
-#define DATA_BUFFER_LENGTH             256
+#define IMAGE_BUFFER_LENGTH             720
+#define DATA_BUFFER_LENGTH              256
 
-#define S1D135XX_WF_MODE(_wf)          (((_wf) << 8) & 0x0F00)
-#define S1D135XX_XMASK                 0x01FF
-#define S1D135XX_YMASK                 0x03FF
-#define S1D135XX_INIT_CODE_CHECKSUM_OK (1 << 15)
+#define S1D135XX_WF_MODE(_wf)           (((_wf) << 8) & 0x0F00)
+#define S1D135XX_XMASK                  0x01FF
+#define S1D135XX_YMASK                  0x03FF
+#define S1D135XX_INIT_CODE_CHECKSUM_OK  (1 << 15)
 #define S1D135XX_PWR_CTRL_UP            0x8001
 #define S1D135XX_PWR_CTRL_DOWN          0x8002
 #define S1D135XX_PWR_CTRL_BUSY          0x0080
@@ -311,7 +311,7 @@ int s1d135xx_load_image(struct s1d135xx *p, const char *path, uint16_t mode,
 
 int s1d135xx_update(struct s1d135xx *p, int wfid, const struct pl_area *area)
 {
-#if VERBOSE_UPDATE
+#if VERBOSE
 	if (area != NULL)
 		LOG("update area %d (%d, %d) %dx%d", wfid,
 		    area->left, area->top, area->width, area->height);
@@ -386,7 +386,9 @@ int s1d135xx_set_epd_power(struct s1d135xx *p, int on)
 	uint16_t arg = on ? S1D135XX_PWR_CTRL_UP : S1D135XX_PWR_CTRL_DOWN;
 	uint16_t tmp;
 
-	LOG("%s %s", __FUNCTION__, on ? "on" : "off");
+#if VERBOSE
+	LOG("EPD power o%s", on ? "n" : "ff");
+#endif
 
 	s1d135xx_write_reg(p, S1D135XX_REG_PWR_CTRL, arg);
 
