@@ -95,6 +95,8 @@ int pl_dispinfo_init_fatfs(struct pl_dispinfo *p)
 	p->vermagic.magic = PL_DISPINFO_MAGIC;
 	p->vermagic.version = PL_DISPINFO_VERSION;
 	p->info.panel_id[0] = '\0';
+
+	/* ToDo: read panel type from display/type */
 	strncpy(p->info.panel_type, CONFIG_DISPLAY_TYPE,
 		sizeof p->info.panel_type);
 

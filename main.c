@@ -239,18 +239,15 @@ static const struct pl_hwinfo g_hwinfo_default = {
 	/* crc */
 	0xFFFF,
 };
+#define HWINFO_DEFAULT (&g_hwinfo_default)
+#else
+#define HWINFO_DEFAULT (NULL)
 #endif
 
 /* --- waveform library and display info --- */
 
 static const char g_wflib_fatfs_path[] = "display/waveform.bin";
 static FIL g_wflib_fatfs_file;
-
-#define PLATFORM_PATH "0:/"
-#ifdef CONFIG_DISPLAY_TYPE
-#define DISPLAY_PATH PLATFORM_PATH""CONFIG_DISPLAY_TYPE
-static const char g_display_path[] = DISPLAY_PATH;
-#endif
 
 /* --- main --- */
 
@@ -328,13 +325,10 @@ int main_init(void)
 	f_chdrive(0);
 	if (f_mount(0, &sdcard) != FR_OK)
 		abort_msg("Failed to initialise SD card");
-	if (f_chdir(g_display_path) != FR_OK)
-		abort_msg("Failed to change directory");
 
 	/* load hardware information */
 #if CONFIG_HWINFO_EEPROM
-	if (probe_hwinfo(&g_plat, &hw_eeprom, &hwinfo_eeprom,
-			 &g_hwinfo_default))
+	if (probe_hwinfo(&g_plat, &hw_eeprom, &hwinfo_eeprom, HWINFO_DEFAULT))
 		abort_msg("Failed to probe hwinfo");
 #elif CONFIG_HWINFO_DEFAULT
 	LOG("Using default hwinfo");
