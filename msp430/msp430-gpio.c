@@ -237,8 +237,6 @@ void msp430_gpio_set(unsigned gpio, int value)
 
 int msp430_gpio_init(struct pl_gpio *gpio)
 {
-	LOG("defs size: %u", (unsigned)sizeof(msp430_gpio_defs));
-
 	gpio->config = msp430_gpio_config;
 	gpio->get = msp430_gpio_get;
 	gpio->set = msp430_gpio_set;
