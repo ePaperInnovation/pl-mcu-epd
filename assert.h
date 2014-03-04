@@ -20,6 +20,10 @@
 #ifndef ASSERT_H_
 #define ASSERT_H_
 
+/* Set to 1 to enable all assert statements.  Alternatively, define
+ * LOCAL_ASSERT in each individual .c file before including this file.  */
+#define GLOBAL_ASSERT 0
+
 #define _STR(x)  __STR(x)
 #define __STR(x) #x
 
@@ -35,14 +39,16 @@ extern void do_abort_msg(const char *file, unsigned line,
 #define abort_msg(_msg) do { \
 	do_abort_msg(__FILE__, __LINE__, ABORT_ERROR, _msg); \
 } while (0)
-#define check(_e) do { \
-	if (!(_e)) do_abort_msg(__FILE__, __LINE__, ABORT_CHECK, _STR(_e)); \
-} while (0)
-#ifdef NDEBUG
+
+#if (defined(NDEBUG) || !GLOBAL_ASSERT) && !defined(LOCAL_ASSERT)
 #define assert(_e)
+#define assert_fail(_msg)
 #else
 #define assert(_e) do { \
 	if (!(_e)) do_abort_msg(__FILE__, __LINE__, ABORT_ASSERT, _STR(_e)); \
+} while (0)
+#define assert_fail(_msg) do { \
+	do_abort_msg(__FILE__, __LINE__, ABORT_ASSERT, _msg); \
 } while (0)
 #endif
 

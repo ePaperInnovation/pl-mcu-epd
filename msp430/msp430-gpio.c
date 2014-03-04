@@ -47,9 +47,6 @@
 #define GPIO_PORT(_gpio) (((_gpio) >> 8) & 0xFF)
 #define GPIO_PIN(_gpio) ((_gpio) & 0xFF)
 
-/* Set to 1 to enable extra GPIO debug messages */
-#define GPIO_DEBUG 0
-
 /* Set to 1 to enable checks (takes a bit more code space) */
 #define GPIO_CHECK_PARAMETERS 0
 
@@ -68,7 +65,7 @@
 
 /* Private functions */
 
-#if GPIO_DEBUG
+#if PL_GPIO_DEBUG
 static int msp430_gpio_pin_number(uint16_t pinmask);
 #endif
 static void msp430_gpio_check_port(uint16_t port);
@@ -161,7 +158,7 @@ static int msp430_gpio_config(unsigned gpio, uint16_t flags)
 	const uint16_t port = GPIO_PORT(gpio);
 	const uint16_t pinmask = GPIO_PIN(gpio);
 
-#if GPIO_DEBUG
+#if PL_GPIO_DEBUG
 	LOG("config gpio=0x%04X (%d.%d)", gpio, (port + 1),
 	    msp430_gpio_pin_number(pinmask));
 	pl_gpio_log_flags(flags);
@@ -253,7 +250,7 @@ int msp430_gpio_init(struct pl_gpio *gpio)
  * private functions
  */
 
-#if GPIO_DEBUG
+#if PL_GPIO_DEBUG
 static int msp430_gpio_pin_number(uint16_t pinmask)
 {
 	int bit;

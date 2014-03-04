@@ -29,6 +29,7 @@
 #include <pl/endian.h>
 #include <FatFs/ff.h>
 #include <string.h>
+#include "assert.h"
 #include "pnm-utils.h"
 #include "crc16.h"
 #include "i2c-eeprom.h"
@@ -52,6 +53,9 @@ int pl_dispinfo_init_eeprom(struct pl_dispinfo *p,
 			    const struct i2c_eeprom *eeprom)
 {
 	uint16_t crc;
+
+	assert(p != NULL);
+	assert(eeprom != NULL);
 
 	if (eeprom_read(eeprom, 0, sizeof *p, (uint8_t *)p)) {
 		LOG("Failed to read EEPROM");
@@ -94,6 +98,8 @@ int pl_dispinfo_init_fatfs(struct pl_dispinfo *p)
 {
 	FIL vcom_file;
 	int stat;
+
+	assert(p != NULL);
 
 	LOG("Loading display data from FatFS");
 

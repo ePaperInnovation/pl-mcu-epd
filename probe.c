@@ -33,12 +33,12 @@
 #include <string.h>
 #include <stdio.h>
 #include "probe.h"
-#include "assert.h"
 #include "config.h"
 #include "i2c-eeprom.h"
 #include "vcom.h"
 #include "pmic-tps65185.h"
 #include "pmic-max17135.h"
+#include "assert.h"
 
 #define LOG_TAG "probe"
 #include "utils.h"
@@ -73,11 +73,12 @@ int probe_hwinfo(struct pl_platform *plat, const struct i2c_eeprom *hw_eeprom,
 int probe_i2c(struct pl_platform *plat, struct s1d135xx *s1d135xx,
 	      struct pl_i2c *host_i2c, struct pl_i2c *disp_i2c)
 {
+	static const char px[] = "I2C: ";
 	int stat;
 
 	switch (plat->hwinfo->board.i2c_mode) {
 	case I2C_MODE_HOST: /* MSP430, I2C already initialised */
-		LOG("I2C: Host");
+		LOG("%sHost", px);
 		stat = 0;
 		plat->i2c = host_i2c;
 		break;
@@ -90,22 +91,22 @@ int probe_i2c(struct pl_platform *plat, struct s1d135xx *s1d135xx,
 		 * may also be possible to probe for the presence of the
 		 * S1D13541 via SPI by reading the product code register for
 		 * example.  */
-		LOG("I2C: S1D13541");
+		LOG("%sS1D13541", px);
 		stat = epson_i2c_init(s1d135xx, disp_i2c, EPSON_EPDC_S1D13541);
 		plat->i2c = disp_i2c;
 		break;
 	case I2C_MODE_S1D13524:
-		LOG("I2C: S1D13524");
+		LOG("%sS1D13524", px);
 		stat = epson_i2c_init(s1d135xx, disp_i2c, EPSON_EPDC_S1D13524);
 		plat->i2c = disp_i2c;
 		break;
 	case I2C_MODE_SC18IS6XX:
-		LOG("I2C: not supported");
+		LOG("%snot supported", px);
 		stat = -1;
 		break;
 	case I2C_MODE_NONE:
 	default:
-		abort_msg("Invalid I2C mode");
+		assert_fail("Invalid I2C mode");
 	}
 
 	return stat;
@@ -144,16 +145,18 @@ int probe_hvpmic(struct pl_platform *plat, struct vcom_cal *vcom_cal,
 		 struct pl_epdpsu_gpio *epdpsu_gpio,
 		 struct tps65185_info *pmic_info)
 {
+	static const char px_psu[] = "EPD PSU: ";
+	static const char px_pmic[] = "HV-PMIC: ";
 	const struct pl_hwinfo *hwinfo = plat->hwinfo;
 	int stat;
 
 	/* ToDo: use hwinfo->board.io_config instead */
 	if (!strcmp(hwinfo->board.board_type, "Raven")) {
 		/* Warning: This must not call the epdc functions yet... */
-		LOG("EPD PSU: EPDC");
+		LOG("%sEPDC", px_psu);
 		stat = pl_epdpsu_epdc_init(&plat->psu, &plat->epdc);
 	} else {
-		LOG("EPD PSU: GPIO");
+		LOG("%sGPIO", px_psu);
 		stat = pl_epdpsu_gpio_init(&plat->psu, epdpsu_gpio);
 	}
 
@@ -166,11 +169,11 @@ int probe_hvpmic(struct pl_platform *plat, struct vcom_cal *vcom_cal,
 
 	switch (hwinfo->board.hv_pmic) {
 	case HV_PMIC_NONE:
-		LOG("HV-PMIC: None");
+		LOG("%sNone", px_pmic);
 		stat = 0;
 		break;
 	case HV_PMIC_MAX17135:
-		LOG("HV-PMIC: MAX17135");
+		LOG("%sMAX17135", px_pmic);
 		stat = max17135_init(
 			plat->i2c, I2C_PMIC_ADDR_MAX17135, &g_max17135);
 		if (!stat)
@@ -182,7 +185,7 @@ int probe_hvpmic(struct pl_platform *plat, struct vcom_cal *vcom_cal,
 
 		break;
 	case HV_PMIC_TPS65185:
-		LOG("HV-PMIC: TPS65185");
+		LOG("%sTPS65185", px_pmic);
 		stat = tps65185_init(pmic_info, plat->i2c,
 				     I2C_PMIC_ADDR_TPS65185, vcom_cal);
 		if (!stat) /* ToDo: generalise set_vcom with HV-PMIC API */
@@ -190,7 +193,7 @@ int probe_hvpmic(struct pl_platform *plat, struct vcom_cal *vcom_cal,
 				pmic_info, plat->dispinfo->info.vcom);
 		break;
 	default:
-		abort_msg("Invalid HV-PMIC id");
+		assert_fail("Invalid HV-PMIC id");
 	}
 
 	return stat;
@@ -198,32 +201,33 @@ int probe_hvpmic(struct pl_platform *plat, struct vcom_cal *vcom_cal,
 
 int probe_epdc(struct pl_platform *plat, struct s1d135xx *s1d135xx)
 {
+	static const char px[] = "EPDC: ";
 	const struct pl_hwinfo *hwinfo = plat->hwinfo;
 	struct pl_epdc *epdc = &plat->epdc;
 	int stat;
 
 	switch (hwinfo->board.epdc_ref) {
 	case EPDC_S1D13524:
-		LOG("EPDC: S1D13524");
+		LOG("%sS1D13524", px);
 		stat = epson_epdc_init(epdc, plat->dispinfo,
 				       EPSON_EPDC_S1D13524, s1d135xx);
 		break;
 	case EPDC_S1D13541:
-		LOG("EPDC: S1D13541");
+		LOG("%sS1D13541", px);
 		stat = epson_epdc_init(epdc, plat->dispinfo,
 				       EPSON_EPDC_S1D13541, s1d135xx);
 		break;
 	case EPDC_NONE:
 #if PL_EPDC_STUB
-		LOG("EPDC: Stub");
+		LOG("%sStub");
 		stat = pl_epdc_stub_init(epdc);
 		break;
 #endif /* fall through otherwise */
 	default:
-		abort_msg("Invalid EPDC identifier");
+		assert_fail("Invalid EPDC identifier");
 	}
 
-#if 1 /* enable during development of new EPDC implementations */
+#if 0 /* enable during development of new EPDC implementations */
 	if (stat)
 		return -1;
 

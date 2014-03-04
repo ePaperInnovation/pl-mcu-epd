@@ -118,7 +118,7 @@ static int s1d13541_set_temp_mode(struct pl_epdc *epdc,
 		reg |= S1D13541_TEMP_SENSOR_EXTERNAL;
 		break;
 	default:
-		abort_msg("Invalid temperature mode");
+		assert_fail("Invalid temperature mode");
 	}
 
 	s1d135xx_write_reg(p, S1D135XX_REG_PERIPH_CONFIG, reg);

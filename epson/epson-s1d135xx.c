@@ -413,7 +413,7 @@ int s1d135xx_set_epd_power(struct s1d135xx *p, int on)
 }
 
 void s1d135xx_cmd(struct s1d135xx *p, uint16_t cmd, const uint16_t *params,
-		 size_t n)
+		  size_t n)
 {
 	set_cs(p, 0);
 	send_cmd(p, cmd);
@@ -487,8 +487,7 @@ static int do_fill(struct s1d135xx *p, const struct pl_area *area,
 		pixels = area->width / 2;
 		break;
 	default:
-		LOG("Invalid bpp");
-		return -1;
+		assert_fail("Invalid bpp");
 	}
 
 	lines = area->height;
@@ -611,17 +610,16 @@ static void send_cmd_cs(struct s1d135xx *p, uint16_t cmd)
 static void send_cmd(struct s1d135xx *p, uint16_t cmd)
 {
 	const unsigned hdc = p->data->hdc;
-	struct pl_gpio *gpio = p->gpio;
 
 	cmd = htobe16(cmd);
 
 	if (hdc != PL_GPIO_NONE)
-		pl_gpio_set(gpio, hdc, 0);
+		pl_gpio_set(p->gpio, hdc, 0);
 
 	spi_write_bytes((uint8_t *)&cmd, sizeof(uint16_t));
 
 	if (hdc != PL_GPIO_NONE)
-		pl_gpio_set(gpio, hdc, 1);
+		pl_gpio_set(p->gpio, hdc, 1);
 }
 
 static void send_params(const uint16_t *params, size_t n)

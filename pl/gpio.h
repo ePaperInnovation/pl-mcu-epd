@@ -45,6 +45,9 @@
 #define pl_gpio_set(_p, _gpio, _value) (_p)->set((_gpio), (_value))
 #endif
 
+/* Set to 1 to enable GPIO debug code */
+#define PL_GPIO_DEBUG 0
+
 /** This value can be used in to indicate that a GPIO is not available */
 #define PL_GPIO_NONE ((unsigned)-1)
 
@@ -106,10 +109,12 @@ struct pl_gpio_config {
 extern int pl_gpio_config_list(struct pl_gpio *gpio,
 			       const struct pl_gpio_config *config, size_t n);
 
+#if PL_GPIO_DEBUG
 /** Log a human-readable version of the flags
     @param[in] flags flags bitmask
 */
 extern void pl_gpio_log_flags(uint16_t flags);
+#endif
 
 /** Check flags are a valid combination
     @param[in] flags flags bitmask

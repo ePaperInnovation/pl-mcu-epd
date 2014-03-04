@@ -30,7 +30,6 @@
 #include <pl/i2c.h>
 #include <pl/hwinfo.h>
 #include <stdint.h>
-#include "assert.h"
 #include "i2c-eeprom.h"
 #include "crc16.h"
 

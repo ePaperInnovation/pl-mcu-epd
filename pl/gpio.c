@@ -49,6 +49,7 @@ int pl_gpio_config_list(struct pl_gpio *gpio,
 	return 0;
 }
 
+#if PL_GPIO_DEBUG
 void pl_gpio_log_flags(uint16_t flags)
 {
 	LOG("flags: 0x%04X %s%s%s%s%s%s%s%s%s%s%s%s",
@@ -66,6 +67,7 @@ void pl_gpio_log_flags(uint16_t flags)
 	    (flags & PL_GPIO_DRIVE_REDUCED) ? "REDUCED " : "",
 	    (flags & PL_GPIO_SPECIAL) ? "SPECIAL " : "");
 }
+#endif
 
 int pl_gpio_check_flags(uint16_t flags)
 {

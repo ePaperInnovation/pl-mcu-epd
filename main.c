@@ -287,21 +287,21 @@ int main_init(void)
 
 	/* initialise GPIO interface */
 	if (msp430_gpio_init(&g_plat.gpio))
-		abort_msg("Failed to initialise GPIO interface");
+		abort_msg("GPIO init failed");
 
 	/* initialise system GPIOs */
 	if (pl_gpio_config_list(&g_plat.gpio, g_gpios, ARRAY_SIZE(g_gpios)))
-		abort_msg("Failed to initialise system GPIOs");
+		abort_msg("System GPIO init failed");
 
 	/* initialize HV-PMIC GPIOs */
 	if (pl_gpio_config_list(&g_plat.gpio, g_hvpmic_gpios,
 				ARRAY_SIZE(g_hvpmic_gpios)))
-		abort_msg("Failed to initialise HV-PMIC GPIOs");
+		abort_msg("HV-PMIC GPIO init failed");
 
 	/* initialise Epson GPIOs */
 	if (pl_gpio_config_list(&g_plat.gpio, g_epson_gpios,
 				ARRAY_SIZE(g_epson_gpios)))
-		abort_msg("Failed to initialise Epson GPIOs");
+		abort_msg("Epson GPIO init failed");
 
 	/* hard-reset Epson controller to avoid errors during soft reset */
 	s1d135xx_hard_reset(&g_plat.gpio, &g_s1d135xx_data);
@@ -310,32 +310,32 @@ int main_init(void)
 	for (i = 0; i < ARRAY_SIZE(g_epson_parallel); ++i) {
 		if (g_plat.gpio.config(g_epson_parallel[i],
 				       PL_GPIO_OUTPUT | PL_GPIO_INIT_L)) {
-			abort_msg("Failed to initialise Epson parallel GPIO");
+			abort_msg("Epson parallel GPIO init failed");
 		}
 	}
 
 	/* initialise MSP430 UART */
 	if (msp430_uart_init(&g_plat.gpio, BR_115200, 'N', 8, 1))
-		abort_msg("Failed to initialise UART");
+		abort_msg("UART init failed");
 
 	/* initialise MSP430 I2C master 0 */
 	if (msp430_i2c_init(&g_plat.gpio, 0, &host_i2c))
-		abort_msg("Failed to initialise I2C bus");
+		abort_msg("I2C init failed");
 
 	/* initialise MSP430 SPI bus */
 	if (spi_init(&g_plat.gpio, SPI_CHANNEL, SPI_DIVISOR))
-		abort_msg("Failed to initialise SPI bus");
+		abort_msg("SPI init failed");
 
 	/* initialise SD-card */
 	SDCard_plat = &g_plat;
 	f_chdrive(0);
 	if (f_mount(0, &sdcard) != FR_OK)
-		abort_msg("Failed to initialise SD card");
+		abort_msg("SD card init failed");
 
 	/* load hardware information */
 #if CONFIG_HWINFO_EEPROM
 	if (probe_hwinfo(&g_plat, &hw_eeprom, &hwinfo_eeprom, HWINFO_DEFAULT))
-		abort_msg("Failed to probe hwinfo");
+		abort_msg("hwinfo probe failed");
 #elif CONFIG_HWINFO_DEFAULT
 	LOG("Using default hwinfo");
 	g_plat.hwinfo = &g_hwinfo_default;
@@ -346,7 +346,7 @@ int main_init(void)
 
 	/* initialise platform I2C bus */
 	if (probe_i2c(&g_plat, &s1d135xx, &host_i2c, &disp_i2c))
-		abort_msg("Failed to initialise platform I2C bus");
+		abort_msg("Platform I2C init failed");
 
 	/* load display information */
 	disp_eeprom.i2c = g_plat.i2c;
@@ -359,11 +359,11 @@ int main_init(void)
 
 	/* initialise EPD HV-PSU and HV-PMIC */
 	if (probe_hvpmic(&g_plat, &vcom_cal, &g_epdpsu_gpio, &pmic_info))
-		abort_msg("Failed to initialise HV-PMIC and EPD PSU");
+		abort_msg("HV-PMIC and EPD PSU init failed");
 
 	/* initialise EPDC */
 	if (probe_epdc(&g_plat, &s1d135xx))
-		abort_msg("Failed to initialise EPDC");
+		abort_msg("EPDC init failed");
 
 	/* run the application */
 	if (app_demo(&g_plat))

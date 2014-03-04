@@ -122,7 +122,7 @@ int epson_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo,
 		stat = epson_epdc_init_s1d13541(epdc);
 		break;
 	default:
-		abort_msg("Invalid Epson ref");
+		assert_fail("Invalid Epson ref");
 	}
 
 	if (stat)
@@ -153,7 +153,7 @@ int epson_epdc_early_init(struct s1d135xx *p, enum epson_epdc_ref ref)
 		stat = epson_epdc_early_init_s1d13541(p);
 		break;
 	default:
-		abort_msg("Invalid Epson ref");
+		assert_fail("Invalid Epson ref");
 	}
 
 	return stat;
