@@ -105,9 +105,9 @@ void s1d135xx_hard_reset(struct pl_gpio *gpio,
 		return;
 	}
 
-	gpio->set(data->reset, 0);
+	pl_gpio_set(gpio, data->reset, 0);
 	mdelay(4);
-	gpio->set(data->reset, 1);
+	pl_gpio_set(gpio, data->reset, 1);
 	mdelay(10);
 }
 
@@ -454,7 +454,7 @@ static int get_hrdy(struct s1d135xx *p)
 	uint16_t status;
 
 	if (p->data->hrdy != PL_GPIO_NONE)
-		return p->gpio->get(p->data->hrdy);
+		return pl_gpio_get(p->gpio, p->data->hrdy);
 
 	status = s1d135xx_read_reg(p, S1D135XX_REG_SYSTEM_STATUS);
 
@@ -616,12 +616,12 @@ static void send_cmd(struct s1d135xx *p, uint16_t cmd)
 	cmd = htobe16(cmd);
 
 	if (hdc != PL_GPIO_NONE)
-		gpio->set(hdc, 0);
+		pl_gpio_set(gpio, hdc, 0);
 
 	spi_write_bytes((uint8_t *)&cmd, sizeof(uint16_t));
 
 	if (hdc != PL_GPIO_NONE)
-		gpio->set(hdc, 1);
+		pl_gpio_set(gpio, hdc, 1);
 }
 
 static void send_params(const uint16_t *params, size_t n)
@@ -640,5 +640,5 @@ static void send_param(uint16_t param)
 
 static void set_cs(struct s1d135xx *p, int state)
 {
-	p->gpio->set(p->data->cs0, state);
+	pl_gpio_set(p->gpio, p->data->cs0, state);
 }

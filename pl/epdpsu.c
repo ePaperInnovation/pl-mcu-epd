@@ -49,21 +49,21 @@ static int pl_epdpsu_gpio_on(struct pl_epdpsu *psu)
 	LOG("on");
 #endif
 
-	p->gpio->set(p->hv_en, 1);
+	pl_gpio_set(p->gpio, p->hv_en, 1);
 
 	for (timeout = p->timeout_ms; timeout; timeout--) {
-		if (p->gpio->get(p->pok))
+		if (pl_gpio_get(p->gpio, p->pok))
 			break;
 		mdelay(1);
 	}
 
 	if (!timeout) {
 		LOG("POK timeout");
-		p->gpio->set(p->hv_en, 0);
+		pl_gpio_set(p->gpio, p->hv_en, 0);
 		return -1;
 	}
 
-	p->gpio->set(p->com_close, 1);
+	pl_gpio_set(p->gpio, p->com_close, 1);
 	psu->state = 1;
 
 	return 0;
@@ -77,8 +77,8 @@ static int pl_epdpsu_gpio_off(struct pl_epdpsu *psu)
 	LOG("off");
 #endif
 
-	p->gpio->set(p->com_close, 0);
-	p->gpio->set(p->hv_en, 0);
+	pl_gpio_set(p->gpio, p->com_close, 0);
+	pl_gpio_set(p->gpio, p->hv_en, 0);
 	psu->state = 0;
 
 	return 0;
