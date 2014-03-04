@@ -40,8 +40,13 @@
 /* Set to 1 to enable verbose debug log messages */
 #define VERBOSE_LOG 0
 
+/* Root path on the SD card */
+#define ROOT_SD_PATH "0:"
+
 /* Ensure the last byte from an EEPROM string is a null character */
 #define STR_TERM(_str) do { _str[PL_DISPINFO_STR_LEN] = '\0'; } while(0)
+
+static int change_panel_dir(const char *panel_type);
 
 int pl_dispinfo_init_eeprom(struct pl_dispinfo *p,
 			    const struct i2c_eeprom *eeprom)
@@ -82,7 +87,7 @@ int pl_dispinfo_init_eeprom(struct pl_dispinfo *p,
 		return -1;
 	}
 
-	return  0;
+	return change_panel_dir(p->info.panel_type);
 }
 
 int pl_dispinfo_init_fatfs(struct pl_dispinfo *p)
@@ -91,6 +96,9 @@ int pl_dispinfo_init_fatfs(struct pl_dispinfo *p)
 	int stat;
 
 	LOG("Loading display data from FatFS");
+
+	if (change_panel_dir(CONFIG_DISPLAY_TYPE))
+		return -1;
 
 	p->vermagic.magic = PL_DISPINFO_MAGIC;
 	p->vermagic.version = PL_DISPINFO_VERSION;
@@ -159,4 +167,19 @@ void pl_dispinfo_log(const struct pl_dispinfo *p)
 	}
 	printf("\n");
 #endif
+}
+
+/* ----------------------------------------------------------------------------
+ * static functions
+ */
+
+static int change_panel_dir(const char *panel_type)
+{
+	char panel_path[MAX_PATH_LEN];
+
+	if (join_path(panel_path, MAX_PATH_LEN, ROOT_SD_PATH, panel_type) ||
+	    (f_chdir(panel_path) != FR_OK))
+		return -1;
+
+	return 0;
 }

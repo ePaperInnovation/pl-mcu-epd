@@ -47,9 +47,6 @@
 #define I2C_PMIC_ADDR_TPS65185 0x68
 #define I2C_PMIC_ADDR_MAX17135 0x48
 
-/* Root path on the SD card */
-#define ROOT_SD_PATH "0:"
-
 #if CONFIG_HWINFO_EEPROM
 int probe_hwinfo(struct pl_platform *plat, const struct i2c_eeprom *hw_eeprom,
 		 struct pl_hwinfo *hwinfo_eeprom,
@@ -119,40 +116,25 @@ int probe_dispinfo(struct pl_dispinfo *dispinfo, struct pl_wflib *wflib,
 		   const struct i2c_eeprom *e,
 		   struct pl_wflib_eeprom_ctx *e_ctx)
 {
-	char disp_path[MAX_PATH_LEN];
-	int stat;
-
 #if CONFIG_DISP_DATA_EEPROM_ONLY
-	stat = (pl_dispinfo_init_eeprom(dispinfo, e) ||
+	return (pl_dispinfo_init_eeprom(dispinfo, e) ||
 		pl_wflib_init_eeprom(wflib, e_ctx, e, dispinfo));
 #elif CONFIG_DISP_DATA_SD_ONLY
-	stat = (pl_dispinfo_init_fatfs(dispinfo) ||
+	return (pl_dispinfo_init_fatfs(dispinfo) ||
 		pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path));
 #elif CONFIG_DISP_DATA_EEPROM_SD
 	if (pl_dispinfo_init_eeprom(dispinfo, e))
-		stat = (pl_dispinfo_init_fatfs(dispinfo) ||
+		return (pl_dispinfo_init_fatfs(dispinfo) ||
 			pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path));
 	else
-		stat = pl_wflib_init_eeprom(wflib, e_ctx, e, dispinfo);
+		return pl_wflib_init_eeprom(wflib, e_ctx, e, dispinfo);
 #elif CONFIG_DISP_DATA_SD_EEPROM
 	if (pl_dispinfo_init_fatfs(dispinfo))
-		stat = (pl_dispinfo_init_eeprom(dispinfo, e) ||
+		return (pl_dispinfo_init_eeprom(dispinfo, e) ||
 			pl_wflib_init_eeprom(wflib, e_ctx, e, dispinfo));
 	else
-		stat = pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path);
+		return pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path);
 #endif
-
-	if (stat)
-		return -1;
-
-	if (join_path(disp_path, MAX_PATH_LEN, ROOT_SD_PATH,
-		      dispinfo->info.panel_type))
-		return -1;
-
-	if (f_chdir(disp_path) != FR_OK)
-		return -1;
-
-	return 0;
 }
 
 /* interim solution */
