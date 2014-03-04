@@ -212,37 +212,43 @@ static const struct s1d135xx_data g_s1d135xx_data = {
 /* --- hardware info --- */
 
 #if CONFIG_HWINFO_DEFAULT
+
+#if CONFIG_PLAT_Z6
+#define BOARD_MAJ 6
+#define BOARD_MIN 3
+#elif CONFIG_PLAT_Z7
+#define BOARD_MAJ 7
+#define BOARD_MIN 2
+#endif
+
 static const struct pl_hwinfo g_hwinfo_default = {
 	/* version */
 	PL_HWINFO_VERSION,
-#if CONFIG_PLAT_Z6
+#if CONFIG_PLAT_Z6 || CONFIG_PLAT_Z7
 	/* vcom */
 	{ 127, 4172, 381, 12490, 25080, -32300, 56886 },
 	/* board */
-	{ "HB", 6, 3, 0, HV_PMIC_TPS65185, 0, 0, 0, I2C_MODE_HOST,
-	  TEMP_SENSOR_LM75, 0, EPDC_S1D13541, 1, 1 },
-#elif CONFIG_PLAT_Z7
-	/* vcom */
-	{ 127, 4172, 381, 12490, 25080, -32300, 56886 },
-	/* board */
-	{ "HB", 7, 2, 0, HV_PMIC_TPS65185, 0, 0, 0, I2C_MODE_HOST,
-	  TEMP_SENSOR_LM75, 0, EPDC_S1D13541, 1, 1 },
+	{ "HB", BOARD_MAJ, BOARD_MIN, 0, HV_PMIC_TPS65185, 0, 0, 0,
+	  CONFIG_DEFAULT_I2C_MODE, TEMP_SENSOR_LM75, 0, EPDC_S1D13541, 1, 1 },
 #elif CONFIG_PLAT_RAVEN
 	/* vcom */
 	{ 63, 4586, 189, 9800, 27770, -41520, 70000 },
 	/* board */
-	{ "Raven", 1, 0, 0, HV_PMIC_MAX17135, 0, 0, 0, I2C_MODE_HOST,
-	  TEMP_SENSOR_LM75, 0, EPDC_S1D13524, 1, 1 },
+	{ "Raven", 1, 0, 0, HV_PMIC_MAX17135, 0, 0, 0,
+	  CONFIG_DEFAULT_I2C_MODE, TEMP_SENSOR_LM75, 0, EPDC_S1D13524, 1, 1 },
 #else
-# error "Sorry, no default hardware data for this platform yet."
+# error "Sorry, no default hardware data available for this platform."
 #endif
 	/* crc */
 	0xFFFF,
 };
+
 #define HWINFO_DEFAULT (&g_hwinfo_default)
-#else
+
+#else /* !CONFIG_HWINFO_DEFAULT */
 #define HWINFO_DEFAULT (NULL)
-#endif
+
+#endif /* CONFIG_HWINFO_DEFAULT */
 
 /* --- waveform library and display info --- */
 
