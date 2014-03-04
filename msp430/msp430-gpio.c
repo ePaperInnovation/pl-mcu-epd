@@ -39,6 +39,7 @@
 #include <stdlib.h>
 #include "assert.h"
 #include "msp430-gpio.h"
+#include "plat-gpio.h"
 
 #define LOG_TAG "msp430-gpio"
 #include "utils.h"
@@ -50,10 +51,10 @@
 #define GPIO_DEBUG 0
 
 /* Set to 1 to enable checks (takes a bit more code space) */
-#define GPIO_CHECK_PARAMETERS 1
+#define GPIO_CHECK_PARAMETERS 0
 
 /* Set to 1 to enable all get-set checks (slows down I/O) */
-#define GPIO_CHECK_GET_SET 1
+#define GPIO_CHECK_GET_SET 0
 
 #define PxIN(_x_)	P ##_x_ ##IN
 #define PxOUT(_x_)	P ##_x_ ##OUT
@@ -64,6 +65,14 @@
 #define PxIES(_x_)	P ##_x_ ##IES
 #define PxIE(_x_)	P ##_x_ ##IE
 #define PxIFG(_x_)	P ##_x_ ##IFG
+
+/* Private functions */
+
+#if GPIO_DEBUG
+static int msp430_gpio_pin_number(uint16_t pinmask);
+#endif
+static void msp430_gpio_check_port(uint16_t port);
+static const struct io_config *msp430_gpio_get_port(unsigned gpio);
 
 /* Could maybe not store offsets if we can compute them?
  * This is a big table but it's in flash. */
@@ -146,26 +155,6 @@ static const struct io_config {
 #endif
 };
 
-#if GPIO_DEBUG
-static int msp430_gpio_pin_number(uint16_t pinmask)
-{
-	int bit;
-
-	for (bit = 0; pinmask; pinmask >>= 1, bit++);
-
-	return bit;
-}
-#endif
-
-static void msp430_gpio_check_port(uint16_t port)
-{
-	if (port >= ARRAY_SIZE(msp430_gpio_defs))
-		abort_msg("Invalid port number");
-
-	if (msp430_gpio_defs[port].in == NULL)
-		abort_msg("Port not available");
-}
-
 static int msp430_gpio_config(unsigned gpio, uint16_t flags)
 {
 	const struct io_config *io;
@@ -231,38 +220,66 @@ static int msp430_gpio_config(unsigned gpio, uint16_t flags)
 	return 0;
 }
 
-static int msp430_gpio_get(unsigned gpio)
+int msp430_gpio_get(unsigned gpio)
 {
-	const uint16_t port = GPIO_PORT(gpio);
-	const uint16_t pinmask = GPIO_PIN(gpio);
+	const struct io_config *port = msp430_gpio_get_port(gpio);
 
-#if GPIO_CHECK_GET_SET
-	msp430_gpio_check_port(port);
-#endif
-
-	return *msp430_gpio_defs[port].in & pinmask;
+	return *port->in & GPIO_PIN(gpio);
 }
 
-static void msp430_gpio_set(unsigned gpio, int value)
+void msp430_gpio_set(unsigned gpio, int value)
 {
-	const uint16_t port = GPIO_PORT(gpio);
+	const struct io_config *port = msp430_gpio_get_port(gpio);
 	const uint16_t pinmask = GPIO_PIN(gpio);
 
-#if GPIO_CHECK_GET_SET
-	msp430_gpio_check_port(port);
-#endif
-
 	if (value)
-		*msp430_gpio_defs[port].out |= pinmask;
+		*port->out |= pinmask;
 	else
-		*msp430_gpio_defs[port].out &= ~pinmask;
+		*port->out &= ~pinmask;
 }
 
 int msp430_gpio_init(struct pl_gpio *gpio)
 {
+	LOG("defs size: %u", (unsigned)sizeof(msp430_gpio_defs));
+
 	gpio->config = msp430_gpio_config;
 	gpio->get = msp430_gpio_get;
 	gpio->set = msp430_gpio_set;
 
 	return 0;
+}
+
+/* ----------------------------------------------------------------------------
+ * private functions
+ */
+
+#if GPIO_DEBUG
+static int msp430_gpio_pin_number(uint16_t pinmask)
+{
+	int bit;
+
+	for (bit = 0; pinmask; pinmask >>= 1, bit++);
+
+	return bit;
+}
+#endif
+
+static void msp430_gpio_check_port(uint16_t port)
+{
+	if (port >= ARRAY_SIZE(msp430_gpio_defs))
+		abort_msg("Invalid port number");
+
+	if (msp430_gpio_defs[port].in == NULL)
+		abort_msg("Port not available");
+}
+
+static const struct io_config *msp430_gpio_get_port(unsigned gpio)
+{
+	const uint16_t port = GPIO_PORT(gpio);
+
+#if GPIO_CHECK_GET_SET
+	msp430_gpio_check_port(port);
+#endif
+
+	return &msp430_gpio_defs[port];
 }

@@ -36,6 +36,15 @@
    Abstract interface to use General Purpose Input / Output signals
 */
 
+/** Optimised API, if defined by the platform */
+#include <plat-gpio.h>
+#ifndef pl_gpio_get
+#define pl_gpio_get(_p, _gpio) (_p)->get((_gpio))
+#endif
+#ifndef pl_gpio_set
+#define pl_gpio_set(_p, _gpio, _value) (_p)->set((_gpio), (_value))
+#endif
+
 /** This value can be used in to indicate that a GPIO is not available */
 #define PL_GPIO_NONE ((unsigned)-1)
 
