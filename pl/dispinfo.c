@@ -39,7 +39,7 @@
 #include "utils.h"
 
 /* Set to 1 to enable verbose debug log messages */
-#define VERBOSE_LOG 0
+#define VERBOSE 0
 
 /* Root path on the SD card */
 #define ROOT_SD_PATH "0:"
@@ -139,31 +139,24 @@ int pl_dispinfo_init_fatfs(struct pl_dispinfo *p)
 
 void pl_dispinfo_log(const struct pl_dispinfo *p)
 {
-#if VERBOSE_LOG
+#if VERBOSE
 	const char *magic = (const char *)&p->vermagic.magic;
-#endif
 
 	LOG("Version: %d", p->vermagic.version);
-
-#if VERBOSE_LOG
 	LOG("Magic: 0x%lX %c%c%c%c",
 	    p->vermagic.magic, magic[0], magic[1], magic[2], magic[3]);
-#endif
-
-#if VERBOSE_LOG
 	LOG("Info CRC: 0x%04X", p->info_crc);
-#endif
-
 	LOG("Panel ID: %s", p->info.panel_id);
+#endif
 	LOG("Panel Type: %s", p->info.panel_type);
 	LOG("VCOM: %li", p->info.vcom);
-#if VERBOSE_LOG
+#if VERBOSE
 	LOG("Waveform Length: %lu", p->info.waveform_full_length);
 	LOG("Waveform Compressed Length: %lu",p->info.waveform_lzss_length);
-#endif
 	LOG("Waveform ID: %s", p->info.waveform_id);
+#endif
 	LOG("Waveform Target: %s", p->info.waveform_target);
-#if VERBOSE_LOG
+#if VERBOSE
 	printf("Waveform MD5: 0x");
 	{
 		int i;

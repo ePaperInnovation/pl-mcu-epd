@@ -36,6 +36,9 @@
 #define LOG_TAG "hwinfo"
 #include "utils.h"
 
+/* Set to 1 to enable verbose log messages */
+#define VERBOSE 0
+
 int pl_hwinfo_init(struct pl_hwinfo *info, const struct i2c_eeprom *eeprom)
 {
 	struct pl_hw_vcom_info *vcom;
@@ -82,16 +85,21 @@ int pl_hwinfo_init(struct pl_hwinfo *info, const struct i2c_eeprom *eeprom)
 
 void pl_hwinfo_log(const struct pl_hwinfo *info)
 {
+#if VERBOSE
 	const struct pl_hw_vcom_info *vcom = &info->vcom;
+#endif
 	const struct pl_hw_board_info *board = &info->board;
 
+#if VERBOSE
 	LOG("Version: %d", info->version);
 	LOG("VCOM DAC info: dac[%d]=%d, dac[%d]=%d",
 	    vcom->dac_x1, vcom->dac_y1, vcom->dac_x2, vcom->dac_y2);
 	LOG("Gate PSU info: VGPOS=%ld, VGNEG=%ld, swing=%ld",
 	    vcom->vgpos_mv, vcom->vgneg_mv, vcom->swing_ideal);
+#endif
 	LOG("Board type: %s, version: %d.%d",
 	    board->board_type, board->board_ver_maj, board->board_ver_min);
+#if VERBOSE
 	LOG("vcom_mode=%d, hv_pmic=%d, vcom_dac=%d, vcom_adc=%d",
 	    board->vcom_mode, board->hv_pmic, board->vcom_dac, board->vcom_adc);
 	LOG("io_config=%d, i2c_mode=%d, temp_sensor=%d, frame_buffer=%d",
@@ -100,4 +108,5 @@ void pl_hwinfo_log(const struct pl_hwinfo *info)
 	LOG("epdc_ref=%d, adc_scale_1=%d, adc_scale_2=%d",
 	    board->epdc_ref, board->adc_scale_1, board->adc_scale_2);
 	LOG("CRC16: %04X", info->crc);
+#endif
 }
