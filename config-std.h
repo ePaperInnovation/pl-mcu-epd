@@ -34,19 +34,19 @@
  * cannot be used (either not programmed, or hardware fault, or
  * CONFIG_HWINFO_EEPROM is not defined).  If set to 0, the system will not be
  * able to work without valid EEPROM data.  */
-#define CONFIG_HWINFO_DEFAULT         1
+#define CONFIG_HWINFO_DEFAULT         0
 
 /** Set one of the following to 1 to manually select te platform.  This will be
  * used if CONFIG_PLAT_AUTO is not defined, or if no platform can be discovered
  * at runtime.  */
-#define CONFIG_PLAT_RAVEN             1 /**< Raven board */
+#define CONFIG_PLAT_RAVEN             0 /**< Raven board */
 #define CONFIG_PLAT_Z13               0 /**< Hummingbird Z1.3 board */
 #define CONFIG_PLAT_Z6                0 /**< Hummingbird Z6.x board */
 #define CONFIG_PLAT_Z7                0 /**< Hummingbird Z7.x board */
 
 /** Default I2C master mode used with CONFIG_HWINFO_DEFAULT (see pl/hwinfo.h
  * and plswmanual.pdf for possible values) */
-#define CONFIG_DEFAULT_I2C_MODE       I2C_MODE_S1D13524
+#define CONFIG_DEFAULT_I2C_MODE       I2C_MODE_NONE
 
 /** Each display has a type and some associated data such as a VCOM voltage and
  * waveform library.  This can either be stored in the display EEPROM or on the
@@ -55,15 +55,15 @@
  *
  * Set one of the following values to 1 in order to choose where the data
  * should be read from: */
-#define CONFIG_DISP_DATA_EEPROM_ONLY  0 /**< Only use display EEPROM */
+#define CONFIG_DISP_DATA_EEPROM_ONLY  1 /**< Only use display EEPROM */
 #define CONFIG_DISP_DATA_SD_ONLY      0 /**< Only use SD card */
-#define CONFIG_DISP_DATA_EEPROM_SD    1 /**< Try EEPROM first, then SD card */
+#define CONFIG_DISP_DATA_EEPROM_SD    0 /**< Try EEPROM first, then SD card */
 #define CONFIG_DISP_DATA_SD_EEPROM    0 /**< Try SD card first, then EEPROM */
 
 /** Set this to manually specify the display type when it could not be detected
  * at run-time.  This is especially useful for displays without an EEPROM such
  * as Type19.  */
-#define CONFIG_DISPLAY_TYPE           "Type11"
+#define CONFIG_DISPLAY_TYPE           (NULL)
 
 /** Set to 1 to use the power state transition demo rather than the slideshow */
 #define CONFIG_DEMO_POWERMODES        0

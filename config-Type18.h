@@ -25,24 +25,28 @@
  */
 
 /** Set to 1 if this CPU is little-endian */
-#define CONFIG_LITTLE_ENDIAN    1
+#define CONFIG_LITTLE_ENDIAN          1
 
 /** Set to 1 to use the VCOM and hardware info stored in board EEPROM **/
-#define CONFIG_HWINFO_EEPROM    1
+#define CONFIG_HWINFO_EEPROM          1
 
 /** Set to 1 to use default VCOM calibration settings if HW info EEPROM data
  * cannot be used (either not programmed, or hardware fault, or
  * CONFIG_HWINFO_EEPROM is not defined).  If set to 0, the system will not be
  * able to work without valid EEPROM data.  */
-#define CONFIG_HWINFO_DEFAULT   1
+#define CONFIG_HWINFO_DEFAULT         1
 
 /** Set one of the following to 1 to manually select te platform.  This will be
  * used if CONFIG_PLAT_AUTO is not defined, or if no platform can be discovered
  * at runtime.  */
-#define CONFIG_PLAT_RAVEN       0       /**< Raven board (Type11) */
-#define CONFIG_PLAT_Z13         0       /**< Hummingbird Z1.3 */
-#define CONFIG_PLAT_Z6          1       /**< Hummingbird Z6.x */
-#define CONFIG_PLAT_Z7          0       /**< Hummingbird Z7.x */
+#define CONFIG_PLAT_RAVEN             0 /**< Raven board */
+#define CONFIG_PLAT_Z13               0 /**< Hummingbird Z1.3 board */
+#define CONFIG_PLAT_Z6                1 /**< Hummingbird Z6.x board */
+#define CONFIG_PLAT_Z7                0 /**< Hummingbird Z7.x board */
+
+/** Default I2C master mode used with CONFIG_HWINFO_DEFAULT (see pl/hwinfo.h
+ * and plswmanual.pdf for possible values) */
+#define CONFIG_DEFAULT_I2C_MODE       I2C_MODE_DISP
 
 /** Each display has a type and some associated data such as a VCOM voltage and
  * waveform library.  This can either be stored in the display EEPROM or on the
@@ -59,9 +63,9 @@
 /** Set this to manually specify the display type when it could not be detected
  * at run-time.  This is especially useful for displays without an EEPROM such
  * as Type19.  */
-#define CONFIG_DISPLAY_TYPE     "Type18"
+#define CONFIG_DISPLAY_TYPE           "Type18"
 
 /** Set to 1 to use the power state transition demo rather than the slideshow */
-#define CONFIG_DEMO_POWERMODES  0
+#define CONFIG_DEMO_POWERMODES        0
 
 #endif /* INCLUDE_CONFIG_H */
