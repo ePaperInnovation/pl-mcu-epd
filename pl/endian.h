@@ -30,17 +30,8 @@
 #include <stdint.h>
 #include "config.h"
 
-/** Swap the 4 bytes of a uint32_t in place */
-#define swap32(_x) do {							\
-	uint8_t *_b = (uint8_t *)&(_x);					\
-	uint8_t _c;							\
-	_c = _b[0];							\
-	_b[0] = _b[3];							\
-	_b[3] = _c;							\
-	_c = _b[1];							\
-	_b[1] = _b[2];							\
-	_b[2] = _c;							\
- } while (0)
+/** Swap the 4 bytes of a uint32_t in place, unaligned */
+extern void swap32(void *x);
 
 #if CONFIG_LITTLE_ENDIAN
 #define htobe16(_x) _swap_bytes(_x)

@@ -49,6 +49,8 @@ int app_demo(struct pl_platform *plat)
 	return stat;
 }
 
+#include <pl/endian.h>
+
 int app_clear(struct pl_platform *plat)
 {
 	struct pl_epdpsu *psu = &plat->psu;

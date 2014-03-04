@@ -25,6 +25,7 @@
  */
 
 #include <pl/types.h>
+#include <pl/endian.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "types.h"
@@ -33,6 +34,19 @@
 #include "pnm-utils.h"
 #include "assert.h"
 #include "utils.h"
+
+void swap32(void *x)
+{
+	uint8_t *b = x;
+	uint8_t tmp;
+
+	tmp = b[0];
+	b[0] = b[3];
+	b[3] = tmp;
+	tmp = b[1];
+	b[1] = b[2];
+	b[2] = tmp;
+}
 
 int join_path(char *path, size_t n, const char *dir, const char *file)
 {

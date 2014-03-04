@@ -66,9 +66,9 @@ int pl_dispinfo_init_eeprom(struct pl_dispinfo *p,
 	p->vermagic.version = be16toh(p->vermagic.version);
 	STR_TERM(p->info.panel_id);
 	STR_TERM(p->info.panel_type);
-	swap32(p->info.vcom);
-	swap32(p->info.waveform_full_length);
-	swap32(p->info.waveform_lzss_length);
+	swap32(&p->info.vcom);
+	swap32(&p->info.waveform_full_length);
+	swap32(&p->info.waveform_lzss_length);
 	STR_TERM(p->info.waveform_id);
 	STR_TERM(p->info.waveform_target);
 	p->info_crc = be16toh(p->info_crc);

@@ -71,9 +71,9 @@ int pl_hwinfo_init(struct pl_hwinfo *info, const struct i2c_eeprom *eeprom)
 	vcom->dac_y1 = be16toh(vcom->dac_y1);
 	vcom->dac_x2 = be16toh(vcom->dac_x2);
 	vcom->dac_y2 = be16toh(vcom->dac_y2);
-	swap32(vcom->vgpos_mv);
-	swap32(vcom->vgneg_mv);
-	swap32(vcom->swing_ideal);
+	swap32(&vcom->vgpos_mv);
+	swap32(&vcom->vgneg_mv);
+	swap32(&vcom->swing_ideal);
 
 	board = &info->board;
 	board->board_type[8] = '\0';
