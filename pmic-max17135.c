@@ -43,6 +43,8 @@
 #define	HVPMIC_TEMP_OPEN	(1 << 1)
 #define	HVPMIC_TEMP_SHORT	(1 << 2)
 
+#define MAX17135_PROD_ID 0x4D
+
 #if 0
 #define MV_DIV	41			// Each DAC step is 41mV ((620/150)*10)
 #define MV_OFFSET	2066	// DAC value of 0 => 2066mV
@@ -141,6 +143,7 @@ struct max17135_info {
 	struct vcom_cal *cal;
 };
 
+/* ToDo: remove and let the caller manage where this structure lives */
 static struct max17135_info pmic_info;
 
 int max17135_init(struct pl_i2c *i2c, uint8_t i2c_addr,
@@ -221,6 +224,11 @@ int max17135_configure(struct max17135_info *pmic, struct vcom_cal *cal,
 
 	LOG("rev 0x%02X, id 0x%02X",
 	    pmic->hvpmic.prod_rev, pmic->hvpmic.prod_id);
+
+	if (pmic->hvpmic.prod_id != MAX17135_PROD_ID) {
+		LOG("Invalid product ID");
+		return -1;
+	}
 
 	if (max17135_temp_disable(pmic))
 		return -1;
