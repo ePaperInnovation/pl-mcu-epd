@@ -144,7 +144,6 @@ int s1d135xx_load_init_code(struct s1d135xx *p)
 	if (f_open(&init_code_file, init_code_path, FA_READ) != FR_OK)
 		return -1;
 
-
 	if (s1d135xx_wait_idle(p))
 		return -1;
 

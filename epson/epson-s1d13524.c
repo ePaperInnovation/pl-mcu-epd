@@ -39,7 +39,8 @@
 #define S1D13524_PLLCFG1                0x0300
 #define S1D13524_PLLCFG2                0x1680
 #define S1D13524_PLLCFG3                0x1880
-#define S1D13524_I2C_CLOCK_DIV          7 /* 100 kHz */
+#define S1D13524_I2C_CLOCK_DIV          7 /* 400 kHz */
+#define S1D13524_I2C_DELAY              3
 #define S1D13524_AUTO_RETRIEVE_ON       0x0000
 #define S1D13524_AUTO_RETRIEVE_OFF      0x0001
 #define S1D13524_LD_IMG_4BPP            (0 << 4)
@@ -228,7 +229,12 @@ int epson_epdc_early_init_s1d13524(struct s1d135xx *p)
 	if (s1d13524_check_rev(p))
 		return -1;
 
-	return s1d13524_init_clocks(p);
+	s1d135xx_write_reg(p, S1D135XX_REG_I2C_STATUS, S1D13524_I2C_DELAY);
+
+	if (s1d13524_init_clocks(p))
+		return -1;
+
+	return s1d135xx_set_power_state(p, PL_EPDC_RUN);
 }
 
 int epson_epdc_init_s1d13524(struct pl_epdc *epdc)
