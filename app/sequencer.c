@@ -24,7 +24,8 @@
  *
  */
 
-#include "app.h"
+#include <app/app.h>
+#include <app/parser.h>
 #include <pl/platform.h>
 #include <pl/epdc.h>
 #include <pl/types.h>

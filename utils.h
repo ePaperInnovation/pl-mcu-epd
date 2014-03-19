@@ -45,34 +45,6 @@ struct pnm_header;
 extern int open_image(const char *dir, const char *file, FIL *f,
 		      struct pnm_header *hrd);
 
-/* -- Lightweight string parser -- */
-
-struct pl_area;
-
-/** Return the offset of the first occurence of any sep characters in str if
- * skip=0, or the first occurence of any character not in sep if skip=1 */
-extern int parser_find_str(const char *str, const char *sep, int skip);
-
-/** Copy the current string until the next separator in out and return the
- * offset to the next string, 0 if last and -1 if error */
-extern int parser_read_str(const char *str, const char *sep, char *out,
-			   int out_len);
-
-/** Same as parser_read_str but convert the string to an integer */
-extern int parser_read_int(const char *str, const char *sep, int *out);
-
-/** Read a series of integers at the given addresses */
-extern int parser_read_int_list(const char *str, const char *sep, int **list);
-
-/** Read area coordinates (left, top, width, height) */
-extern int parser_read_area(const char *str, const char *sep,
-			    struct pl_area *area);
-
-/** Read one line worth of data from a text file
- *  Return 1 if some data was read, 0 if end of file reached and no data was
- *  read but no error occured and -1 if an error occured.  */
-extern int parser_read_file_line(FIL *f, char *buffer, int max_length);
-
 /* -- Debug utilities */
 
 /** Print the contents of a buffer with offsets on stdout */
