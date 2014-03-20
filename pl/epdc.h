@@ -43,7 +43,7 @@
 #define PL_BLACK PL_GL16(0)
 
 enum pl_epdc_power_state {
-	PL_EPDC_RUN,
+	PL_EPDC_RUN = 0,
 	PL_EPDC_STANDBY,
 	PL_EPDC_SLEEP,
 	PL_EPDC_OFF,
@@ -57,6 +57,7 @@ enum pl_epdc_temp_mode {
 
 struct pl_area;
 struct pl_dispinfo;
+struct pl_epdpsu;
 
 struct pl_wfid {
 	const char *path;
@@ -104,6 +105,16 @@ extern const char wf_delta_mono[];    /**< delta/mono */
 
 /** Get a waveform identifier or -1 if not found */
 extern int pl_epdc_get_wfid(struct pl_epdc *p, const char *wf_path);
+
+/** Perform a typical single image update:
+ * # Update temperature
+ * # Turn the EPD PSU on
+ * # Generate an update with the given waveform and area
+ * # Wait for the update to end
+ * # Turn the EPD PSU off
+ */
+extern int pl_epdc_single_update(struct pl_epdc *epdc, struct pl_epdpsu *psu,
+				 int wfid, const struct pl_area *area);
 
 #if PL_EPDC_STUB
 /** Initialise a stub implementation for debugging purposes */

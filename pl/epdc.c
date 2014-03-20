@@ -25,6 +25,7 @@
  */
 
 #include <pl/epdc.h>
+#include <pl/epdpsu.h>
 #if PL_EPDC_STUB
 #include <pl/types.h>
 #endif
@@ -58,6 +59,24 @@ int pl_epdc_get_wfid(struct pl_epdc *p, const char *wf_path)
 			return wfid->id;
 
 	return -1;
+}
+
+int pl_epdc_single_update(struct pl_epdc *epdc, struct pl_epdpsu *psu,
+			  int wfid, const struct pl_area *area)
+{
+	if (epdc->update_temp(epdc))
+		return -1;
+
+	if (psu->on(psu))
+		return -1;
+
+	if (epdc->update(epdc, wfid, area))
+		return -1;
+
+	if (epdc->wait_update_end(epdc))
+		return -1;
+
+	return psu->off(psu);
 }
 
 #if PL_EPDC_STUB
