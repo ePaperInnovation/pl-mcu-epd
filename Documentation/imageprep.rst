@@ -9,7 +9,7 @@ For details see: `http://en.wikipedia.org/wiki/Netpbm_format <http://en.wikipedi
 This is a simple, uncompressed, file format that can be generated with GIMP (Linux or Windows) or using
 the Python Imaging Library.
 
-Image files are expected to match the full display size, and in the case of the Type-19 “bracelet” displays
+Image files are expected to match the full display size, and in the case of the Type19 “bracelet” displays
 the pixel data must be reordered, so that the contents can be transferred directly from storage to the
 display controller.
 
@@ -21,7 +21,7 @@ Image Conversion Tools
 ----------------------
 The code archive contains a python script, img_convert.py, which uses the Python Imaging Library (PIL) to
 support the translation of PNG files to PGM format. The script can also reorder the pixel data as required
-for Type-19 displays.
+for Type19 displays.
 
 The script requires Python version 2.7.5 and a compatible version of the Python Imaging Library (PIL), and
 works in both Linux and Windows.
@@ -42,7 +42,7 @@ destination directory is the same as the Python 2.7.5 installation directory.
 For Linux, use the most recent PIL source kit. Again, installation instructions can be found within the tarball.
 
 Execute the script from the command line in either operating system, passing the image to be converted as
-the first argument. If the target device is using a Type-19 display, pass "scramble" as the second argument
+the first argument. If the target device is using a Type19 display, pass "scramble" as the second argument
 in order to generate the correct pixel data ordering.
 
 e.g. (Linux example):
@@ -54,7 +54,7 @@ output will be image_n.pgm.
 The output files should be copied to the SD Card in the img folder of the appropriate display type folder
 e.g.:
 
-0:/Type-16/img/image_n.pgm
+0:/Type16/img/image_n.pgm
 
 Sequence file
 -------------

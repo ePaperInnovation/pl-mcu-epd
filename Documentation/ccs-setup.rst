@@ -5,11 +5,10 @@ Code Composer Studio Setup
 
 The Plastic Logic reference code project uses Texas Instrument's Code Composer Studio IDE. This section details the steps necessary to set up Code Composer Studio to build and debug the code.
 
-1. Get the source code, either by downloading an archive or cloning the repository:
+1. Get the source code, either by downloading an archive or cloning the
+   repository::
 
-.. code-block:: gitclone
-
-	git clone https://github.com/plasticlogic/pl-mcu-epd.git
+    git clone https://github.com/plasticlogic/pl-mcu-epd.git
 
 
 2. Install `Code Composer Studio <http://processors.wiki.ti.com/index.php/Download_CCS>`_ from TI on MS Windows or GNU/Linux

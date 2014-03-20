@@ -139,7 +139,7 @@ Power State Demo
 
 A power state demo can be launched using the Plastic Logic reference code by including the following in config.h:
 
-.. code-block:: pwrstate
+.. code-block:: c
 
    #define CONFIG_DEMO_POWERMODES 1
 
@@ -167,20 +167,20 @@ required.
 +--------------+------------+------------------------------------------------------+
 | Display Type | Resolution | Notes                                                |
 +==============+============+======================================================+
-| Type-4       | 1280x960   | External Controller                                  |
+| Type4        | 1280x960   | External Controller                                  |
 |              |            | Requires wiring harness - not supported long term    |
 |              |            | This display is no longer available for new designs  |
 +--------------+------------+------------------------------------------------------+
-| Type-11      | 1280x960   | External Controller                                  |
+| Type11       | 1280x960   | External Controller                                  |
 |              |            | Use the Mercury display connector board              |
 +--------------+------------+------------------------------------------------------+
-| Type-16      | 320x240    | Bonded Controller                                    |
+| Type16       | 320x240    | Bonded Controller                                    |
 |              |            | 4.7" @85ppi, 2.7" @150ppi                            |
 +--------------+------------+------------------------------------------------------+
-| Type-18      | 400x240    | Bonded Controller                                    |
+| Type18       | 400x240    | Bonded Controller                                    |
 |              |            | 4.0" @115ppi                                         |
 +--------------+------------+------------------------------------------------------+
-| Type-19      | 720x120    | Bonded Controller                                    |
+| Type19       | 720x120    | Bonded Controller                                    |
 |              |            | 4.9" @150ppi                                         |
 |              |            | Requires pixel data to be reordered                  |
 +--------------+------------+------------------------------------------------------+
@@ -205,7 +205,7 @@ the Z6, but has been introduced as of version 6.3, along with the ability to con
 PMIC wake signals. Both boards are intended to drive an S1D13541 small display controller which is bonded to 
 the display itself. The board has a TI PMIC and a 128B EEPROM for storing power supply calibration data. The 
 VCOM DAC in the PMIC is used to set the VCOM value for the display. The Z7 board is used to drive the 
-Type-19 “Bracelet display” and the Z6 is used to drive all other Plastic Logic small displays.
+Type19 “Bracelet display” and the Z6 is used to drive all other Plastic Logic small displays.
 
 
 HB Z1.3
@@ -219,7 +219,7 @@ use the MAXIM PMIC for small displays but this board remains useful of an exampl
 
 Raven
 ^^^^^
-The Raven board is designed to drive large 10.7” Type-11 displays. The board has an Epson S1D13524
+The Raven board is designed to drive large 10.7” Type11 displays. The board has an Epson S1D13524
 controller and associated memory, a Maxim PMIC, a 128B EEPROM for storing power supply calibration
 data and an LM75 temperature sensor. The VCOM DAC in the PMIC is used to set the VCOM value for the
 display.
@@ -228,12 +228,6 @@ The board has input connectors that allow it to be controlled via the Serial hos
 host interface. Additionally the signals to support data transfer using the TFT interface are available. The
 board has 5 test pads which bring out the 5 Epson GPIO pins found on the S1D13524.
 
-
-Cuckoo
-^^^^^^
-The Cuckoo board is designed to drive large 10.7” Type-4 displays. The board has an Epson S1D13524
-controller and associated memory, and a Maxim PMIC. A separate Maxim 5820 DAC is used to set the
-VCOM value for the display. There is no storage for power supply calibration data on this board.
 
 .. raw:: pdf
 

@@ -1,10 +1,10 @@
-=======
-PL-MCU
-=======
+================================================
+Plastic Logic Micro-Controller E-Paper Reference
+================================================
 
 .. |date| date:: %d %B %Y
 
-:Description: Plastic Logic Microcontroller Platform Manual
+:Description: Plastic Logic Micro-Controller E-Paper Reference Manual
 :Date: |date|
 :Revision: v006
 

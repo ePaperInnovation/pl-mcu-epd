@@ -34,44 +34,29 @@ the config header file (``config.h``). For the best results, it is advisable to 
 as this is tuned for each display.
 
 
-Epson Controller Interface
---------------------------
-The Epson controller interface provides a layer to send high level commands and data to the controllers.
-This encapsulates the SPI interface and the management of other interface signals.
+EPDC API and Epson implementations
+----------------------------------
 
-All commands must pass through this layer on the way to the Epson controller. In order to assist in
-debugging communication issues a detailed trace of interaction with the controller can be enabled by
-setting the CONFIG_TRACE_COMMANDS macro in Epson/Epson-cmd.c to 1:
+The ``<pl/epdc.h>`` header file defines an abstract interface to an E-Paper
+Display Controller implementation.  There are currently two Epson
+implementations (S1D13524 and S1D13541), which internally share some overlap.
+This will generate the appropriate SPI data transfers and control various GPIOs
+to operate the EPDC.
 
-.. code-block:: config
+Utility functions provide higher level functions on top of command transfer
+layer. These functions support initialisation code and waveform loading, frame
+buffer RAM fill, image data transfer and power state transition control.
 
-    /* Enable Epson command tracing */
-    #define CONFIG_TRACE_COMMANDS 0
-
-Sample output:
-
-.. code-block:: sample-output
-
-    [{0x0011}, (0x0008), (0x00ff)] // write register {0x0011}, reg:0x0008, value:0x00ff
-    [{0x0010}, (0x000a) =>0x2000] // read register {0x0010}, reg:0x000a, read:0x2000
-	
-The output can be used with a scope to verify correct operation of the interface signals.
-[ - Epson controller selected
-{Command Word} – HDC => Low
-(Data Word) – HDC => High
-] – Epson controller deselected
-
-Utility functions provide higher level functions on top of command transfer layer. These functions support
-initialisation code and waveform loading, frame buffer RAM fill, image data transfer and power state
-transition control.
-
-It is worth noting that Epson name the SPI data signals with respect to the controller. Hence DI (DataIn) =>
-MOSI, and DO(DataOut) => MISO.
+It is worth noting that Epson name the SPI data signals with respect to the
+controller. Hence DI (DataIn) => MOSI, and DO(DataOut) => MISO.
 
 To prepare the controller for operation it is necessary to send two files to it:
 
-1. A controller initialisation file which customises the controller's behaviour to the type of display it is going to drive, e.g. resolution, driver configuration, clock timings.
-2. A waveform data file which provides display specific timing information required to maximise the performance and image quality of a display.
+1. A controller initialisation file which customises the controller's behaviour
+   to the type of display it is going to drive, e.g. resolution, driver
+   configuration, clock timings.
+2. A waveform data file which provides display specific timing information
+   required to maximise the performance and image quality of a display.
 
 
 Epson S1D135xx I2C Interface
@@ -178,17 +163,24 @@ The TI PMIC is used on boards intended to drive the small displays. Its key feat
 
 Putting it all Together
 -----------------------
-The source code contains examples of how to drive a number of different display interface boards.
 
-The files plat-cuckoo.c, plat-hbz13.c, plat-hbz6.c and plat-raven.c collect together the necessary hardware
-component support in one place and show how they should be initialised and managed to produce a
-working system.
+The source code contains examples of how to drive a number of different display
+interface boards.
 
-plat-hbz6.c and plat-raven.c are the primary reference platforms with the others being legacy platforms
-which are still supported as they provide useful references.
+The ``main.c`` file contains hardware definitions and the ``main_init``
+function which goes through a top-level initialisation sequence.  This is
+common to all Plastic Logic reference hardware combinations.  It calls
+functions in ``probe.c`` to determine any run-time configuration and initialise
+the software and hardware accordingly.
 
-Reviewing these files will make it much clearer how the software components are put together to create a
-working system.
+When porting to a specific product design, typically the ``main_init`` function
+and associated hardware definitions (i.e. GPIOs) would be tailored to only take
+care of the hardware features available on the product.  The ``probe.c``
+functions are here mainly for run-time dynamic configuration, which may not be
+applicable to a fixed and optimised product so initialisation function calls
+may be typically be picked from ``probe.c`` and called directly in
+``main_init``.
+
 
 .. raw:: pdf
 

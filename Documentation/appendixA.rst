@@ -7,7 +7,7 @@ The license text for third party components is reproduced below:
 FatFs
 -----
 
-.. code-block:: fatfs
+.. code-block:: c
 
    /*----------------------------------------------------------------------------/
     * / FatFs - FAT file system module R0.08a		(C)ChaN, 2010
@@ -24,12 +24,13 @@ FatFs
     * / * Redistributions of source code must retain the above copyright notice.
     * /
     * /-----------------------------------------------------------------------------/
+    */
 
 
 Texas Instruments
 -----------------
 
-.. code-block:: ti
+.. code-block:: c
 
     /* --COPYRIGHT--,BSD_EX
     * Copyright (c) 2012, Texas Instruments Incorporated

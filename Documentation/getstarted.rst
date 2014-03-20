@@ -36,7 +36,7 @@ SD Card Setup
 -------------
 The micro SD card for the processor board must be formatted as a FAT/FAT16 file-system (not FAT32).
 Unzip the contents of the archive ”Support/sd-card-content/sd-card-gold.zip” and place the resulting files
-on the SD card so that the root directory of the file-system contains the folders Type-4, Type-11 etc.
+on the SD card so that the root directory of the file-system contains the folders Type4, Type11 etc.
 
 The supplied content provides a safe set of configuration data for each type of display. In order to obtain
 the best image quality the waveform.bin and vcom.txt files must be replaced with data specific to the
