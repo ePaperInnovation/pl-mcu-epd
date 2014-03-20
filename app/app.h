@@ -33,6 +33,7 @@ extern int app_stop;
 
 extern int app_demo(struct pl_platform *plat);
 extern int app_clear(struct pl_platform *plat);
+extern int app_power(struct pl_platform *plat, const char *path);
 extern int app_slideshow(struct pl_platform *plat, const char *path);
 extern int app_sequencer(struct pl_platform *plat, const char *path);
 

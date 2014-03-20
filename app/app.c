@@ -41,7 +41,9 @@ int app_demo(struct pl_platform *plat)
 	if (app_clear(plat))
 		return -1;
 
-	if (is_file_present(SLIDES_PATH))
+	if (CONFIG_DEMO_POWERMODES)
+		stat = app_power(plat, "img");
+	else if (is_file_present(SLIDES_PATH))
 		stat = app_sequencer(plat, SLIDES_PATH);
 	else
 		stat = app_slideshow(plat, "img");
