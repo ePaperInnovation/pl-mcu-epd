@@ -127,7 +127,7 @@ static const struct pl_gpio_config g_hvpmic_gpios[] = {
 };
 
 static struct pl_epdpsu_gpio g_epdpsu_gpio = {
-	&g_plat.gpio, PMIC_EN, HVSW_CTRL, PMIC_POK, 100,
+	&g_plat.gpio, PMIC_EN, HVSW_CTRL, PMIC_POK, 300, 5, 100
 };
 
 /* --- Epson GPIOs --- */

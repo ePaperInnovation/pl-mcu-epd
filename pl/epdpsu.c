@@ -64,6 +64,7 @@ static int pl_epdpsu_gpio_on(struct pl_epdpsu *psu)
 	}
 
 	pl_gpio_set(p->gpio, p->com_close, 1);
+	msleep(p->on_delay_ms);
 	psu->state = 1;
 
 	return 0;
@@ -79,6 +80,7 @@ static int pl_epdpsu_gpio_off(struct pl_epdpsu *psu)
 
 	pl_gpio_set(p->gpio, p->com_close, 0);
 	pl_gpio_set(p->gpio, p->hv_en, 0);
+	msleep(p->off_delay_ms);
 	psu->state = 0;
 
 	return 0;

@@ -65,6 +65,8 @@ struct pl_epdpsu_gpio {
 	unsigned com_close;   /**< GPIO number to close the COM switch */
 	unsigned pok;         /**< GPIO number to read Power OK */
 	unsigned timeout_ms;  /**< Maximum time in ms to wait for POK */
+	unsigned on_delay_ms; /**< Delay after turning the power on */
+	unsigned off_delay_ms;/**< Delay after turning the power off */
 };
 
 /**
