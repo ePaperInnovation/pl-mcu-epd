@@ -139,7 +139,7 @@ static struct pl_epdpsu_gpio g_epdpsu_gpio = {
 #define SPI_HDC_USED      1 /* HDC pin is used */
 
 /* Basic signals to enable Epson clock and PSU */
-#define EPSON_3V3_EN      MSP430_GPIO(1,7)
+#define EPSON_VCC_EN      MSP430_GPIO(1,7)
 #define EPSON_CLK_EN      MSP430_GPIO(1,6)
 
 /* Interface control signals */
@@ -174,7 +174,7 @@ static struct pl_epdpsu_gpio g_epdpsu_gpio = {
 #define	EPSON_TFT_CLK     MSP430_GPIO(7,5)
 
 static const struct pl_gpio_config g_epson_gpios[] = {
-	{ EPSON_3V3_EN,  PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+	{ EPSON_VCC_EN,  PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
 	{ EPSON_CLK_EN,  PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
 	{ EPSON_HIRQ,    PL_GPIO_INPUT  | PL_GPIO_PU     },
 	{ EPSON_HRDY,    PL_GPIO_INPUT                   },
@@ -202,6 +202,7 @@ static const struct s1d135xx_data g_s1d135xx_data = {
 #else
 	PL_GPIO_NONE,
 #endif
+	EPSON_CLK_EN, EPSON_VCC_EN
 };
 
 /* --- SPI bus configuration --- */
@@ -239,7 +240,7 @@ static const struct pl_hwinfo g_hwinfo_default = {
 #else
 # error "Sorry, no default hardware data available for this platform."
 #endif
-	/* crc */
+	/* CRC16 (not used when not reading from actual EEPROM) */
 	0xFFFF,
 };
 

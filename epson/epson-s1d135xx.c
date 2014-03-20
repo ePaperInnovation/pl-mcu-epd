@@ -92,6 +92,7 @@ static void send_cmd(struct s1d135xx *p, uint16_t cmd);
 static void send_params(const uint16_t *params, size_t n);
 static void send_param(uint16_t param);
 static void set_cs(struct s1d135xx *p, int state);
+static void set_hdc(struct s1d135xx *p, int state);
 
 /* ----------------------------------------------------------------------------
  * public functions
@@ -364,24 +365,45 @@ int s1d135xx_wait_idle(struct s1d135xx *p)
 int s1d135xx_set_power_state(struct s1d135xx *p,
 			     enum pl_epdc_power_state state)
 {
-	static const uint8_t pwr_cmds[] = {
-		S1D135XX_CMD_RUN, S1D135XX_CMD_STBY, S1D135XX_CMD_SLEEP,
-	};
+	const struct s1d135xx_data *data = p->data;
+	int stat;
 
-	if (state == PL_EPDC_OFF) {
-		LOG("Warning: OFF mode not supported");
-		return 0;
-	}
+	set_cs(p, 1);
+	set_hdc(p, 1);
+	pl_gpio_set(p->gpio, data->vcc_en, 1);
+	pl_gpio_set(p->gpio, data->clk_en, 1);
 
 	if (s1d135xx_wait_idle(p))
 		return -1;
 
-	send_cmd_cs(p, pwr_cmds[state]);
-#if 0 /* ToDo: needed? */
-	mdelay(100);
-#endif
+	switch (state) {
+	case PL_EPDC_RUN:
+		send_cmd_cs(p, S1D135XX_CMD_RUN);
+		stat = s1d135xx_wait_idle(p);
+		break;
 
-	return s1d135xx_wait_idle(p);
+	case PL_EPDC_STANDBY:
+		send_cmd_cs(p, S1D135XX_CMD_STBY);
+		stat = s1d135xx_wait_idle(p);
+		break;
+
+	case PL_EPDC_SLEEP:
+		send_cmd_cs(p, S1D135XX_CMD_STBY);
+		stat = s1d135xx_wait_idle(p);
+		pl_gpio_set(p->gpio, data->clk_en, 0);
+		break;
+
+	case PL_EPDC_OFF:
+		send_cmd_cs(p, S1D135XX_CMD_SLEEP);
+		stat = s1d135xx_wait_idle(p);
+		pl_gpio_set(p->gpio, data->clk_en, 0);
+		pl_gpio_set(p->gpio, data->vcc_en, 0);
+		set_hdc(p, 0);
+		set_cs(p, 0);
+		break;
+	}
+
+	return stat;
 }
 
 int s1d135xx_set_epd_power(struct s1d135xx *p, int on)
@@ -608,17 +630,11 @@ static void send_cmd_cs(struct s1d135xx *p, uint16_t cmd)
 
 static void send_cmd(struct s1d135xx *p, uint16_t cmd)
 {
-	const unsigned hdc = p->data->hdc;
-
 	cmd = htobe16(cmd);
 
-	if (hdc != PL_GPIO_NONE)
-		pl_gpio_set(p->gpio, hdc, 0);
-
+	set_hdc(p, 0);
 	spi_write_bytes((uint8_t *)&cmd, sizeof(uint16_t));
-
-	if (hdc != PL_GPIO_NONE)
-		pl_gpio_set(p->gpio, hdc, 1);
+	set_hdc(p, 1);
 }
 
 static void send_params(const uint16_t *params, size_t n)
@@ -638,4 +654,12 @@ static void send_param(uint16_t param)
 static void set_cs(struct s1d135xx *p, int state)
 {
 	pl_gpio_set(p->gpio, p->data->cs0, state);
+}
+
+static void set_hdc(struct s1d135xx *p, int state)
+{
+	const unsigned hdc = p->data->hdc;
+
+	if (hdc != PL_GPIO_NONE)
+		pl_gpio_set(p->gpio, hdc, state);
 }

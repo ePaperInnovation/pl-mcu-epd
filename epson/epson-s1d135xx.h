@@ -64,6 +64,8 @@ struct s1d135xx_data {
 	unsigned hirq;
 	unsigned hrdy;
 	unsigned hdc;
+	unsigned clk_en;
+	unsigned vcc_en;
 };
 
 struct s1d135xx {
