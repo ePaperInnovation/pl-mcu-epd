@@ -76,7 +76,7 @@
 #define	SEL4        MSP430_GPIO(8,7)
 
 /* Version of pl-mcu-epd */
-static const char VERSION[] = "v006";
+static const char VERSION[] = "v007";
 
 /* Platform instance, to be passed to other modules */
 static struct pl_platform g_plat;

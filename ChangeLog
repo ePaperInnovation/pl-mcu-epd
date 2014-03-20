@@ -1,3 +1,188 @@
+Release v006 -> v007 - 2014-03-20
+
+Guillaume Tucker (181):
+      gitattributes: treat .sh files as binary
+      i2c: code tidy-up
+      i2c-eeprom: code tidy-up
+      plwf: update with changes to i2c-eeprom interface
+      temp-lm75: update with new I2C interface
+      psu-data: update with i2c_eeprom interface changes
+      pmic-max17135.c: tidy-up code and update with new I2C interface
+      pmic-tps65185: tidy-up code
+      plat-*: update with latest interface changes
+      i2c-eeprom.h: put back original order in i2c_eeprom
+      msp430/platform.h: add struct platform for all platforms
+      config-none.h: fix dispkay type identifiers
+      max17135: fix panel type identifiers
+      plat-*: use new platform structure
+      main.c: use struct platform + tidy-up I2C init
+      review and improve build-time compile options
+      config-Type{18|19}.h: update with new build options
+      move i2c files to pl directory + tidy-up
+      add pl/endian.h and remove other endianness definitions
+      update all I2C and endianness things
+      config-Type{18|19}.h: add CONFIG_LITTLE_ENDIAN
+      add Doxyfile and associated doxygen files
+      setver.sh: also update project version in Doxyfile
+      move platform.h to pl directory + tidy-up
+      rename psu-data to pl/hwinfo + review and fix
+      pl/endian.h: fix 32-bit swap operations for non-aligned data
+      vcom: use pl/hwinfo.h for pl_hw_vcom_info
+      plwf.c: use swap32
+      add pl/gpio.c and pl/gpio.h with generic GPIO API
+      msp430-gpio: use new pl_gpio API + tidy-up
+      msp430: use new GPIO API everywhere + tidy-up
+      epson: use new pl_gpio API + tidy-up
+      pl/platform.h: add platform.gpio
+      plat-*: use new pl_gpio API + tidy-up
+      main.c: use new pl_gpio API + tidy-up"
+      utils.h: allow 16 characters for LOG_TAG
+      utils.c: remove dead code util_id_pins
+      pl/gpio.h: complete basic Doxygen comments
+      Doxyfile: add pl/gpio.h
+      main.c, utils.c: tidy-up assert and use global platform
+      pl/platform.h: add pl_system_gpio with list of GPIOs
+      main: define and initialise all system GPIOs
+      pl/gpio.h: define PL_GPIO_NONE for unavailable pins
+      pl/hwinfo: add enums with HW info values + split log func
+      pl/platform.h: ad platform.hv_gpio to control HV-PMIC
+      main.c: add all GPIO definitions + fix init calls
+      msp430-main.c: declare void app_main as it never returns
+      epson: use new GPIO definitions
+      types.h: remove enum epdc_type as it's in pl/hwinfo.h
+      plat-*: temporary fix for z6 + fix build for others + wip
+      msp430-uart: tidy-up and add msp430_ prefix
+      console.c: use new msp430_uart_ function names
+      pnm-utils: add pnm_read_int32 + tidy-up
+      i2c-eeprom: use const i2c_eeprom to allow static const data
+      pl/platform.h: remove platform.hw_eeprom as it's only read once
+      pl/hwinfo: use const i2c_eeprom
+      plat-epson: start adding new generic plat_epson_init
+      add probe.c and probe.h to initialise the hardware
+      main.c: use probe and start deprecating plat_*_init
+      plwf: use const struct i2c_eeprom + tidy-up
+      utils: remove util_read_vcom as it's done in probe now
+      plat-*: compile-out deprecated code for now - wip
+      epson: deprecate busy screen API + tidy-up
+      types.h: remove unused types
+      add pl/epdpsu to turn EPD PSU on and off
+      pl/platform.h: replace hv_gpio with psu
+      Doxyfile: add pl/epdpsu.h
+      plat-hbz{6|13}: deprecate old code and remove g_plat
+      main, probe: tidy-up and call imterim app function
+      add pl/epdc: abstract EPDC interface
+      add epson-epdc as first draft implementation
+      pl/platform.h: add platform.epdc
+      pl/*.h: tidy-up INCLUDE_ macros
+      plat-hbz6: use new epdc interface - wip
+      plat-epson: all dead code - wip
+      s1d135xx: remove waveform tables now in epson-epdc
+      probe: update to use pl/epdc
+      pl/epdpsu: add optional stub implementation
+      add pl/types.h with PL specific types
+      main.c: update calls to probe and other top-level functions
+      epson: first working -541 implementation using pl_epdc
+      pl/epdc: add set_temp_mode and wait_update_end
+      plat-*: disable old code and fix API calls
+      probe: tidy-up and use new APIs
+      add app directory with empty app function for now
+      main.c: tidy-up and call app_demo
+      msp430: fix compiler warnings and call main_init
+      app: add sequencer
+      epson: remove broken includes
+      utils: add open_image
+      plat-*: remove slideshow from plat-hbz6 and silence dead code
+      app/app.c: auto select demo mode
+      add pl/disp-data.h with data from plwf.h + add to pl_epdc
+      epson-epdc: use pl_disp_data
+      epson-s1d13541: call send_waveform
+      pl/epdc: add pl_epdc->update_temp
+      epson-s1d135{xx|41}: fix temperature support
+      app/*: use pl_epdc->update_temp
+      epson-s1d13541: initialise display instead of in the app
+      pl/epdc.h: add pl_epdc.fill
+      epson: add epdc->fill for s1d13541
+      pl/epdc: disable stub by default + add 8bpp grey
+      use epdc stub and 8bpp grey levels
+      add pl_epdc.init and call it in app_clear
+      combine pl_epdc.update and .update_area into .update
+      add pl_epdc.load_wf_lib + implement for s1d13541
+      epson-s1d135xx: add send_cmd_cs to reduce code size
+      probe.c: add optional sanity check
+      epson-s1d135xx: port transfer_file to new API
+      add pl_epdc.load_image + s1d13541 implementation
+      app: use pl_epdc.load_image
+      epson-s1d135xx: add send_cmd_area to reduce code size
+      fix a bunch of compiler warnings
+      main.c: fix HW info logic + tested OK with host I2C bus
+      pl/hwinfo: check CRC before version + tweaks
+      pmic-tps65185: tidy-up and merge configure with init
+      epson: fix I2C master support + add early_init
+      platform, probe, main: use Epson I2C master
+      tidy-up various small things
+      add pl/wflib to cope with waveform library data
+      epson: use pl_wflib with s1d13541
+      main, probe: use pl_wflib with SD card FatFS
+      wflib: change API in preparation for EEPROM + LZSS
+      plwf + pl/wflib: use wflib for EEPROM + LZSS support
+      main, probe: enable EEPROM + LZSS
+      lzss: fix error reporting everywhere
+      plwf.c: propagate I/O errors
+      i2c-eeprom: tidy-up and do not use PL_I2C_NO_STOP
+      epson-i2c: fix STOP bits
+      epson: fix loading wflib from EEPROM using Epson I2C
+      plwf: remove struct plwf and use pl_disp_data
+      probe: fix loading wflib from EEPROM
+      refactor plwf and disp_data into wflib and dispinfo
+      epson: use pl_dispinfo
+      epson: use faster polling and add log messages
+      rename hw_info to hwinfo and add to platform
+      main, probe, platform: move I2C init to separate function
+      probe: add probe_dispinfo and use it in main
+      pmic-tps65185: tidy-up and remove static instance
+      main, probe: add probe_hvpmic and probe_epdc
+      platform, main, probe: rename pl_platform for consistency
+      app: use pl_platform
+      msp430-sdcard: use pl_platform + tidy-up
+      epson-s1d13541: epdc.wflib is not a pointer
+      config-Type{18|19}.h: update with latest config options
+      epdc: fix stub implementation
+      remove CONFIG_PLAT_CUCKOO as it's now deprecated
+      probe, main: add probe_hwinfo
+      max17135, probe: fix and call initialisation code
+      epdc, epson: add basic s1d13524 support + rename epdc.clear_init
+      main.c: add Raven board default hw info values
+      epdc, epson: add epdc.set_epd_power
+      pl/epdpsu: add epdc implementation to use epdc.set_epd_power
+      probe: use epdpsu_epdc with Raven
+      config-Type{11|18|19}.h: tidy-up and add Type11
+      epson-s1d135xx: tweak verbose log messages
+      epson: fix s1d13524 + tidy-up common code
+      tweak minor things in various places
+      remove deprecated code and S1D135XX_INTERIM
+      fix f_chdir call to path with display type
+      probe, pl/dispinfo: move f_chdir to dispinfo init functions
+      main.c: fix default hwinfo config
+      update standard config files
+      add directory with test configs
+      gpio: add optimised API using platform macros + disable checks
+      gpio: use optimised API in various places
+      tweak asserts and log message to reduce data size
+      pl/hwinfo, pl/dispinfo: disable verbose log messages
+      convert swap32 to a function to reduce code size
+      msp430-gpio: remove unwanted log message
+      add tests/config-R test config files
+      add test config files for Z7
+      pmic-max17135: add product ID test
+      add tests/config-R-[001:004].h
+      epson: tweak S1D13524 I2C init
+      move lightweight parser from utils.c to app/parser.c
+      pl/epdc: add pl_epdc_single_update for typical update procedure
+      epson: use clk_en and vcc_en when changing power states
+      app: add app_power to go through all the EPDC power states
+      Documentation: update to match latest changes
+      pl/epdpsu: add power on/off delay
+
 Release v005 -> v006 - 2014-01-23
 
 Andrew Cox (10):

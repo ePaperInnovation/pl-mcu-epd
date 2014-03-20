@@ -6,7 +6,7 @@ Plastic Logic Micro-Controller E-Paper Reference
 
 :Description: Plastic Logic Micro-Controller E-Paper Reference Manual
 :Date: |date|
-:Revision: v006
+:Revision: v007
 
 .. Global document settings
 
