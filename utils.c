@@ -69,6 +69,18 @@ void swap16_array(int16_t **x, uint16_t n)
 		swap16(*x++);
 }
 
+int is_file_present(const char *path)
+{
+	FIL f;
+
+	if (f_open(&f, path, FA_READ) != FR_OK)
+		return 0;
+
+	f_close(&f);
+
+	return 1;
+}
+
 int join_path(char *path, size_t n, const char *dir, const char *file)
 {
 	return (snprintf(path, n, "%s/%s", dir, file) >= n) ? -1 : 0;

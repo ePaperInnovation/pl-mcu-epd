@@ -68,7 +68,7 @@ extern void mdelay(uint16_t ms);
 extern void msleep(uint16_t ms);
 
 /** Check for the presence of a file in FatFs */
-#define is_file_present(_path) ({ FILINFO i; f_stat(_path, &i) == FR_OK; })
+extern int is_file_present(const char *path);
 
 /* FatFS only supports 8.3 filenames, and we work from the current directory so
    paths should be short... */

@@ -29,7 +29,7 @@
  * /  f_truncate and useless f_getfree. */
 
 
-#define _FS_MINIMIZE    0   /* 0 to 3 */
+#define _FS_MINIMIZE    1   /* 0 to 3 */
 /* The _FS_MINIMIZE option defines minimization level to remove some functions.
  * /
  * /   0: Full function.
@@ -121,7 +121,7 @@
  * /  enable LFN feature and set _LFN_UNICODE to 1. */
 
 
-#define _FS_RPATH   2           /* 0 to 2 */
+#define _FS_RPATH   1           /* 0 to 2 */
 /* The _FS_RPATH option configures relative path feature.
  * /
  * /   0: Disable relative path feature and remove related functions.

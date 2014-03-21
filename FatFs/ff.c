@@ -332,6 +332,12 @@ static WCHAR LfnBuf[_MAX_LFN + 1];
  *-----------------------------------------------------------------------
  */
 
+#if 1 /* use standard functions... */
+#include <string.h>
+#define mem_cpy(_dst, _src, _cnt) memcpy((_dst), (_src), (_cnt))
+#define mem_set(_dst, _val, _cnt) memset((_dst), (_val), (_cnt))
+#define mem_cmp(_dst, _src, _cnt) memcmp((_dst), (_src), (_cnt))
+#else
 /* Copy memory to memory */
 static
 void mem_cpy (void* dst, const void* src, UINT cnt){
@@ -367,6 +373,7 @@ int mem_cmp (const void* dst, const void* src, UINT cnt){
     while (cnt-- && (r = *d++ - *s++) == 0) ;
     return (r);
 }
+#endif
 
 /* Check if chr is contained in the string */
 static
