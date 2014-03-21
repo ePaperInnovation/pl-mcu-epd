@@ -47,6 +47,28 @@ void swap32(void *x)
 	b[2] = tmp;
 }
 
+void swap32_array(int32_t **x, uint16_t n)
+{
+	while (n--)
+		swap32(*x++);
+}
+
+void swap16(void *x)
+{
+	uint8_t *b = x;
+	uint8_t tmp;
+
+	tmp = b[0];
+	b[0] = b[1];
+	b[1] = tmp;
+}
+
+void swap16_array(int16_t **x, uint16_t n)
+{
+	while (n--)
+		swap16(*x++);
+}
+
 int join_path(char *path, size_t n, const char *dir, const char *file)
 {
 	return (snprintf(path, n, "%s/%s", dir, file) >= n) ? -1 : 0;

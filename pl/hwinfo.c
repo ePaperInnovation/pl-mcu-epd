@@ -53,7 +53,9 @@ int pl_hwinfo_init(struct pl_hwinfo *info, const struct i2c_eeprom *eeprom)
 	crc = crc16_run(crc16_init, (const uint8_t *)info,
 			(sizeof(info->version) + sizeof(info->vcom) +
 			 sizeof(info->board)));
-	info->crc = be16toh(info->crc);
+#if CONFIG_LITTLE_ENDIAN
+	swap16(&info->crc);
+#endif
 
 	if (crc != info->crc) {
 		LOG("CRC mismatch: %04X instead of %04X", crc, info->crc);
@@ -67,18 +69,24 @@ int pl_hwinfo_init(struct pl_hwinfo *info, const struct i2c_eeprom *eeprom)
 	}
 
 	vcom = &info->vcom;
-	vcom->dac_x1 = be16toh(vcom->dac_x1);
-	vcom->dac_y1 = be16toh(vcom->dac_y1);
-	vcom->dac_x2 = be16toh(vcom->dac_x2);
-	vcom->dac_y2 = be16toh(vcom->dac_y2);
-	swap32(&vcom->vgpos_mv);
-	swap32(&vcom->vgneg_mv);
-	swap32(&vcom->swing_ideal);
-
 	board = &info->board;
 	board->board_type[8] = '\0';
-	board->adc_scale_1 = be16toh(board->adc_scale_1);
-	board->adc_scale_2 = be16toh(board->adc_scale_2);
+
+#if CONFIG_LITTLE_ENDIAN
+	{
+		int16_t *data16[] = {
+			&vcom->dac_x1, &vcom->dac_y1,
+			&vcom->dac_x2, &vcom->dac_y2,
+			&board->adc_scale_1, &board->adc_scale_2,
+		};
+		int32_t *data32[] = {
+			&vcom->vgpos_mv, &vcom->vgneg_mv, &vcom->swing_ideal,
+		};
+
+		swap16_array(data16, ARRAY_SIZE(data16));
+		swap32_array(data32, ARRAY_SIZE(data32));
+	}
+#endif
 
 	return 0;
 }

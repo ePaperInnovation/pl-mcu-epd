@@ -54,7 +54,9 @@ int pl_i2c_reg_read_16be(struct pl_i2c *i2c, uint8_t i2c_addr, uint8_t reg,
 	if (i2c->read(i2c, i2c_addr, (uint8_t *)data, 2, 0))
 		return -1;
 
-	*data = be16toh(*data);
+#if CONFIG_LITTLE_ENDIAN
+	swap16(data);
+#endif
 
 	return 0;
 }
