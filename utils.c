@@ -82,15 +82,21 @@ int open_image(const char *dir, const char *file, FIL *f,
 /* Defined in main.c */
 extern void abort_now(const char *abort_msg);
 
-void do_abort_msg(const char *file, unsigned line,
-		  enum abort_error error, const char *message)
+static void do_abort_msg(const char *file, unsigned line,
+			 const char *error_str, const char *message)
 {
-	static const char *error_str[] = {
-		"Fatal error\n", "Assertion failed\n", "Check failed\n",
-	};
-
 	fprintf(stderr, "%s, line %u: %s\n", file, line, message);
-	abort_now(error_str[error]);
+	abort_now(error_str);
+}
+
+void do_abort_msg_assert(const char *file, unsigned line, const char *message)
+{
+	do_abort_msg(file, line, "Assertion failed\n", message);
+}
+
+void do_abort_msg_error(const char *file, unsigned line, const char *message)
+{
+	do_abort_msg(file, line, "Fatal error\n", message);
 }
 
 void dump_hex(const void *data, uint16_t len)

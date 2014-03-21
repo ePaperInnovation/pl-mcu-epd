@@ -30,25 +30,26 @@
 enum abort_error {
 	ABORT_ERROR = 0,
 	ABORT_ASSERT,
-	ABORT_CHECK,
 };
 
-extern void do_abort_msg(const char *file, unsigned line,
-			 enum abort_error error, const char *message);
-
+/* This is always enabled */
 #define abort_msg(_msg) do { \
-	do_abort_msg(__FILE__, __LINE__, ABORT_ERROR, _msg); \
+	do_abort_msg_error(__FILE__, __LINE__, _msg); \
 } while (0)
+
+/* These are typically not called directly but via assert or abort_msg */
+extern void do_abort_msg_assert(const char *f, unsigned line, const char *msg);
+extern void do_abort_msg_error(const char *f, unsigned line, const char *msg);
 
 #if (defined(NDEBUG) || !GLOBAL_ASSERT) && !defined(LOCAL_ASSERT)
 #define assert(_e)
 #define assert_fail(_msg)
 #else
 #define assert(_e) do { \
-	if (!(_e)) do_abort_msg(__FILE__, __LINE__, ABORT_ASSERT, _STR(_e)); \
+	if (!(_e)) do_abort_msg_assert(__FILE__, __LINE__, _STR(_e)); \
 } while (0)
 #define assert_fail(_msg) do { \
-	do_abort_msg(__FILE__, __LINE__, ABORT_ASSERT, _msg); \
+	do_abort_msg_assert(__FILE__, __LINE__, _msg); \
 } while (0)
 #endif
 
