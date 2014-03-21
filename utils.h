@@ -27,7 +27,7 @@
 
 #ifdef LOG_TAG
 #define LOG(msg, ...) \
-	do { printf("%-16s: "msg"\n", LOG_TAG, ##__VA_ARGS__); } while (0)
+	do { printf("%-16s "msg"\n", LOG_TAG, ##__VA_ARGS__); } while (0)
 #else
 #define LOG(msg, ...)
 #endif
@@ -43,10 +43,10 @@
 #define max(x,y)	( (x) > (y) ? (x) : (y) )
 #endif
 
-#define DIV_ROUND_CLOSEST(x, divisor)(			\
-{												\
-	(((x) + ((divisor) / 2)) / (divisor));		\
-}												\
+#define DIV_ROUND_CLOSEST(x, divisor)(				\
+	{							\
+		(((x) + ((divisor) / 2)) / (divisor));		\
+	}							\
 )
 
 #define CPU_CLOCK_SPEED_IN_HZ	20000000L
