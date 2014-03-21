@@ -28,10 +28,12 @@
 #ifndef MSP430_I2C_H
 #define MSP430_I2C_H 1
 
+#include <stdint.h>
+
 struct pl_gpio;
 struct pl_i2c;
 
 extern int msp430_i2c_init(struct pl_gpio *gpio,
-			   u8 channel, struct pl_i2c *i2c);
+			   uint8_t channel, struct pl_i2c *i2c);
 
 #endif /* MSP430_I2C_H */

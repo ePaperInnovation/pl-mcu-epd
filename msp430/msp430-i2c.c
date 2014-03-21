@@ -72,7 +72,7 @@ static int msp430_i2c_read(struct pl_i2c *i2c, uint8_t i2c_addr,
  *   Initialization of the I2C Module.
  *   Which i2c interface is determined at compile time.
  */
-int msp430_i2c_init(struct pl_gpio *gpio, u8 channel, struct pl_i2c *i2c)
+int msp430_i2c_init(struct pl_gpio *gpio, uint8_t channel, struct pl_i2c *i2c)
 {
 	static const struct pl_gpio_config gpios[] = {
 		{ I2C_SCL, PL_GPIO_SPECIAL },
@@ -120,7 +120,7 @@ int msp430_i2c_init(struct pl_gpio *gpio, u8 channel, struct pl_i2c *i2c)
 static int msp430_i2c_write(struct pl_i2c *i2c, uint8_t i2c_addr,
 			    const uint8_t *data, uint8_t count, uint8_t flags)
 {
-	int result = -EIO;
+	int result = -1;
 	unsigned int gie = __get_SR_register() & GIE; //Store current GIE state
 
 	__disable_interrupt();              	// Make this operation atomic
@@ -180,7 +180,7 @@ error:
 static int msp430_i2c_read(struct pl_i2c *i2c, uint8_t i2c_addr, uint8_t *data,
 			   uint8_t count, uint8_t flags)
 {
-	int result = -EIO;
+	int result = -1;
 	int remaining = count;
 	int send_stop;
 	int stop_sent = 0;

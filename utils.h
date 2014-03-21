@@ -24,6 +24,7 @@
 #include "FatFs/ff.h"
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #ifdef LOG_TAG
 #define LOG(msg, ...) \

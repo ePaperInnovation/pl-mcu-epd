@@ -31,7 +31,6 @@
 #include <pl/types.h>
 #include <stdlib.h>
 #include <string.h>
-#include "types.h"
 #include "assert.h"
 
 #define LOG_TAG "sequencer"

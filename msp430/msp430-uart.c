@@ -55,12 +55,10 @@ int fputs(const char *ptr, register FILE *fp);
 
 int msp430_uart_getc(void)
 {
-	int ret = -EAGAIN;
-
 	if (init_done && (UCxnIFG & UCRXIFG))
-		ret = (UCxnRXBUF & 0x00ff);
+		return (UCxnRXBUF & 0x00ff);
 
-	return ret;
+	return -1;
 }
 
 int msp430_uart_putc(int c)
@@ -115,7 +113,7 @@ int msp430_uart_init(struct pl_gpio *gpio, int baud_rate_id, char parity,
 			UCxnCTL0 &= ~UC7BIT;
 			break;
 		default:
-			return -EINVAL;
+			return -1;
 	}
 
 	switch (stop_bits)
@@ -127,7 +125,7 @@ int msp430_uart_init(struct pl_gpio *gpio, int baud_rate_id, char parity,
 			UCxnCTL0 |= UCSPB;
 			break;
 		default:
-			return -EINVAL;
+			return -1;
 	}
 
 	switch (parity)
@@ -142,7 +140,7 @@ int msp430_uart_init(struct pl_gpio *gpio, int baud_rate_id, char parity,
 			UCxnCTL0 |= UCPEN;
 			break;
 		default:
-			return -EINVAL;
+			return -1;
 	}
 
 	/* These registers taken from Table 34-4 and 34-5 of the
@@ -185,7 +183,7 @@ int msp430_uart_init(struct pl_gpio *gpio, int baud_rate_id, char parity,
 			UCxnMCTL = (UCOS16 | UCBRS_0 | UCBRF_7);
 			break;
 		default:
-			return -EINVAL;
+			return -1;
 	}
 
 	// release unit from reset

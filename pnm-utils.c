@@ -58,7 +58,6 @@
  */
 
 #include <stdlib.h>
-#include "types.h"
 #include "assert.h"
 #include "FatFs/ff.h"
 #include "pnm-utils.h"
@@ -155,5 +154,5 @@ int pnm_read_header(FIL *pnm_file, struct pnm_header *hdr)
 
 format_error:
 read_error:
-	return -EINVAL;
+	return -1;
 }

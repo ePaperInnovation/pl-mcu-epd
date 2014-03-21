@@ -220,13 +220,13 @@ int tps65185_wait_pok(struct tps65185_info *p)
 /* use the i2c interface to power up the PMIC */
 int tps65185_enable(struct tps65185_info *p)
 {
-	return -EPERM;
+	return -1;
 }
 
 /* use the i2c interface to power down the PMIC */
 int tps65185_disable(struct tps65185_info *p)
 {
-	return -EPERM;
+	return -1;
 }
 
 int tps65185_temperature_measure(struct tps65185_info *p, int16_t *measured)

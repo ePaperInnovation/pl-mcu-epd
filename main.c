@@ -37,7 +37,6 @@
 #include "vcom.h"
 #include "pmic-tps65185.h"
 #include "assert.h"
-#include "types.h"
 #include "config.h"
 #include "probe.h"
 #include "msp430-i2c.h"

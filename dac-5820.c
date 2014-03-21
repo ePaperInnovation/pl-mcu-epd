@@ -25,9 +25,11 @@
 
 #include <pl/i2c.h>
 #include <stddef.h>
-#include "types.h"
 #include "assert.h"
 #include "vcom.h"
+
+#define LOG_TAG "dac-max5820"
+#include "utils.h"
 
 /* VCOM DAC */
 #define	DAC5820_DAC_MAX		((1 << 8)-1)
@@ -154,8 +156,7 @@ void dac5820_set_voltage(struct dac5820_info *dac, int vcom_mv)
 	dac->dac_value = (u8)dac_value;
 	dac->vcom_mv = vcom_mv;
 
-	printk("DAC5820: VCOM DAC %dmV -> %d\n",
-	       dac->vcom_mv, dac->dac_value);
+	LOG("VCOM DAC %dmV -> %d", dac->vcom_mv, dac->dac_value);
 }
 
 int dac5820_write(struct dac5820_info *dac)

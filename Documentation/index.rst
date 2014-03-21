@@ -24,9 +24,7 @@ Plastic Logic Micro-Controller E-Paper Reference
 
       Page ###Page###
 
-   Copyright (C) 2013 Plastic Logic Limited. All rights reserved.
-   
-
+   Copyright (C) 2013, 2014 Plastic Logic Limited.  All rights reserved.
 
 
 .. Table of contents

@@ -21,7 +21,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <stddef.h>
-#include "types.h"
 #include "assert.h"
 #include "lzss.h"
 

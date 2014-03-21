@@ -24,8 +24,10 @@
  */
 
 #include <pl/i2c.h>
-#include "types.h"
 #include "assert.h"
+
+#define LOG_TAG "lm75"
+#include "utils.h"
 
 #define	LM75_TEMP_DEFAULT	20
 
@@ -87,12 +89,12 @@ int lm75_temperature_measure(struct lm75_info *lm75, short *measured)
 
 	if (ret) {
 		*measured = LM75_TEMP_DEFAULT;
-		ret = -EDEFAULT;
+		ret = -1;
 	}
 	else
 		*measured = (temp.measured >> 1);
 
-	printk("LM75: Temperature: %d\n", *measured);
+	LOG("Temperature: %d", *measured);
 
 	return ret;
 }

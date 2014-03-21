@@ -24,10 +24,10 @@
  */
 
 #include <msp430.h>
-#include "types.h"
 #include "msp430-gpio.h"
+#include <stdint.h>
 
-u8 port2_int_summary = 0;
+uint8_t port2_int_summary = 0;
 
 /***************************************************************************//**
  * @brief   Port 2 interrupt service routine

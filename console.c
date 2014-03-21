@@ -157,7 +157,7 @@ term_process_line(Command *cmd_table)
 
             return r;
         }
-        return -ENOENT;
+        return -1;
     }
 
     /* locate the command in the command table */
@@ -172,7 +172,7 @@ term_process_line(Command *cmd_table)
     /* unknown term_command are reported */
     if (NULL == cmd_table[index].command)
     {
-        return -ENOENT;
+        return -1;
     }
 
     /* Now process the argumemts (if any) */
