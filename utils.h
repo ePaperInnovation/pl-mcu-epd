@@ -20,7 +20,6 @@
 #ifndef INCLUDE_UTIL_H
 #define INCLUDE_UTIL_H 1
 
-#include "types.h"
 #include "FatFs/ff.h"
 #include <stdint.h>
 #include <stdlib.h>
@@ -32,6 +31,41 @@
 #else
 #define LOG(msg, ...)
 #endif
+
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+#endif
+
+#ifndef min
+#define min(x,y)	( (x) < (y) ? (x) : (y) )
+#endif
+#ifndef max
+#define max(x,y)	( (x) > (y) ? (x) : (y) )
+#endif
+
+#define DIV_ROUND_CLOSEST(x, divisor)(			\
+{												\
+	(((x) + ((divisor) / 2)) / (divisor));		\
+}												\
+)
+
+#define CPU_CLOCK_SPEED_IN_HZ	20000000L
+#if CPU_CLOCK_SPEED_IN_HZ < 1000000L
+#error CPU_CLOCK_SPEED_IN_HZ assumed to be more than 1MHz in delay timer calculations
+#endif
+
+typedef uint8_t bool;
+
+enum bool_opts {
+	false = 0,
+	true = 1
+};
+
+/* -- Sleep & delay -- */
+
+extern void udelay(uint16_t us);
+extern void mdelay(uint16_t ms);
+extern void msleep(uint16_t ms);
 
 /** Check for the presence of a file in FatFs */
 #define is_file_present(_path) ({ FILINFO i; f_stat(_path, &i) == FR_OK; })

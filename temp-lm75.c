@@ -24,6 +24,7 @@
  */
 
 #include <pl/i2c.h>
+#include <stdint.h>
 #include "assert.h"
 
 #define LOG_TAG "lm75"
@@ -35,14 +36,14 @@
  * include i2c adapter so epson can check its the same one */
 struct i2c_temp_sensor_info {
 	struct pl_i2c *i2c;
-	u8 i2c_addr;
-	u8 reg;
+	uint8_t i2c_addr;
+	uint8_t reg;
 };
 
 /* Lm75 i2c temperature sensor */
 struct lm75_info {
 	struct pl_i2c *i2c;
-	u8 i2c_addr;
+	uint8_t i2c_addr;
 	struct i2c_temp_sensor_info sensor;
 } lm75_data;
 
@@ -54,7 +55,7 @@ union lm75_temp_value {
 	uint16_t word;
 };
 
-int lm75_init(struct pl_i2c *i2c, u8 i2c_addr, struct lm75_info **lm75)
+int lm75_init(struct pl_i2c *i2c, uint8_t i2c_addr, struct lm75_info **lm75)
 {
 	assert(i2c);
 	assert(lm75);

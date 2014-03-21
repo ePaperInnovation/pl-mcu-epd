@@ -23,14 +23,15 @@
  *
  */
 
-#include "types.h"
+#include "utils.h"
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include "msp430-uart.h"
 
 typedef union arg
 {
-    s32  l;
+    int32_t  l;
     char*  s;
 } ARG;
 
@@ -38,7 +39,7 @@ typedef union arg
  * Typedef for command functions - functions that implement term_command
  * See func entry in struct Command below.
  */
-typedef int CommandFunction(u8, union arg *);
+typedef int CommandFunction(uint8_t, union arg *);
 
 /*
  * Definition of a command entry.
@@ -79,15 +80,15 @@ int term_got_line(void);
 int term_process_line(Command *cmd_table);
 
 
-#define TERM_NO_COMMAND ((u8)0xFF)
+#define TERM_NO_COMMAND ((uint8_t)0xFF)
 
 char term_line[TERM_MAX_INPUTLINE];
 
 ARG term_args[TERM_MAX_ARGS];
-u8  term_last_cmd = TERM_NO_COMMAND;
-u8  term_last_arg;
+uint8_t  term_last_cmd = TERM_NO_COMMAND;
+uint8_t  term_last_arg;
 
-u32 term_hex(const char *);
+uint32_t term_hex(const char *);
 
 CommandFunction pterm_command_help;
 
@@ -96,9 +97,9 @@ Command term_command[] = {
 };
 
 int
-pterm_command_help(u8 argcnt, union arg *args)
+pterm_command_help(uint8_t argcnt, union arg *args)
 {
-    u8 i;
+    uint8_t i;
 
     msp430_uart_puts("help: command listing (name followed by arg string)\n");
 
@@ -127,7 +128,7 @@ int term_process(void)
 int
 term_process_line(Command *cmd_table)
 {
-    u8 index, arg;
+    uint8_t index, arg;
     char  *p;
     char  arg_type;
     int   r;
@@ -213,11 +214,11 @@ term_process_line(Command *cmd_table)
 
                 case 'i':
                 case 'd':
-                    term_args[arg].l = (s32)atol(p);
+                    term_args[arg].l = (int32_t)atol(p);
                     break;
 
                 case 'x':
-                    term_args[arg].l = (s32)term_hex(p);
+                    term_args[arg].l = (int32_t)term_hex(p);
                     break;
 
                 case 's':
@@ -247,7 +248,7 @@ term_got_line(void)
 {
     static int outputPrompt = true;
     static int nextChar = 0;
-    s16 c;
+    int16_t c;
 
     if (outputPrompt)
     {
@@ -291,11 +292,11 @@ term_got_line(void)
  * Convert a single character from hexadecimal to a number.
  * This is a helper function used by term_hex.
  */
-u8
+uint8_t
 term_1_hex(char c)
 {
     static char xdigit[] = "0123456789abcdefABCDEF";
-    u8 i;
+    uint8_t i;
 
     for (i = 0; i < ARRAY_SIZE(xdigit); ++i)
     {
@@ -314,10 +315,10 @@ term_1_hex(char c)
 /*
  * Converts string from hexadecimal number to UInt32.
  */
-u32
+uint32_t
 term_hex(const char *p)
 {
-    u32 x;
+    uint32_t x;
 
     x = 0;
     while (*p)

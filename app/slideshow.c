@@ -31,7 +31,6 @@
 #include <pl/epdpsu.h>
 #include <stdio.h>
 #include <string.h>
-#include "types.h"
 #include "assert.h"
 
 #define LOG_TAG "slideshow"

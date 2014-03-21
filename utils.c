@@ -28,7 +28,6 @@
 #include <pl/endian.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "types.h"
 #include "FatFs/ff.h"
 #include "msp430-gpio.h"
 #include "pnm-utils.h"

@@ -29,7 +29,6 @@
 #include <stdlib.h>
 #include "i2c-eeprom.h"
 #include "assert.h"
-#include "types.h" /* min() */
 
 #define LOG_TAG "i2c-eeprom"
 #include "utils.h"

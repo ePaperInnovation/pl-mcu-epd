@@ -27,13 +27,14 @@
 #define MSP430_SPI_H_
 
 #include <stddef.h>
-#include "types.h"
+#include <stdint.h>
 
 struct pl_gpio;
 
 // function prototypes
-extern int spi_init(struct pl_gpio *gpio, u8 spi_channel, u16 divisor);
-void spi_read_bytes(u8 *buff, size_t size);
-void spi_write_bytes(u8 *buff, size_t size);
+extern int spi_init(struct pl_gpio *gpio, uint8_t spi_channel,
+		    uint16_t divisor);
+void spi_read_bytes(uint8_t *buff, size_t size);
+void spi_write_bytes(uint8_t *buff, size_t size);
 
 #endif /* MSP430_SPI_H_ */

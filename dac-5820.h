@@ -30,7 +30,7 @@ struct dac5820_info;
 
 int dac5820_init(struct pl_i2c *i2c, u8 i2c_addr, struct dac5820_info **dac);
 int dac5820_configure(struct dac5820_info *dac, struct vcom_cal *cal);
-int dac5820_set_power(struct dac5820_info *dac, bool on);
+int dac5820_set_power(struct dac5820_info *dac, int on);
 void dac5820_set_voltage(struct dac5820_info *dac, int vcom_mv);
 int dac5820_write(struct dac5820_info *dac);
 

@@ -25,6 +25,7 @@
 
 #include <pl/i2c.h>
 #include <stddef.h>
+#include <stdint.h>
 #include "assert.h"
 #include "vcom.h"
 
@@ -76,7 +77,7 @@ union dac5820_write_payload {
 		struct dac5820_byte_write_cmd cmd_byte;
 		struct dac5820_byte_write_data data_byte;
 	};
-	u8 bytes[2];
+	uint8_t bytes[2];
 };
 
 union dac5820_ext_payload {
@@ -84,20 +85,20 @@ union dac5820_ext_payload {
 		struct dac5820_byte_write_cmd cmd_byte;
 		struct dac5820_byte_cmd_ext ext_byte;
 	};
-	u8 bytes[2];
+	uint8_t bytes[2];
 };
 
 struct dac5820_info {
 	struct pl_i2c *i2c;
-	u8 i2c_addr;
+	uint8_t i2c_addr;
 	struct vcom_cal *cal;
-	u8 dac_value;
+	uint8_t dac_value;
 	int vcom_mv;
 };
 
 struct dac5820_info vcom_dac;
 
-int dac5820_init(struct pl_i2c *i2c, u8 i2c_addr, struct dac5820_info **dac)
+int dac5820_init(struct pl_i2c *i2c, uint8_t i2c_addr, struct dac5820_info **dac)
 {
 	vcom_dac.i2c_addr = i2c_addr;
 	vcom_dac.i2c = i2c;
@@ -116,7 +117,7 @@ int dac5820_configure(struct dac5820_info *dac, struct vcom_cal *cal)
 	return 0;
 }
 
-int dac5820_set_power(struct dac5820_info *dac, bool on)
+int dac5820_set_power(struct dac5820_info *dac, int on)
 {
 	union dac5820_ext_payload payload;
 
@@ -153,7 +154,7 @@ void dac5820_set_voltage(struct dac5820_info *dac, int vcom_mv)
 	else if (dac_value > DAC5820_DAC_MAX)
 		dac_value = DAC5820_DAC_MAX;
 
-	dac->dac_value = (u8)dac_value;
+	dac->dac_value = (uint8_t)dac_value;
 	dac->vcom_mv = vcom_mv;
 
 	LOG("VCOM DAC %dmV -> %d", dac->vcom_mv, dac->dac_value);

@@ -27,7 +27,7 @@
 #include <pl/gpio.h>
 #include "msp430.h"
 #include "msp430-defs.h"
-#include "types.h" /* ARRAY_SIZE */
+#include "utils.h"
 #include "assert.h"
 #include "msp430-gpio.h"
 #include "msp430-sdcard.h"

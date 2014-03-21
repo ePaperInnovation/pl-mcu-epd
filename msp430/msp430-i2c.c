@@ -29,7 +29,7 @@
 #include <pl/i2c.h>
 #include <msp430.h>
 #include <stdint.h>
-#include "types.h"
+#include "utils.h"
 #include "assert.h"
 #include "msp430-defs.h"
 #include "msp430-gpio.h"

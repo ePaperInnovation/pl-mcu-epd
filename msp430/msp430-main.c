@@ -24,7 +24,7 @@
  */
 
 #include <msp430.h>
-#include "types.h" /* mdelay */
+#include "utils.h"
 #include "hal_pmm.h"
 
 extern int main_init(void);

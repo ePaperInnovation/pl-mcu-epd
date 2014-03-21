@@ -24,7 +24,8 @@
  */
 
 #include <msp430.h>
-#include "types.h"
+#include <stdint.h>
+#include "utils.h"
 #include "msp430-gpio.h"
 
 #define INIT_COUNT_L 0xC3
@@ -36,7 +37,7 @@ static int delay;
 #define CPU_CYCLES_PER_MSECOND (CPU_CLOCK_SPEED_IN_HZ/1000L)
 
 /* Functions for delay/sleep. Needs to be calibrated */
-void udelay(u16 us)
+void udelay(uint16_t us)
 {
 	while (us--)
 	{
@@ -44,7 +45,7 @@ void udelay(u16 us)
 	}
 }
 
-void mdelay(u16 ms)
+void mdelay(uint16_t ms)
 {
     while (ms--)
     {
@@ -52,7 +53,7 @@ void mdelay(u16 ms)
     }
 }
 
-void msleep(u16 ms)
+void msleep(uint16_t ms)
 {
 	mdelay(ms);
 }

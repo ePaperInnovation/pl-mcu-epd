@@ -26,9 +26,10 @@
  */
 
 #include <pl/gpio.h>
+#include <stdint.h>
+#include "utils.h"
 #include "msp430.h"
 #include "msp430-defs.h"
-#include "types.h"
 #include "msp430-uart.h"
 #include "msp430-gpio.h"
 
@@ -46,7 +47,7 @@ typedef void FILE;
 #define CONFIG_UART_PRINTF		0
 
 // protect from calls before intialisation is complete.
-static u8 init_done = 0;
+static uint8_t init_done = 0;
 
 #if CONFIG_UART_PRINTF
 int fputc(int c, register FILE *fp);

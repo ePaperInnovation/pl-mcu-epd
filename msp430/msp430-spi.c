@@ -25,7 +25,7 @@
 
 #include <pl/gpio.h>
 #include <msp430.h>
-#include "types.h"
+#include "utils.h"
 #include "assert.h"
 #include "msp430-defs.h"
 #include "msp430-spi.h"
@@ -53,7 +53,7 @@
 /* We only support a single SPI bus and that bus is defined at compile
  * time.
  */
-int spi_init(struct pl_gpio *gpio, u8 spi_channel, u16 divisor)
+int spi_init(struct pl_gpio *gpio, uint8_t spi_channel, uint16_t divisor)
 {
 	static const struct pl_gpio_config gpios[] = {
 #if CONFIG_IF_PARALLEL
@@ -97,7 +97,7 @@ void spi_close(void)
 #if CONFIG_IF_PARALLEL
 // Higher level read register command needs to know not to ditch first word
 // in parallel port as its valid data.
-void spi_read_bytes(u8 *buff, size_t size)
+void spi_read_bytes(uint8_t *buff, size_t size)
 {
 	assert((size & 1) == 0);
 
@@ -114,7 +114,7 @@ void spi_read_bytes(u8 *buff, size_t size)
 		__no_operation();
 	} while (size -= 2);
 }
-void spi_write_bytes(u8 *buff, size_t size)
+void spi_write_bytes(uint8_t *buff, size_t size)
 {
 	assert((size & 1) == 0);
 
@@ -123,7 +123,7 @@ void spi_write_bytes(u8 *buff, size_t size)
 	P4DIR = 0xff;
 #if 0
 	{
-		u8 bit = 1;
+		uint8_t bit = 1;
 		while (bit)
 		{
 			P4OUT = bit;
@@ -143,7 +143,7 @@ void spi_write_bytes(u8 *buff, size_t size)
 
 #else
 
-void spi_read_bytes(u8 *buff, size_t size)
+void spi_read_bytes(uint8_t *buff, size_t size)
 {
 	unsigned int gie = __get_SR_register() & GIE;	// Store current GIE state
 
@@ -161,7 +161,7 @@ void spi_read_bytes(u8 *buff, size_t size)
     __bis_SR_register(gie);                         // Restore original GIE state
 }
 
-void spi_write_bytes(u8 *buff, size_t size)
+void spi_write_bytes(uint8_t *buff, size_t size)
 {
 	unsigned int gie = __get_SR_register() & GIE;   // Store current GIE state
 
