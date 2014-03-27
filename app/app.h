@@ -36,5 +36,6 @@ extern int app_clear(struct pl_platform *plat);
 extern int app_power(struct pl_platform *plat, const char *path);
 extern int app_slideshow(struct pl_platform *plat, const char *path);
 extern int app_sequencer(struct pl_platform *plat, const char *path);
+extern int app_pattern(struct pl_platform *plat);
 
 #endif /* INCLUDE_APP_H */

@@ -205,6 +205,13 @@ static int s1d13524_fill(struct pl_epdc *epdc, const struct pl_area *area,
 	return s1d135xx_fill(p, S1D13524_LD_IMG_4BPP, 4, area, grey);
 }
 
+static int s1d13524_pattern_check(struct pl_epdc *epdc)
+{
+	struct s1d135xx *p = epdc->data;
+
+	return s1d135xx_pattern_check(p, epdc->yres, epdc->xres, S1D13524_LD_IMG_8BPP);
+}
+
 static int s1d13524_load_image(struct pl_epdc *epdc, const char *path,
 			       const struct pl_area *area, int left, int top)
 {
@@ -270,6 +277,7 @@ int epson_epdc_init_s1d13524(struct pl_epdc *epdc)
 	epdc->set_temp_mode = s1d13524_set_temp_mode;
 	epdc->update_temp = s1d13524_update_temp;
 	epdc->fill = s1d13524_fill;
+	epdc->pattern_check = s1d13524_pattern_check;
 	epdc->load_image = s1d13524_load_image;
 	epdc->wf_table = epson_epdc_wf_table_s1d13524;
 	epdc->xres = s1d135xx_read_reg(p, S1D13524_REG_FRAME_DATA_LENGTH);

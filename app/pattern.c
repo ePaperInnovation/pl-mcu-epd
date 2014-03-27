@@ -1,7 +1,7 @@
 /*
   Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2014 Plastic Logic Limited
+  Copyright (C) 2013, 2014 Plastic Logic Limited
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,65 +17,53 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
- * app/app.c -- Application
+ * app/pattern.c -- Pattern generator app
  *
  * Authors:
  *   Guillaume Tucker <guillaume.tucker@plasticlogic.com>
+ *   Andrew Cox <andrew.cox@plasticlogic.com>
  *
  */
 
-#include <pl/platform.h>
 #include "app.h"
+#include <pl/platform.h>
+#include <pl/epdc.h>
+#include <pl/epdpsu.h>
+#include <stdio.h>
+#include <string.h>
+#include "assert.h"
 
-#define LOG_TAG "app"
+#define LOG_TAG "pattern-demo"
 #include "utils.h"
 
-static const char SLIDES_PATH[] = "img/slides.txt";
-
-int app_stop = 0;
-
-int app_demo(struct pl_platform *plat)
+int app_pattern(struct pl_platform *plat)
 {
-	int stat;
-
-	if (app_clear(plat))
-		return -1;
-
-	if (CONFIG_DEMO_POWERMODES)
-		stat = app_power(plat, "img");
-	else if (CONFIG_DEMO_PATTERN)
-		stat = app_pattern(plat);
-	else if (is_file_present(SLIDES_PATH))
-		stat = app_sequencer(plat, SLIDES_PATH);
-	else
-		stat = app_slideshow(plat, "img");
-
-	return stat;
-}
-
-#include <pl/endian.h>
-
-int app_clear(struct pl_platform *plat)
-{
-	struct pl_epdpsu *psu = &plat->psu;
 	struct pl_epdc *epdc = &plat->epdc;
+	struct pl_epdpsu *psu = &plat->psu;
+	int wfid; /* = pl_epdc_get_wfid(epdc, wf_refresh);*/
 
-	LOG("Clearing the screen");
+	wfid = pl_epdc_get_wfid(epdc, wf_refresh);
 
-	if (epdc->fill(epdc, NULL, PL_WHITE))
+	if (wfid < 0)
 		return -1;
 
-	if (epdc->clear_init(epdc))
+	if (epdc->pattern_check(epdc))
+		return -1;
+
+	if (epdc->update_temp(epdc))
 		return -1;
 
 	if (psu->on(psu))
 		return -1;
 
-	if (epdc->update(epdc, pl_epdc_get_wfid(epdc, wf_init), NULL))
+	if (epdc->update(epdc, wfid, NULL))
 		return -1;
 
 	if (epdc->wait_update_end(epdc))
 		return -1;
 
-	return psu->off(psu);
+	if (psu->off(psu))
+		return -1;
+
+	return 0;
 }

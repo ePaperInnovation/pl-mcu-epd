@@ -68,4 +68,6 @@
 /** Set to 1 to use the power state transition demo rather than the slideshow */
 #define CONFIG_DEMO_POWERMODES        0
 
+#define CONFIG_DEMO_PATTERN           0
+
 #endif /* INCLUDE_CONFIG_H */
