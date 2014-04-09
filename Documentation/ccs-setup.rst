@@ -42,7 +42,7 @@ The Plastic Logic reference code project uses Texas Instrument's Code Composer S
 
    The following project settings need to be modified:
 
-   * **CCS Build -> MSP430 Compiler -> Advanced Debugging Options**
+   * **CCS Build -> MSP430 Compiler -> Debug Options**
         **Debugging Model:** Should be set to **'Full Symbolic Debug'**
 
    * **CCS Build -> MSP430 Compiler -> Advanced Options -> Language Options:** 
@@ -55,7 +55,7 @@ The Plastic Logic reference code project uses Texas Instrument's Code Composer S
        Disable numbers **2** and **5** in the list
 
 
-   * **CCS Build -> MSP430 Linker -> Advanced Options -> Diagnostics:** 
+   * **CCS Build -> MSP430 Compiler -> Advanced Options -> Diagnostic Options:** 
       Check the box for **Emit Diagnostic Identifier Numbers**
 
    * **CCS Build -> MSP430 Linker -> Basic Options**
