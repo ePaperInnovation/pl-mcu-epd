@@ -230,9 +230,6 @@ int max17135_configure(struct max17135_info *pmic, struct vcom_cal *cal,
 		return -1;
 	}
 
-	if (max17135_temp_disable(pmic))
-		return -1;
-
 	memcpy(pmic->hvpmic.timings, timings, HVPMIC_NB_TIMINGS);
 
 	LOG("timings (seq:%d) on: %d, %d, %d, %d, "
