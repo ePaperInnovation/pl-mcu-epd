@@ -261,7 +261,12 @@ static const struct pl_hwinfo g_hwinfo_default = {
 
 /* --- waveform library and display info --- */
 
-static const char g_wflib_fatfs_path[] = "display/waveform.bin";
+#if CONFIG_PLAT_RAVEN
+    static const char g_wflib_fatfs_path[] = "display/waveform.wbf";
+#else
+    static const char g_wflib_fatfs_path[] = "display/waveform.bin";
+#endif
+
 static FIL g_wflib_fatfs_file;
 
 /* --- main --- */
