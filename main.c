@@ -74,6 +74,9 @@
 #define	SEL3        MSP430_GPIO(8,6)
 #define	SEL4        MSP430_GPIO(8,7)
 
+/* Ruddock shutdown (power control) */
+#define RUDDOCK_SHUTDOWN MSP430_GPIO(5,1)
+
 /* Version of pl-mcu-epd */
 static const char VERSION[] = "v007";
 
@@ -104,6 +107,9 @@ static const struct pl_gpio_config g_gpios[] = {
 
 	/* System LEDs */
 	{ ASSERT_LED, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+
+	/* Ruddock shutdown (power control) */
+	{ RUDDOCK_SHUTDOWN, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
 };
 
 static const struct pl_system_gpio g_sys_gpio = {
@@ -111,6 +117,7 @@ static const struct pl_system_gpio g_sys_gpio = {
 	{ SW1, SW2, SW3, SW4, SW5 },
 	{ LED1, LED2, LED3, LED4 },
 	ASSERT_LED,
+	RUDDOCK_SHUTDOWN,
 };
 
 /* --- HV-PMIC GPIOs --- */
@@ -118,15 +125,17 @@ static const struct pl_system_gpio g_sys_gpio = {
 #define HVSW_CTRL         MSP430_GPIO(1,2) /* VCOM switch enable */
 #define PMIC_EN           MSP430_GPIO(1,1) /* HV-PMIC enable */
 #define PMIC_POK          MSP430_GPIO(1,0) /* HV-PMIC power OK */
+#define PMIC_FLT          MSP430_GPIO(2,5) /* HV-PMIC fault condition */
 
 static const struct pl_gpio_config g_hvpmic_gpios[] = {
 	{ HVSW_CTRL,  PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
 	{ PMIC_EN,    PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
 	{ PMIC_POK,   PL_GPIO_INPUT                   },
+	{ PMIC_FLT,   PL_GPIO_INPUT                   },
 };
 
 static struct pl_epdpsu_gpio g_epdpsu_gpio = {
-	&g_plat.gpio, PMIC_EN, HVSW_CTRL, PMIC_POK, 300, 5, 100
+	&g_plat.gpio, PMIC_EN, HVSW_CTRL, PMIC_POK, PMIC_FLT, 300, 5, 100
 };
 
 /* --- Epson GPIOs --- */

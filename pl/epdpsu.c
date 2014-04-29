@@ -95,6 +95,7 @@ int pl_epdpsu_gpio_init(struct pl_epdpsu *psu, struct pl_epdpsu_gpio *p)
 	assert(p->hv_en != PL_GPIO_NONE);
 	assert(p->com_close != PL_GPIO_NONE);
 	assert(p->pok != PL_GPIO_NONE);
+	assert(p->flt != PL_GPIO_NONE);
 
 	psu->on = pl_epdpsu_gpio_on;
 	psu->off = pl_epdpsu_gpio_off;

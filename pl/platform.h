@@ -45,6 +45,7 @@ struct pl_system_gpio {
 	unsigned sw[5];
 	unsigned led[4];
 	unsigned assert_led;
+	unsigned ruddock_shutdown;
 };
 
 struct pl_platform {
