@@ -52,6 +52,7 @@
 #define S1D13524_CTLR_PROCESSED_TRIPLE  0x0002
 
 enum s1d13524_reg {
+	S1D13524_REG_POWER_SAVE_MODE    = 0x0006,
 	S1D13524_REG_FRAME_DATA_LENGTH  = 0x0300,
 	S1D13524_REG_LINE_DATA_LENGTH   = 0x0306,
 	S1D13524_REG_TEMP_AUTO_RETRIEVE = 0x0320,
@@ -323,6 +324,7 @@ static int s1d13524_init_clocks(struct s1d135xx *p)
 	if (s1d135xx_wait_idle(p))
 		return -1;
 
+	s1d135xx_write_reg(p, S1D13524_REG_POWER_SAVE_MODE, 0x0);
 	s1d135xx_write_reg(p, S1D135XX_REG_I2C_CLOCK, S1D13524_I2C_CLOCK_DIV);
 
 	return s1d135xx_wait_idle(p);
