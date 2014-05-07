@@ -86,7 +86,7 @@ static int s1d13524_init_ctlr_mode(struct s1d135xx *p);
 
 static int s1d13524_clear_init(struct pl_epdc *epdc)
 {
-	static const uint16_t params[] = { 0x0000 };
+	static const uint16_t params[] = { 0x0500 };
 	struct s1d135xx *p = epdc->data;
 
 	s1d135xx_cmd(p, 0x32, params, ARRAY_SIZE(params));

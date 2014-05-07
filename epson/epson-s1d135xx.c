@@ -164,7 +164,7 @@ int s1d135xx_load_init_code(struct s1d135xx *p)
 
 	set_cs(p, 0);
 	send_cmd(p, S1D135XX_CMD_INIT_STBY);
-	send_param(0);
+	send_param(0x0500);
 	set_cs(p, 1);
 	mdelay(100);
 
