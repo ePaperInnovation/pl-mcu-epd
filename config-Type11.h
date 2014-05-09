@@ -46,7 +46,7 @@
 
 /** Default I2C master mode used with CONFIG_HWINFO_DEFAULT (see pl/hwinfo.h
  * and plswmanual.pdf for possible values) */
-#define CONFIG_DEFAULT_I2C_MODE       I2C_MODE_S1D13524
+#define CONFIG_DEFAULT_I2C_MODE       I2C_MODE_HOST
 
 /** Each display has a type and some associated data such as a VCOM voltage and
  * waveform library.  This can either be stored in the display EEPROM or on the
