@@ -161,6 +161,8 @@ static int s1d13524_set_temp_mode(struct pl_epdc *epdc,
 		assert_fail("Invalid temperature mode");
 	}
 
+	epdc->temp_mode = mode;
+
 	return stat;
 }
 
