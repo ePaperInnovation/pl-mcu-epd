@@ -32,9 +32,6 @@
 #define LOG_TAG "s1d13541"
 #include "utils.h"
 
-/* Set to 1 to enable verbose temperature log messages */
-#define VERBOSE_TEMPERATURE 1
-
 #define S1D13541_PROD_CODE              0x0053
 #define S1D13541_STATUS_HRDY            (1 << 13)
 #define S1D13541_INTERNAL_CLOCK_ENABLE  (1 << 7)

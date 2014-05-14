@@ -34,6 +34,8 @@
 struct pl_gpio;
 struct pl_wflib;
 
+/* Set to 1 to enable verbose temperature log messages */
+#define VERBOSE_TEMPERATURE                  0
 #define S1D135XX_TEMP_MASK                   0x00FF
 
 enum s1d135xx_reg {
