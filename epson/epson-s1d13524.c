@@ -286,7 +286,7 @@ int epson_epdc_init_s1d13524(struct pl_epdc *epdc)
 	epdc->xres = s1d135xx_read_reg(p, S1D13524_REG_FRAME_DATA_LENGTH);
 	epdc->yres = s1d135xx_read_reg(p, S1D13524_REG_LINE_DATA_LENGTH);
 
-	return epdc->set_temp_mode(epdc, PL_EPDC_TEMP_MANUAL);
+	return epdc->set_temp_mode(epdc, PL_EPDC_TEMP_EXTERNAL);
 }
 
 /* ----------------------------------------------------------------------------
