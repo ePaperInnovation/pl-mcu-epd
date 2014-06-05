@@ -180,8 +180,6 @@ static int s1d13524_update_temp(struct pl_epdc *epdc)
 		new_temp = epdc->manual_temp;
 		break;
 	case PL_EPDC_TEMP_EXTERNAL:
-		/* ToDo */
-		/*p->measured_temp = s1d135xx_read_reg(...);*/
 		new_temp = s1d135xx_read_reg(p, S1D13524_REG_TEMP);
 		break;
 	case PL_EPDC_TEMP_INTERNAL:
