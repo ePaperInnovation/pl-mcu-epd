@@ -42,12 +42,11 @@
 /* Set to 1 to enable verbose update and EPD power on/off log messages */
 #define VERBOSE 0
 
-#define IMAGE_BUFFER_LENGTH             720
 #define DATA_BUFFER_LENGTH              512
 
 #define S1D135XX_WF_MODE(_wf)           (((_wf) << 8) & 0x0F00)
-#define S1D135XX_XMASK                  0x01FF
-#define S1D135XX_YMASK                  0x03FF
+#define S1D135XX_XMASK                  0x0FFF
+#define S1D135XX_YMASK                  0x0FFF
 #define S1D135XX_INIT_CODE_CHECKSUM_OK  (1 << 15)
 #define S1D135XX_PWR_CTRL_UP            0x8001
 #define S1D135XX_PWR_CTRL_DOWN          0x8002
@@ -618,25 +617,42 @@ static int transfer_file(FIL *file)
 static int transfer_image(FIL *f, const struct pl_area *area, int left,
 			  int top, int width)
 {
-	uint8_t data[IMAGE_BUFFER_LENGTH];
+	uint8_t data[DATA_BUFFER_LENGTH];
 	size_t line;
 
-	/* ToDo: allower buffer to be smaller than line length */
-	if (width > IMAGE_BUFFER_LENGTH) {
-		LOG("Image width is bigger than buffer size: %d, max=%d",
-		    width, IMAGE_BUFFER_LENGTH);
+	/* Simple bounds check */
+	if (width < area->width || width < (left + area->width)) {
+		LOG("Invalid combination of width/left/area");
 		return -1;
 	}
 
-	f_lseek(f, f->fptr + ((long)top * (unsigned long)width));
+	if (f_lseek(f, f->fptr + ((long)top * (unsigned long)width)) != FR_OK)
+		return -1;
 
 	for (line = area->height; line; --line) {
 		size_t count;
+		size_t remaining = area->width;
 
-		if (f_read(f, data, width, &count) != FR_OK)
+		/* Find the first relevant pixel (byte) on this line */
+		if (f_lseek(f, f->fptr + (unsigned long)left) != FR_OK)
 			return -1;
 
-		transfer_data(&data[left], area->width);
+		/* Transfer data of interest in chunks */
+		while (remaining) {
+			size_t btr = (remaining <= DATA_BUFFER_LENGTH) ?
+					remaining : DATA_BUFFER_LENGTH;
+
+			if (f_read(f, data, btr, &count) != FR_OK)
+				return -1;
+
+			transfer_data(&data[0], btr);
+
+			remaining -= btr;
+		}
+
+		/* Move file pointer to end of line */
+		if (f_lseek(f, f->fptr + (width - (left + area->width))) != FR_OK)
+			return -1;
 	}
 
 	return 0;
