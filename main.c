@@ -238,7 +238,7 @@ static const struct pl_hwinfo g_hwinfo_default = {
 	{ 127, 4172, 381, 12490, 25080, -32300, 56886 },
 	/* board */
 	{ "HB", BOARD_MAJ, BOARD_MIN, 0, HV_PMIC_TPS65185, 0, 0, 0,
-	  CONFIG_DEFAULT_I2C_MODE, TEMP_SENSOR_LM75, 0, EPDC_S1D13541, 1, 1 },
+	  CONFIG_DEFAULT_I2C_MODE, TEMP_SENSOR_NONE, 0, EPDC_S1D13541, 1, 1 },
 #elif CONFIG_PLAT_RAVEN
 	/* vcom */
 	{ 63, 4586, 189, 9800, 27770, -41520, 70000 },
