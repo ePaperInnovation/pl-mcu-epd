@@ -69,5 +69,6 @@
 #define CONFIG_DEMO_POWERMODES        0
 
 #define CONFIG_DEMO_PATTERN           0
+#define CONFIG_DEMO_PATTERN_SIZE      32
 
 #endif /* INCLUDE_CONFIG_H */

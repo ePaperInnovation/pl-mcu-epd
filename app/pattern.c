@@ -47,7 +47,7 @@ int app_pattern(struct pl_platform *plat)
 	if (wfid < 0)
 		return -1;
 
-	if (epdc->pattern_check(epdc))
+	if (epdc->pattern_check(epdc, CONFIG_DEMO_PATTERN_SIZE))
 		return -1;
 
 	if (epdc->update_temp(epdc))

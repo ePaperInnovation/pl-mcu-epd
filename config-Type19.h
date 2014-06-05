@@ -68,6 +68,7 @@
 /** Set to 1 to use the power state transition demo rather than the slideshow */
 #define CONFIG_DEMO_POWERMODES        0
 
-#define CONFIG_DEMO_PATTERN           0
+#define CONFIG_DEMO_PATTERN           0 /** NOT INTENDED FOR USE ON Type 19 displays  */
+#define CONFIG_DEMO_PATTERN_SIZE      16
 
 #endif /* INCLUDE_CONFIG_H */

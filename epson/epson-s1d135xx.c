@@ -259,11 +259,10 @@ int s1d135xx_fill(struct s1d135xx *p, uint16_t mode, unsigned bpp,
 	return do_fill(p, fill_area, bpp, grey);
 }
 
-int s1d135xx_pattern_check(struct s1d135xx *p, uint16_t height, uint16_t width, uint16_t mode)
+int s1d135xx_pattern_check(struct s1d135xx *p, uint16_t height, uint16_t width, uint16_t checker_size, uint16_t mode)
 {
-	int i = 0, j = 0, k = 0, m = 0;
-	uint8_t checker_size = 32; /* 32 pixel squares */
-	uint16_t colour = 0;
+	uint16_t i = 0, j = 0, k = 0;
+	uint16_t val = 0;
 
 	set_cs(p, 0);
 	send_cmd(p, S1D135XX_CMD_LD_IMG);
@@ -277,22 +276,12 @@ int s1d135xx_pattern_check(struct s1d135xx *p, uint16_t height, uint16_t width, 
 	send_cmd(p, S1D135XX_CMD_WRITE_REG);
 	send_param(S1D135XX_REG_HOST_MEM_PORT);
 
-	for (i = 0; i < width/checker_size; i++) {
-		for (j = 0; j < checker_size; j++) {
-			for (k = 0; k < height/checker_size; k++) {
-				for (m = 0; m < checker_size; m++) {
-					send_param(colour);
-				}
-				if (colour == 0)
-					colour = 0xffff;
-				else
-					colour = 0;
-			}
+	for (i = 0; i < height; i++) {
+		k = i / checker_size;
+		for (j = 0; j < width; j += 2) {
+			val = (k + (j / checker_size)) % 2 ? 0xFFFF : 0x0;
+			send_param(val);
 		}
-		if (colour == 0)
-			colour = 0xffff;
-		else
-			colour = 0;
 	}
 
 	set_cs(p, 1);

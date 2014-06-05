@@ -96,7 +96,7 @@ extern int s1d135xx_clear_init(struct s1d135xx *p);
 extern int s1d135xx_fill(struct s1d135xx *p, uint16_t mode, unsigned bpp,
 			 const struct pl_area *a, uint8_t grey);
 extern int s1d135xx_pattern_check(struct s1d135xx *p, uint16_t height,
-			uint16_t width, uint16_t mode);
+			uint16_t width, uint16_t checker_size, uint16_t mode);
 extern int s1d135xx_load_image(struct s1d135xx *p, const char *path,
 			       uint16_t mode, unsigned bpp,
 			       const struct pl_area *area, int left, int top);
