@@ -100,6 +100,10 @@ int pnm_read_int32(FIL *pnm_file, int32_t *value)
 				if (!in_comment) {
 					val = val * 10 + (ch - '0');
 					digits++;
+
+					if (f_eof(pnm_file)) {
+						found = 1;
+					}
 				}
 				break;
 			default:
