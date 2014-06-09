@@ -3,8 +3,8 @@ Plastic Logic Micro-Controller E-Paper Reference
 ================================================
 
 :Description: Plastic Logic Micro-Controller E-Paper Reference Manual
-:Date: 20 March 2014
-:Revision: v007
+:Date: 09 June 2014
+:Revision: v008 RC1
 
 .. Global document settings
 
@@ -22,14 +22,10 @@ Plastic Logic Micro-Controller E-Paper Reference
 
       Page ###Page###
 
-   Copyright (C) 2013, 2014 Plastic Logic Limited.  All rights reserved.
+   Copyright (C) 2013-2014 Plastic Logic Limited.  All rights reserved.
 
 
 .. Table of contents
-
-.. raw:: pdf
-
-   PageBreak tocPage
 
 .. contents:: Table of contents
    :depth: 3
@@ -42,16 +38,11 @@ Plastic Logic Micro-Controller E-Paper Reference
    PageBreak oneColumn
 
 .. include:: intro.rst
-.. include:: supportedhw.rst
 .. include:: getstarted.rst
 .. include:: imageprep.rst
 .. include:: codestructure.rst
-.. include:: components.rst
-.. include:: hostAL.rst
 .. include:: msp430.rst
-.. include:: ccs-setup.rst
-.. .. include:: pic.rst
-.. .. include:: arm.rst
+.. include:: supportedhw.rst
 .. include:: resources.rst
 .. include:: appendixA.rst
 

@@ -9,22 +9,20 @@ Parrot - MSP430 Processor Board
 -------------------------------
 The Parrot board docks with the Ruddock2 motherboard to provide access to the display interfaces. It has
 the same form factor and connector pin out as a BeagleBone allowing the processors to be easily swapped
-for evaluation or development work.
+for evaluation or development work. The Parrot board can also be used without the Ruddock2 by connecting it directly to the Z6, Z7 or Raven boards via the 24-pin "serial" interface.
 
 The board has the following features:
 
-1. MSP430F5438A, clocked at 20MHz
-2. A 32KHz oscillator for low power operation
-3. micro SD card socket
-4. On-board reset switch
-5. JTAG programming header (an adapter may be required to mate with the MSP-FET430UIF programmer)
-6. All 100 processor pins available on debug headers
-7. On-board power regulation and power socket
-8. The board has 1 LED for power good and another connected to a pin on the processor for status indication.
-9. Provision for an SPI daisy-chain of MSP430 boards using 2 SPI channels (upstream and downstream)
-
-If required the board can be used as a standalone development platform be powered from the JTAG-FET
-programmer.
+- MSP430F5438A, clocked at 20MHz
+- A 32KHz oscillator for low power operation
+- micro SD card socket
+- On-board reset switch
+- JTAG programming header (an adapter may be required to mate with the MSP-FET430UIF programmer)
+- All 100 processor pins available on debug headers
+- On-board power regulation and power socket (can also be powered from USB)
+- The board has 1 LED for power good and another connected to a pin on the processor for status indication
+- 24-pin "serial" interface to Z6, Z7 and Raven boards
+- Provision for an SPI daisy-chain of MSP430 boards using 2 SPI channels (upstream and downstream)
 
 
 Toolchains
@@ -47,7 +45,7 @@ configuration.
 
 A small amount of source code in the platform common layer was taken from Plastic Logic’s equivalent
 Linux drivers. The code uses anonymous unions extensively and in order to get the code to compile it was
-necessary to add a compiler flag to tell it to behave more like gcc.
+necessary to add a compiler flag (``--gcc``) to tell it to behave more like gcc.
 
 For full instructions on how to configure Code Composer Studio for the Plastic Logic reference code project
 please see the chapter 11: Code Composer Studio Setup.
@@ -60,133 +58,7 @@ chain but the work is not yet complete. Much of the code compiles cleanly howeve
 to pragmas used to declare interrupt handlers. Full support for this tool chain will depend on customer demand.
 
 
-MSP430 Specific Host Interfaces
-===============================
-
-GPIO Interface
---------------
-
-This is the reference implementation for the GPIO host interface and can be
-found in msp430-gpio.c. It supports the configuration of all features on all
-pins that can be configured. It is only possible to configure one pin at a time
-in a port. It is not possible to define the configuration of multiple pins in a
-port with one call – e.g. when defining an 8 bit bus as output or input. The
-code attempts to verify the request as much as it can. Much of the error
-checking code can be disabled once the porting process to a new platform has
-been completed and the platform configuration is stable.
-
-
-I2C Interface
--------------
-
-A single i2c interface is supported. I2C is only supported in UCSB modules and
-the chosen UCSB module is defined in the msp430-i2c.c source file by setting
-the macros “USCI_UNIT” and “USCI_CHAN” as required.  The code will then
-reconfigure itself to reference the correct I2C unit. In addition to specifying
-which UCSI module to use the I2C SDA and SCL pins need to be connected to the
-USCI unit by defining the appropriate pins as PIN_SPECIAL in the gpio_request()
-call.
-
-
-SPI Interface – Epson
----------------------
-
-SPI is supported in both USCI_A and USCI_B modules and the chosen USCI module
-is defined in the msp430-spi.c source file by setting the macros “USCI_UNIT”
-and “USCI_CHAN” as required. The code will then reconfigure itself to reference
-the correct SPI unit. In addition to specifying which USCI module to use the
-SPI_CLK, SPI_MOSI and SPI_MISO pins need to be connected to the USCI unit by
-defining the appropriate pins as PIN_SPECIAL in the gpio_request() call. Note
-that it is possible to use both the USCI_A and USCI_B units. i.e. USCI_A0 and
-USCI_B0 are physically different hardware units.
-
-A single SPI interface is supported for Epson controller
-communications. Multiple controllers can be connected to this bus and are
-selected using their chip select lines as required. This interface runs at
-20Mbps reliably. Due to the need to keep the Epson chip selected for the
-duration of the image data transfer the Epson controller must be placed on a
-separate bus to the SD card so that multiple blocks can be read from the SD
-card.
-
-
-SPI Interface – SD Card
------------------------
-
-SPI is supported in both USCI_A and USCI_B modules and the chosen USCI module
-is defined in the msp430-sdcard.c source file by setting the macros “USCI_UNIT”
-and “USCI_CHAN” as required. The code will then reconfigure itself to reference
-the correct SPI unit. In addition to specifying which USCI module to use the
-SPI_CLK, SPI_MOSI and SPI_MISO pins need to be connected to the USCI unit by
-defining the appropriate pins as PIN_SPECIAL in the gpio_request() call. Note
-that it is possible to use both the USCI_A and USCI_B units. i.e. USCI_A0 and
-USCI_B0 are physically different hardware units.
-
-A single SPI interface is supported for transferring data from the micro SD
-card slot. This interface runs at 20Mbps reliably.
-
-UART Interface
---------------
-
-A serial interface is supported using a pin header on the MSP430 board into
-which can be plugged an FTDI active serial –to-USB cable. The code can be
-configured to route all standard output to the serial port rather than back to
-the debugger. This allows debug output still be seen when no debugger is
-attached.
-
-
-Porting the Existing Code to a New MSP430 Processor
----------------------------------------------------
-
-Porting the existing code to a design which requires a different pin out is
-relatively straightforward.  The necessary configuration information is mainly
-contained in the ``main.c`` file.
-
-To reconfigure the reference code follow the sequence below:
-
-1. Determine which USCI units will be used in the new configuration. Ensure the
-   unit is suitable for its intended purpose.
-2. Determine which pins are associated with the chosen USCI units.
-3. Determine which pins will be used for the Epson SPI signals HRDY, HDC, and
-   RESET
-4. Determine which pin(s) will be used for the Epson SPI chip select
-5. Determine which pins may be necessary to control the power supplies
-6. In each of the msp430-spi.c, msp430-sdcard.c, msp430-i2c.c and msp430-uart.c
-
-    a. Define USCI_UNIT and USCI_CHAN as required
-    b. Modify the definitions for the pins so they match the chosen UCSI unit.
-    c. E.g.:
-
-.. code-block:: c
-
-    #define USCI_UNIT B
-    #define USCI_CHAN 0
-    // Pins from MSP430 connected to the SD Card
-    #define SD_CS MSP430_GPIO(5,5)
-    #define SD_SIMO MSP430_GPIO(3,1)
-    #define SD_SOMI MSP430_GPIO(3,2)
-    #define SD_CLK MSP430_GPIO(3,3)
-
-7. In ``main.c``, define the Epson SPI interface signals E.g.:
-
-.. code-block:: c
-
-    // Remaining Epson interface pins
-    #define EPSON_HDC MSP430_GPIO(1,3)
-    #define EPSON_HRDY MSP430_GPIO(2,7)
-    #define EPSON_RESET MSP430_GPIO(5,0)
-
-8. In the platform implementation file, e.g. plat-hbz6.c, define the power
-   control and Epson chip select pins. E.g.:
-
-.. code-block:: c
-
-    #define B_HWSW_CTRL MSP430_GPIO(1,2)
-    #define B_POK MSP430_GPIO(1,0)
-    #define B_PMIC_EN MSP430_GPIO(1,1)
-    #define EPSON_CS_0 MSP430_GPIO(3,6)
-	
-Recompile the code and it has now been retargeted to the new pin assignments.
-
 .. raw:: pdf
-
+ 
    PageBreak
+

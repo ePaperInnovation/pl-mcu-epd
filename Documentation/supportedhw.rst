@@ -1,13 +1,66 @@
 Supported Hardware
 ==================
 
+Hardware Components
+-------------------
+This section lists the hardware components commonly found on boards intended to drive Plastic Logic
+displays that require software drivers.
+
+
+Maxim 5820 DAC
+^^^^^^^^^^^^^^
+The 5820 DAC is a general purpose I2C 8bit DAC used to set the VCOM voltage on some boards. It can be
+turned off to save power. The need for an external DAC has largely been removed from new designs by the
+ability to use the VCOM DAC provided in the PMIC instead.
+
+
+Microchip EEPROMs
+^^^^^^^^^^^^^^^^^
+The code supports I2C EEPROMs up to 64KB in size. The code currently supports two I2C EEPROM types:
+
+1. 24LC014 – this is a small 128B EEPROM fitted to later display interface boards and is used to store power supply calibration data. This permits accurate VCOM voltages to be achieved when the display interface board is swapped. It also stores other hardware configuration information.
+2. 24AA256 – this is a 32KB EEPROM found on some display types. It is intended to store waveform information so that the necessary information to drive a display travels with the display. This allows the system to ensure the correct waveform information is used for the display. Since waveforms can exceed 32KB in size, the data stored on this EEPROM is compressed using the LZSS compression algorithm.
+
+EEPROM types can be added by extending the table that defines the device characteristics (in ``i2c-eeprom.c``) and extending the enumeration of EEPROM types (in ``i2c-eeprom.h``).
+
+
+LM75 Temperature Sensor
+^^^^^^^^^^^^^^^^^^^^^^^
+The LM75 temperature sensor is a configurable I2C temperature sensor that can measure temperature
+autonomously at programmable intervals. It can be used when the temperature measuring facilities of the
+PMICs cannot be used for some reason.
+The measured temperature register can be read automatically by the Epson controllers.
+
+
+Maxim MAX17135 HV PMIC
+^^^^^^^^^^^^^^^^^^^^^^
+The Maxim PMIC is used on boards primarily intended to drive the 10.7” displays. Its key features are:
+
+- I2C interface for configuration of power sequence timings
+- Hardware signals for PowerUp/Down, PowerGood and PowerFault
+- I2C commands for PowerUp/Down and power supply monitoring
+- Inbuilt 8bit VCOM DAC
+- Inbuilt LM75 compatible temperature sensor with automatic temperature sensing
+
+
+TI TPS65185 HV PMIC
+^^^^^^^^^^^^^^^^^^^
+The TI PMIC is used on boards intended to drive the small displays. Its key features are:
+
+- I2C interface for configuration of power sequence timings
+- Hardware signals PowerUp/Down, PowerGood and PowerFault
+- I2C commands for PowerUp/Down and power supply monitoring
+- Inbuilt 9bit VCOM DAC
+- Inbuilt LM75 compatible temperature sensor with on demand temperature sensing.
+
+
 Epson Controllers
 -----------------
 Epson have a range of controllers designed to support the output of images onto electrophoretic (EPD)
 displays. The controllers differ in the size of display they can support, whether they have external or
-internal frame buffer memory, on-board or external power supplies and support for color displays.
+internal frame buffer memory, on-board or external power supplies and support for colour displays.
 
-The controllers can be accessed via SPI or a 16 bit parallel data bus.
+The controllers can be accessed via SPI or a 16-bit parallel data bus.
 
 In addition to the main EPD functionality the controllers contain a varying collection of useful hardware
 units that may be required in a system fitted with an electrophoretic display. For example, an I2C master,
@@ -16,9 +69,9 @@ SPI master, GPIO ports, and internal temperature sensor.
 Which options are available will ultimately depend on the controller selected and how it is connected to
 the display and other system components.
 
-The code supports the Epson S1D13524 and S1D13541 controllers in various configurations. The ‘524
-controller supports large and color displays and is fitted to a circuit board with its external SDRAM. The ‘541
-controller supports smaller displays and is physically bonded to the display module.
+The code supports the Epson S1D13524 and S1D13541 controllers in various configurations. The S1D13524
+controller supports large (up to 4096x4096 pixels greyscale) and colour displays and is fitted to a circuit board with its external SDRAM. The S1D13541
+controller supports smaller displays (up to 854x480 pixels greyscale) and is physically bonded to the display module.
 
 
 Power State Management
@@ -63,43 +116,38 @@ Below is a breakdown of the actions that must be taken for each of the power sta
 Run -> Standby:
 ***************
 
-- STBY command (CMD(0x04), no parameters) issued to epson controller
-- Wait for HRDY = 1
-- Standby Mode entered
+1. STBY command (CMD(0x04), no parameters) issued to epson controller
+2. Wait for HRDY = 1
 
 Sleep -> Standby
 ****************
 
-- Set CLK_EN GPIO true to re-enable clock
-- Set REG[0x0006] bit 8 to 1 for normal power supply
-- STBY command (CMD(0x04), no parameters) issued to epson controller
-- Wait for HRDY = 1
-- Standby Mode entered
+1. Set CLK_EN GPIO true to re-enable clock
+2. Set REG[0x0006] bit 8 to 1 for normal power supply
+3. STBY command (CMD(0x04), no parameters) issued to epson controller
+4. Wait for HRDY = 1
 
 Run/Standby -> Sleep:
 *********************
 
-- SLP command (CMD(0x05), no parameters) issued to epson controller
-- Wait for HRDY = 1
-- Set REG[0x0006] bit 8 to 0 for minimum power supply
-- Set CLK_EN GPIO to false to disable clock
-- Sleep Mode entered
+1. SLP command (CMD(0x05), no parameters) issued to epson controller
+2. Wait for HRDY = 1
+3. Set REG[0x0006] bit 8 to 0 for minimum power supply
+4. Set CLK_EN GPIO to false to disable clock
 
 Standby -> Run:
 ***************
 
-- RUN command (CMD(0x02), no parameters) issued to epson controller
-- Wait for HRDY = 1
-- Run Mode entered
+1. RUN command (CMD(0x02), no parameters) issued to epson controller
+2. Wait for HRDY = 1
 
 Sleep -> Run:
 *************
 
-- Set CLK_EN GPIO to true to re-enable clock
-- Set REG[0x0006] bit 8 to 1 for normal power supply
-- RUN command (CMD(0x02), no parameters) issued to epson controller
-- Wait for HRDY
-- Run Mode entered
+1. Set CLK_EN GPIO to true to re-enable clock
+2. Set REG[0x0006] bit 8 to 1 for normal power supply
+3. RUN command (CMD(0x02), no parameters) issued to epson controller
+4. Wait for HRDY = 1
 
 Run/Standby/Sleep -> Power Off
 ******************************
@@ -109,27 +157,27 @@ is to be retained when powering back up, the contents of the image buffer should
 location (eg. an SD card) before continuing with the power off. This image can then be loaded back into 
 the image buffer when coming out of power off mode.
 
-- SLP command (CMD(0x05), no parameters) issued to epson controller
-- Set CLK_EN GPIO to false to disable clock
-- Set 3V3_EN GPIO to false to disable 3V3 power supply
+1. SLP command (CMD(0x05), no parameters) issued to epson controller
+2. Set CLK_EN GPIO to false to disable clock
+3. Set 3V3_EN GPIO to false to disable 3V3 power supply
 
 Power Off -> Standby Mode:
 **************************
 
 Note: after each of the following commands, the host should wait for HRDY to be 1 before continuing
 
-- Set 3V3_EN GPIO to true to enable 3V3 power supply
-- Set CLK_EN GPIO to true to enable clock
-- INIT_CMD_SET command (CMD(0x00 + Epson Instruction Code Binaries)) issued to epson controller
-- INIT_SYS_STBY command (CMD(0x06, no parameters) issued to epson controller
-- Set Protect Key Code to REG[0x042C] and REG[0x042E]
-- BST_WR_MEM command (CMD(0x1D) + Waveform Storage Address) to start loading waveform data
-- WR_REG command (CMD(0x11), 0x154 + Waveform) to load waveform data
-- BST_END_MEM command (CMD(0x1E), no parameters) to end loading waveform data
-- RUN command (CMD(0x02), no parameters) issued to epson controller
-- UPD_GDRV_CLR command (CMD(0x37), no parameters)
-- WAIT_DSPE_TRG command (CMD(0x28), no parameters)
-- S1D13541 is initialised into known state
+1. Set 3V3_EN GPIO to true to enable 3V3 power supply
+2. Set CLK_EN GPIO to true to enable clock
+3. INIT_CMD_SET command (CMD(0x00 + Epson Instruction Code Binaries)) issued to epson controller
+4. INIT_SYS_STBY command (CMD(0x06, no parameters) issued to epson controller
+5. Set Protect Key Code to REG[0x042C] and REG[0x042E]
+6. BST_WR_MEM command (CMD(0x1D) + Waveform Storage Address) to start loading waveform data
+7. WR_REG command (CMD(0x11), 0x154 + Waveform) to load waveform data
+8. BST_END_MEM command (CMD(0x1E), no parameters) to end loading waveform data
+9. RUN command (CMD(0x02), no parameters) issued to epson controller
+10. UPD_GDRV_CLR command (CMD(0x37), no parameters)
+11. WAIT_DSPE_TRG command (CMD(0x28), no parameters)
+12. S1D13541 is initialised into known state
 
 The EPD Panel and Image Buffer should now be initialised to a known state; either the standard
 white initialisation waveform, or image data copied to a safe medium before power off was called.
@@ -167,10 +215,6 @@ required.
 +--------------+------------+------------------------------------------------------+
 | Display Type | Resolution | Notes                                                |
 +==============+============+======================================================+
-| Type4        | 1280x960   | External Controller                                  |
-|              |            | Requires wiring harness - not supported long term    |
-|              |            | This display is no longer available for new designs  |
-+--------------+------------+------------------------------------------------------+
 | Type11       | 1280x960   | External Controller                                  |
 |              |            | Use the Mercury display connector board              |
 +--------------+------------+------------------------------------------------------+
@@ -188,38 +232,23 @@ required.
 
 Ruddock2
 ^^^^^^^^
-The Ruddock2 board is a motherboard that sits between a processor module, currently either BeagleBone
+The Ruddock2 board is a motherboard that sits between a processor board, currently either BeagleBone
 or a microcontroller (MSP430) and the display interface board. It provides signal routing from the processor
-to the interface connectors together with some LED’s and switches that can be used to configure the
+to the interface connectors together with some LEDs and switches that can be used to configure the
 software or create a user interface. The board allows the Epson serial, parallel and TFT interfaces to be
-used depending on the interface board and controller selected. The processor board can remove all power
+used depending on the interface board and controller selected. The processor board can disable all power
 from the Ruddock2 under software control allowing hardware components, e.g. display interface boards, to
 be safely exchanged. The board has a 128B EEPROM which can be used as non-volatile storage if required.
 
 
 HB Z6/Z7
 ^^^^^^^^
-The Z6 and Z7 are very similar boards differing in the display connector used. All versions of the  Z7 board 
-have the provision to turn off 3V3 power to the display controller; this feature is absent on version 6.1 of 
-the Z6, but has been introduced as of version 6.3, along with the ability to control the clock enable and 
-PMIC wake signals. Both boards are intended to drive an S1D13541 small display controller which is bonded to 
-the display itself. The board has a TI PMIC and a 128B EEPROM for storing power supply calibration data. The 
-VCOM DAC in the PMIC is used to set the VCOM value for the display. The Z7 board is used to drive the 
-Type19 “Bracelet display” and the Z6 is used to drive all other Plastic Logic small displays.
-
-
-HB Z1.3
-^^^^^^^
-The Z1.3 board is intended to drive an S1D13541 small display controller which is bonded to the display
-itself. The board has a MAXIM PMIC and a separate Maxim 5820 DAC for setting the VCOM voltage. There
-is no storage for power supply calibration data on this board. Driving this board requires some physical
-modifications to the microcontroller board to resolve an SPI wiring issue. It is no longer recommended to
-use the MAXIM PMIC for small displays but this board remains useful of an example of how to if required.
+The Z6 and Z7 are intented to drive a S1D13541 small display controller which is bonded to the display itself. The boards differ in the display connector used. The Z7 board is used to drive the Type19 "Bracelet" display and the Z6 is used to drive all other Plastic Logic small displays. The boards have a TI PMIC and a 128B EEPROM for storing power supply calibration data. The VCOM DAC in the PMIC is used to set the VCOM value for the display. All versions of the Z7 board have the provision to turn off 3V3 power to the display controller; this feature is absent on version 6.1 of the Z6 but has been introduced as of version 6.3, along with the ability to control the clock enable and PMIC wake signals.
 
 
 Raven
 ^^^^^
-The Raven board is designed to drive large 10.7” Type11 displays. The board has an Epson S1D13524
+The Raven board is designed to drive 10.7” Type11 displays. The board has an Epson S1D13524
 controller and associated memory, a Maxim PMIC, a 128B EEPROM for storing power supply calibration
 data and an LM75 temperature sensor. The VCOM DAC in the PMIC is used to set the VCOM value for the
 display.

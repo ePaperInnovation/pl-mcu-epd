@@ -22,7 +22,7 @@ Epson display controller as this information is readily available, or may requir
 experience with embedded programming is expected and discussion will focus on the specifics of this code
 base.
 The code is able to drive a slideshow of full size, pre-rendered, images in the PGM file format to a chosen
-display. Due to restrictions on resources the code is not currently able to manipulate the images in any
+display (the slideshow is defined using the ``slides.txt`` file). Due to restrictions on resources the code is not currently able to manipulate the images in any
 way.
 The code focusses on functionality and does not pretend to implement best practice for any specific
 microcontroller. Data transfer speed improvements are planned for subsequent
