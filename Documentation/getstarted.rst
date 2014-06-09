@@ -7,7 +7,7 @@ Hardware Setup
 --------------
 The software requires a processor board, Ruddock2 (optional if using the Parrot processor board), a display interface board and a display to match the interface board.
 
-If using the optional Ruddock 2 board, ensure that:
+If using the optional Ruddock2 board, ensure that:
 
 1. The “I2C isolate” 2-pin header, has no link fitted
 2. The P4 2-pin header, has a link fitted
@@ -19,7 +19,7 @@ The processor board plugs into the Ruddock2 using the two parallel headers, note
 outline in the silk screen on the Ruddock2 for correct orientation.
 
 The display interface board connects to the Ruddock2 serial interface connector (the smaller of the two FFC
-connectors) using a flexi-cable. If using a Parrot board, the display interface board can be connected directly to the Parrot using a flexi-cable. Finally the display itself connects to the display interface board either directly in the case of the small displays or via a Mercury board using a 50way flexi-cable.
+connectors) using a flexi-cable. If using a Parrot board, the display interface board can be connected directly to the Parrot using a flexi-cable. Finally the display itself connects to the display interface board either directly in the case of the small displays or via a Mercury board using a 50-way flexi-cable.
 
 
 .. _Code Composer Studio Setup:
@@ -27,7 +27,7 @@ connectors) using a flexi-cable. If using a Parrot board, the display interface 
 Code Composer Studio Setup
 --------------------------
 
-The Plastic Logic reference code project uses Texas Instrument's Code Composer Studio IDE v5.5. This section details the steps necessary to set up Code Composer Studio to build and debug the code.
+The Plastic Logic reference code project uses Texas Instruments' Code Composer Studio IDE v5.5. This section details the steps necessary to set up Code Composer Studio to build and debug the code.
 
 1. Get the source code, either by downloading an archive or cloning the
    repository::
@@ -93,6 +93,13 @@ The Plastic Logic reference code project uses Texas Instrument's Code Composer S
       **Stack Size:** Set to **160**
       **Heap Size:** Set to **1000**
 
+.. Padding to get page formatting right
+
+|
+|
+|
+|
+
    * **C/C++ General -> Paths and Symbols**
       **Includes:** Add the following paths to the includes list (check all three boxes in the creation dialog window)
          /${ProjName}/msp430 
@@ -112,7 +119,7 @@ The Plastic Logic reference code project uses Texas Instrument's Code Composer S
 6. Setup ``config.h``
 
    Finally, a ``config.h`` file must be created in the source location. A sample config file is supplied for each supported display type. Go to the cloned repository directory 
-   and copy one of the sample config files (eg. ``config-Type18.h``) to ``config.h``. Go back to CCS, right click 
+   and copy one of the sample config files (e.g. ``config-Type18.h``) to ``config.h``. Go back to CCS, right click 
    on the project in the Project Explorer and select **Add Files**. Select the newly created config.h file. 
    When prompted, select the **copy file** radio button. The config file should now appear in the Project Explorer.
 
@@ -141,6 +148,12 @@ The following example defines a Raven board with Type11 display:
      * at run-time.  This is especially useful for displays without an EEPROM such
      * as Type19.  */
     #define CONFIG_DISPLAY_TYPE           "Type11"
+
+.. Page break to get page formatting right
+
+.. raw:: pdf
+
+   PageBreak
 
 
 **Configuration of how hardware information is used**
@@ -200,6 +213,12 @@ device used as the I2C master:
             I2C_MODE_SC18IS6XX, /* not currently supported */ 
     };
 
+.. Page break to get page formatting right
+
+.. raw:: pdf
+
+   PageBreak
+
 **Power mode demonstration**
 
 The following setting can be used to configure a demonstration of power state transitions:
@@ -207,7 +226,7 @@ The following setting can be used to configure a demonstration of power state tr
 .. code-block:: c
 
     /** Set to 1 to use the power state transition demo rather than the slideshow */
-    #define CONFIG_DEMO_POWERMODES        0
+    #define CONFIG_DEMO_POWERMODES        1
 
 **Pattern demonstration**
 
@@ -216,20 +235,22 @@ The following settings can be used to display a checker-board pattern of the spe
 .. code-block:: c
 
     /** Set to 1 to use the pattern demo rather than the slideshow */
-    #define CONFIG_DEMO_PATTERN           0  /** Not intended for Type19 displays  */
+    #define CONFIG_DEMO_PATTERN           1  /** Not intended for Type19 displays  */
     #define CONFIG_DEMO_PATTERN_SIZE      32 /** Size of checker-board /*
 
 
 SD Card Setup
 -------------
 The micro SD card for the processor board must be formatted as a FAT/FAT16 file-system (not FAT32).
-The SD card contents contents (initialisation data and images) can be retrieved from the Plastic Logic GitHub repository (https://github.com/plasticlogic/pl-mcu-sd-card.git). Unzip this archive and place the resulting files on the SD card so that the root directory of the file-system contains the lfolders Type11, Type16, etc.
+The SD card contents contents (initialisation data and images) can be retrieved from the Plastic Logic GitHub repository (https://github.com/plasticlogic/pl-mcu-sd-card.git). Unzip this archive and place the resulting files on the SD card so that the root directory of the file-system contains the folders Type11, Type16, etc.
 
-The supplied content provides a safe set of configuration data for each type of display. In order to obtain the best image quality the waveform.bin (for S1D13541) or waveform.wbf (for S1D13524) and vcom files must be replaced with data specific to the display you are using. These files are located at:
+The supplied content provides a safe set of configuration data for each type of display. In order to obtain the best image quality the ``waveform.bin`` (for S1D13541) or ``waveform.wbf`` (for S1D13524) and ``vcom`` files must be replaced with data specific to the display you are using. These files are located at:
 
- 0:/<Display-Type>/display/waveform.bin *(for S1D13541 or waveform.wbf for S1D13524)*
+ ``0:/<Display-Type>/display/waveform.bin`` *(for S1D13541)*
 
- 0:/<Display-Type>/display/vcom *(text file containing the VCOM voltage in mV)*
+ ``0:/<Display-Type>/display/waveform.wbf`` *(for S1D13524)*
+
+ ``0:/<Display-Type>/display/vcom`` *(text file containing the VCOM voltage in mV)*
 
 Place the micro SD card in the micro SD card socket on the processor board.
 
@@ -242,6 +263,36 @@ Once the code has been configured and built in Code Composer Studio, the resulti
 - A slideshow of stock images from the ``0:/<Display-Type>/img`` folder being shown on the display until execution is halted (with or without power sequencing). The slideshow will skip any files that do not have the extension ".pgm"
 - A sequence of images defined by the ``slides.txt`` file
 - A checkerboard image
+
+
+Toolchains
+----------
+
+Code Composer Studio
+^^^^^^^^^^^^^^^^^^^^
+This has been used extensively during development of the code in conjunction with the MSP-FET430UIF
+USB/JTAG programmer. Both have proved to be extremely reliable in use. There is a free version of the
+tools which restrict the size of code they will generate to 16KB. The full version can be evaluated free for 90
+days.
+
+The current configuration of the code is too large to fit within the 16K limit, however by removing some
+features, e.g. Fat file system support then the free version may be sufficient.
+
+A very useful feature of the IDE is the ability to use standard printf type functions and have the output
+displayed in a console window within the IDE. In order for this to work the amount of memory set aside for
+the stack and heap must be increased and the “cio” functionality must be enabled in the project build
+configuration.
+
+A small amount of source code in the platform common layer was taken from Plastic Logic’s equivalent
+Linux drivers. The code uses anonymous unions extensively and in order to get the code to compile it was
+necessary to add a compiler flag (``--gcc``) to tell it to behave more like gcc.
+
+
+msp430-gcc
+^^^^^^^^^^
+There is an open source msp430 tool chain available – msp430-gcc. Some work has been done to support this tool 
+chain but the work is not yet complete. Much of the code compiles cleanly however there are some issues related 
+to pragmas used to declare interrupt handlers. Full support for this tool chain will depend on customer demand.
 
 
 .. raw:: pdf

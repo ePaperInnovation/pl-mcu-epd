@@ -46,14 +46,14 @@ Execute the script from the command line in either operating system, passing the
 
 e.g. (Linux example):
 
- $: python prepare_pgm.py image.png --interleave
+ ``$: python prepare_pgm.py image.png --interleave``
 
-For the above example, the output will be a file called image.pgm.
+For the above example, the output will be a file called ``image.pgm.``
 
 The output files should be copied to the SD Card in the img folder of the appropriate display type folder
 e.g.:
 
- 0:/Type19/img/image.pgm
+ ``0:/Type19/img/image.pgm``
 
 Sequence File
 -------------
@@ -117,7 +117,7 @@ Supported commands
   software will wait for any on-going update to complete.
 ``fill, LEFT, TOP, WIDTH, HEIGHT, GREY_LEVEL``
   Fill a rectangle starting with the (``LEFT``, ``TOP``) pixel coordinates and
-  the given ``WIDTH`` and ``HEIGHT`` with the givel ``GREY_LEVEL`` which is a
+  the given ``WIDTH`` and ``HEIGHT`` with the given ``GREY_LEVEL`` which is a
   number between 0 and 15 - 0 being black and 15 white. Note that ``WIDTH`` must
   be exactly divisible by 4 and the specified rectangle must not exceed the bounds
   of the display.
@@ -168,7 +168,7 @@ libraries:
 
 +------------------+--------+--------------------------------------+----------+
 | Path             | Grey \ | Description                          | Length \ |
-|                  | levels |                                      | (ms)*    |
+|                  | levels |                                      | (ms) *   |
 +==================+========+======================================+==========+
 | ``refresh``      | 16     | All pixels are updated.              | 670      |
 +------------------+--------+--------------------------------------+----------+
@@ -183,7 +183,7 @@ libraries:
 |                  |        | the image content is lost.           |          |
 +------------------+--------+--------------------------------------+----------+
 
-* At typical room temperature. For full specification see the relevent display datasheet.
+\* At typical room temperature. For full specification see the relevant display datasheet.
 
 They all have a unique numerical identifier which can be different in each
 waveform library.  To get the identifier of a waveform for a given path string,

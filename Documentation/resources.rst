@@ -1,15 +1,33 @@
 Relevant Data Sheets and Additional Resources
 =============================================
 
-* TI TPS65185 HV-PMIC
-* Maxim MAX17135 HV-PMIC
-* Maxim LM75 Temperature sensor
-* Maxim MAX5820 DAC
-* Microchip 24LC014 EEPROM
-* Microchip 24AA256 EEPROM
-* Epson S1D13524 ePDC
-* Epson S1D13421 ePDC
-* TI MSP430 User Guide
+TI TPS65185 HVPMIC
+  http://www.ti.com/product/tps65185
+
+Maxim MAX17135 HVPMIC
+  http://datasheets.maximintegrated.com/en/ds/MAX17135.pdf
+
+LM75 temperature sensor
+  http://www.ti.com/lit/ds/snos808o/snos808o.pdf
+
+Maxim MAX5820 DAC
+  http://datasheets.maximintegrated.com/en/ds/MAX5820.pdf
+
+Microchip 24LC014 EEPROM
+  http://ww1.microchip.com/downloads/en/DeviceDoc/21809G.pdf
+
+Microchip 24AA256 EEPROM
+  http://ww1.microchip.com/downloads/en/DeviceDoc/21203Q.pdf
+
+Epson S1D13524 EPDC (NDA required for full datasheet)
+  http://vdc.epson.com/index.php?option=com_docman&task=doc_download&gid=1768&Itemid=99
+
+Epson S1D13541 EPDC (NDA required for full datasheet)
+  no public datasheet
+
+TI MSP430 tools and software
+  http://www.ti.com/lsds/ti/microcontroller/16-bit_msp430/tools_software.page
+  
 
 Detailed schematics and design documents are available from Plastic Logic for
 all of the boards supported by this software.

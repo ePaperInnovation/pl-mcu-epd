@@ -12,8 +12,8 @@ The diagram below shows an overview of the code base.
 Things to note are:
 
 1. The application sits right on top of the common components. There is no layer that abstracts a complete display system that can be manipulated by calling methods on it. 
-2. The Host abstraction layer allows for porting to different CPU’s, either members of the same family or different architectures. Interrupts and Timers are not mandatory for the sample code to work.
-3. There is an “Access Abstraction Layer”. This exists because the Epson controllers contain a number of resources, e.g. I2C master, SPI master, and on chip GPIO’s that the Application layer may want to use. This abstraction layer allows the application to access either a host CPU resource or one contained in the Epson controller without needing to know its location once initialised. Currently only support for I2C is implemented.
+2. The Host abstraction layer allows for porting to different CPUs, either members of the same family or different architectures. Interrupts and Timers are not mandatory for the sample code to work.
+3. There is an “Access Abstraction Layer”. This exists because the Epson controllers contain a number of resources, e.g. I2C master, SPI master, and on chip GPIOs that the Application layer may want to use. This abstraction layer allows the application to access either a host CPU resource or one contained in the Epson controller without needing to know its location once initialised. Currently only support for I2C is implemented.
 
 
 Platform Neutral Components
@@ -28,8 +28,11 @@ data within files.
 Long filenames can be used when writing files to the SD card from a PC however the FatFs code can only
 use the 8.3 compatible filenames. These names can be displayed under Windows by entering “DIR /X” e.g.:
 
- 21/05/2011 07:01 8,863,336 NVWGF2~1.DLL nvwgf2umx.dll
+ ``21/05/2011 07:01 8,863,336 NVWGF2~1.DLL nvwgf2umx.dll``
 
+.. raw:: pdf
+ 
+   PageBreak
 
 +----------------------------------------+-------------------------------------------------------+
 | SD Card path                           | Contents                                              |
@@ -51,7 +54,7 @@ use the 8.3 compatible filenames. These names can be displayed under Windows by 
 
 Note: The VCOM and waveform data for each display should be stored on the display's EEPROM where applicable
 (Type 19 displays have no EEPROM). The Plastic Logic reference code uses the data stored on the EEPROM by
-default and will search on the SD card if the EEPROM does not contain valid data. This behaviour can be changed by modifying the ``CONFIG_DISP_DATA_xxx`` pre-processor definitions in
+default and will search on the SD card if the EEPROM does not contain valid data. This behaviour can be changed by modifying the ``CONFIG_DISP_DATA_xxx`` preprocessor definitions in
 the config header file (``config.h``). For the best results, it is advisable to use the EEPROM-based data as this is tuned for each display.
 
 
@@ -160,10 +163,10 @@ their availability is not required to create a working system.
 Host GPIO Interface
 ^^^^^^^^^^^^^^^^^^^
 The GPIO interface provides a way to reserve and define a GPIO pin on the host processor at run time. On
-small microcontrollers pins are typically either GPIO’s or connected to a single special purpose hardware
-unit e.g. an I2C unit. Some, or all, of the GPIO’s supported may be able to generate interrupts.
+small microcontrollers pins are typically either GPIOs or connected to a single special purpose hardware
+unit e.g. an I2C unit. Some, or all, of the GPIOs supported may be able to generate interrupts.
 
-The GPIO interface records which GPIO’s are already defined but not the mode in which they are
+The GPIO interface records which GPIOs are already defined but not the mode in which they are
 configured. This allows the code to trap errors where a pin is defined multiple times, or used before being
 defined. GPIO pins are typically used to control the power sequence hardware and manipulate signals in
 the serial and parallel interface to the Epson controller.
@@ -271,6 +274,7 @@ USCI_B0 are physically different hardware units.
 A single SPI interface is supported for transferring data from the micro SD
 card slot. This interface runs at 20Mbps reliably.
 
+
 UART Interface
 ^^^^^^^^^^^^^^
 
@@ -307,8 +311,7 @@ To reconfigure the reference code follow the sequence below:
 6. In each of the msp430-spi.c, msp430-sdcard.c, msp430-i2c.c and msp430-uart.c
 
     a. Define USCI_UNIT and USCI_CHAN as required
-    b. Modify the definitions for the pins so they match the chosen UCSI unit
-    c. e.g.:
+    b. Modify the definitions for the pins so they match the chosen UCSI unit, e.g.:
 
 .. code-block:: c
 

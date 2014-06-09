@@ -4,7 +4,7 @@ Plastic Logic Micro-Controller E-Paper Reference
 
 :Description: Plastic Logic Micro-Controller E-Paper Reference Manual
 :Date: 09 June 2014
-:Revision: v008 RC1
+:Revision: v008 RC1a
 
 .. Global document settings
 
@@ -38,10 +38,10 @@ Plastic Logic Micro-Controller E-Paper Reference
    PageBreak oneColumn
 
 .. include:: intro.rst
+.. include:: glossary.rst
 .. include:: getstarted.rst
 .. include:: imageprep.rst
 .. include:: codestructure.rst
-.. include:: msp430.rst
 .. include:: supportedhw.rst
 .. include:: resources.rst
 .. include:: appendixA.rst
