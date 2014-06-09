@@ -52,11 +52,11 @@ enum hv_pmic_id {
 };
 
 enum i2c_mode_id {
-	I2C_MODE_NONE = 0,
-	I2C_MODE_HOST,
-	I2C_MODE_DISP,
-	I2C_MODE_S1D13524,
-	I2C_MODE_SC18IS6XX,
+	I2C_MODE_NONE = 0,  /* invalid mode */
+	I2C_MODE_HOST,      /* use the host */
+	I2C_MODE_DISP,      /* use SPI-I2C bridge on the display (S1D13541) */
+	I2C_MODE_S1D13524,  /* use SPI-I2C bridge on the S1D13524 */
+	I2C_MODE_SC18IS6XX, /* not currently supported */ 
 };
 
 enum temp_sensor_id {

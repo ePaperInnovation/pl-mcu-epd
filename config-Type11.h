@@ -27,7 +27,7 @@
 /** Set to 1 if this CPU is little-endian */
 #define CONFIG_LITTLE_ENDIAN          1
 
-/** Set to 1 to use the VCOM and hardware info stored in board EEPROM **/
+/** Set to 1 to use the VCOM and hardware info stored in board EEPROM */
 #define CONFIG_HWINFO_EEPROM          1
 
 /** Set to 1 to use default VCOM calibration settings if HW info EEPROM data
@@ -36,11 +36,9 @@
  * able to work without valid EEPROM data.  */
 #define CONFIG_HWINFO_DEFAULT         1
 
-/** Set one of the following to 1 to manually select te platform.  This will be
- * used if CONFIG_PLAT_AUTO is not defined, or if no platform can be discovered
- * at runtime.  */
+/** Set one of the following to 1 to manually select the platform.
+ * This will be used if no platform can be discovered at runtime.  */
 #define CONFIG_PLAT_RAVEN             1 /**< Raven board */
-#define CONFIG_PLAT_Z13               0 /**< Hummingbird Z1.3 board */
 #define CONFIG_PLAT_Z6                0 /**< Hummingbird Z6.x board */
 #define CONFIG_PLAT_Z7                0 /**< Hummingbird Z7.x board */
 
@@ -68,7 +66,8 @@
 /** Set to 1 to use the power state transition demo rather than the slideshow */
 #define CONFIG_DEMO_POWERMODES        0
 
-#define CONFIG_DEMO_PATTERN           0
-#define CONFIG_DEMO_PATTERN_SIZE      32
+/** Set to 1 to use the pattern demo rather than the slideshow */
+#define CONFIG_DEMO_PATTERN           0  /** Not intended for Type19 displays  */
+#define CONFIG_DEMO_PATTERN_SIZE      32 /** Size of checker-board /*
 
 #endif /* INCLUDE_CONFIG_H */
