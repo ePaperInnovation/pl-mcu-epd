@@ -46,6 +46,9 @@ extern int parser_read_int(const char *str, const char *sep, int *out);
 /** Read a series of integers at the given addresses */
 extern int parser_read_int_list(const char *str, const char *sep, int **list);
 
+/** Same as parser_read_int but convert the string to a word */
+extern int parser_read_word(const char *str, const char *sep, unsigned int *out);
+
 /** Read area coordinates (left, top, width, height) */
 extern int parser_read_area(const char *str, const char *sep,
 			    struct pl_area *area);

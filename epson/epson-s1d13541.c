@@ -219,6 +219,11 @@ int epson_epdc_init_s1d13541(struct pl_epdc *epdc)
 		return -1;
 	}
 
+	if (s1d135xx_load_register_overrides(p)) {
+		LOG("Failed to load register overrides");
+		return -1;
+	}
+
 	s1d135xx_write_reg(p, S1D13541_REG_PROT_KEY_1, S1D13541_PROT_KEY_1);
 	s1d135xx_write_reg(p, S1D13541_REG_PROT_KEY_2, S1D13541_PROT_KEY_2);
 

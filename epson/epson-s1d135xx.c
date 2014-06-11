@@ -39,6 +39,8 @@
 #define LOG_TAG "s1d135xx"
 #include "utils.h"
 
+#include <app/parser.h>
+
 /* Set to 1 to enable verbose update and EPD power on/off log messages */
 #define VERBOSE 0
 
@@ -498,6 +500,67 @@ void s1d135xx_write_reg(struct s1d135xx *p, uint16_t reg, uint16_t val)
 	send_cmd(p, S1D135XX_CMD_WRITE_REG);
 	send_params(params, ARRAY_SIZE(params));
 	set_cs(p, 1);
+}
+
+int s1d135xx_load_register_overrides(struct s1d135xx *p)
+{
+	static const char override_path[] = "bin/override.txt";
+	static const char sep[] = ", ";
+	FIL file;
+	FRESULT res;
+	int stat;
+	uint16_t reg, val;
+
+	res = f_open(&file, override_path, FA_READ);
+	if (res != FR_OK) {
+		if (res == FR_NO_FILE) {
+			return 0;
+		}
+		else {
+			LOG("Failed to open register override file");
+			return -1;
+		}
+	}
+
+	stat = 0;
+	while (!stat) {
+		char line[81];
+		int len;
+		stat = parser_read_file_line(&file, line, sizeof(line));
+		if (stat < 0) {
+			LOG("Failed to read line");
+			break;
+		}
+		else if (!stat) {
+			/* End of file */
+			break;
+		}
+
+		if ((line[0] == '\0') || (line[0] == '#')) {
+			stat = 0;
+			continue;
+		}
+
+		/* Assume failure */
+		stat = -1;
+
+		len = parser_read_word(line, sep, &reg);
+		if (len <= 0)
+			break;
+
+		len = parser_read_word(line + len, sep, &val);
+		if (len <= 0)
+			break;
+
+		s1d135xx_write_reg(p, reg, val);
+		if (val == s1d135xx_read_reg(p, reg)) {
+			stat = 0;	/* success */
+		}
+	}
+
+	f_close(&file);
+
+	return stat;
 }
 
 /* ----------------------------------------------------------------------------

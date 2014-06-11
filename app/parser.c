@@ -99,6 +99,18 @@ int parser_read_int_list(const char *str, const char *sep, int **list)
 	return (opt - str);
 }
 
+int parser_read_word(const char *str, const char *sep, unsigned int *out)
+{
+	char value[16];
+	const int len = parser_read_str(str, sep, value, sizeof(value));
+
+	if (len >= 0)
+		*out = strtoul(value, NULL, 0);
+
+	return len;
+}
+
+
 int parser_read_area(const char *str, const char *sep, struct pl_area *a)
 {
 	int *coords[] = { &a->left, &a->top, &a->width, &a->height, NULL };

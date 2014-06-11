@@ -259,6 +259,11 @@ int epson_epdc_init_s1d13524(struct pl_epdc *epdc)
 		return -1;
 	}
 
+	if (s1d135xx_load_register_overrides(p)) {
+		LOG("Failed to load register overrides");
+		return -1;
+	}
+
 	/* Loading the init code turns the EPD power on as a side effect... */
 	if (s1d135xx_set_epd_power(p, 0))
 		return -1;
