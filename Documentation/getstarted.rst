@@ -1,4 +1,4 @@
-Getting Started
+﻿Getting Started
 ===============
 This section covers setting up the hardware and software so that a given display type can be driven. Please follow the steps outlined in order to setup and build the software.
 
@@ -236,7 +236,7 @@ The following settings can be used to display a checker-board pattern of the spe
 
     /** Set to 1 to use the pattern demo rather than the slideshow */
     #define CONFIG_DEMO_PATTERN           1  /** Not intended for Type19 displays  */
-    #define CONFIG_DEMO_PATTERN_SIZE      32 /** Size of checker-board /*
+    #define CONFIG_DEMO_PATTERN_SIZE      32 /** Size of checker-board */
 
 
 SD Card Setup

@@ -68,6 +68,6 @@
 
 /** Set to 1 to use the pattern demo rather than the slideshow */
 #define CONFIG_DEMO_PATTERN           0  /** Not intended for Type19 displays  */
-#define CONFIG_DEMO_PATTERN_SIZE      16 /** Size of checker-board /*
+#define CONFIG_DEMO_PATTERN_SIZE      16 /** Size of checker-board */
 
 #endif /* INCLUDE_CONFIG_H */
