@@ -37,9 +37,14 @@
 
 struct pl_gpio;
 
-extern int msp430_uart_getc(void);
-extern int msp430_uart_putc(int c);
-extern int msp430_uart_puts(const char *ptr);
+int    msp430_uart_open(const char *path, unsigned flags, int llv_fd);
+int    msp430_uart_close(int dev_fd);
+int    msp430_uart_read(int dev_fd, char *buf, unsigned count);
+int    msp430_uart_write(int dev_fd, const char *buf, unsigned count);
+fpos_t msp430_uart_lseek(int dev_fd, fpos_t offset, int origin);
+int    msp430_uart_unlink(const char *path);
+int    msp430_uart_rename(const char *old_name, const char *new_name);
+
 extern int msp430_uart_init(struct pl_gpio *gpio, int baud_rate_id,
 			    char parity, int data_bits, int stop_bits);
 

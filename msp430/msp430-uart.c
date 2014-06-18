@@ -27,15 +27,12 @@
 
 #include <pl/gpio.h>
 #include <stdint.h>
+#include <file.h>
 #include "utils.h"
 #include "msp430.h"
 #include "msp430-defs.h"
 #include "msp430-uart.h"
 #include "msp430-gpio.h"
-
-#if CONFIG_UART_PRINTF
-typedef void FILE;
-#endif
 
 #define USCI_UNIT	A
 #define	USCI_CHAN	1
@@ -46,13 +43,9 @@ typedef void FILE;
 // set to 1 to have stdout, stderr sent to serial port
 #define CONFIG_UART_PRINTF		0
 
+#if CONFIG_UART_PRINTF
 // protect from calls before intialisation is complete.
 static uint8_t init_done = 0;
-
-#if CONFIG_UART_PRINTF
-int fputc(int c, register FILE *fp);
-int fputs(const char *ptr, register FILE *fp);
-#endif
 
 int msp430_uart_getc(void)
 {
@@ -87,6 +80,39 @@ int msp430_uart_puts(const char *s)
 
 	return i;
 }
+
+int msp430_uart_register_files()
+{
+	add_device("msp430UART", _MSA,
+		msp430_uart_open, msp430_uart_close,
+		msp430_uart_read, msp430_uart_write,
+		msp430_uart_lseek, msp430_uart_unlink, msp430_uart_rename);
+
+	if (!freopen("msp430UART:stderrfile", "w", stderr)) {
+		LOG("Failed to freopen stderr");
+		return -1;
+	}
+
+	/* Don't buffer as we want to see error immediately*/
+	if (setvbuf(stderr, NULL, _IONBF, 0)) {
+		LOG("Failed to setvbuf stderr");
+		return -1;
+	}
+
+	if (!freopen("msp430UART:stdoutfile", "w", stdout)) {
+		LOG("Failed to freopen stdout");
+		return -1;
+	}
+
+	/* Don't buffer (saves calling fflush) */
+	if (setvbuf(stdout, NULL, _IONBF, 0)) {
+		LOG("Failed to setvbuf stdout");
+		return -1;
+	}
+
+	return 0;
+}
+#endif
 
 int msp430_uart_init(struct pl_gpio *gpio, int baud_rate_id, char parity,
 		     int data_bits, int stop_bits)
@@ -190,21 +216,64 @@ int msp430_uart_init(struct pl_gpio *gpio, int baud_rate_id, char parity,
 	// release unit from reset
 	UCxnCTL1 &= ~UCSWRST;
 
+#if CONFIG_UART_PRINTF
 	init_done = 1;
-
+	return msp430_uart_register_files();
+#else
 	return 0;
+#endif
 }
 
 #if CONFIG_UART_PRINTF
-/* Override fputc to allow printf et al to be routed over the serial port */
-int fputc(int c, register FILE *fp)
+
+int msp430_uart_open(const char *path, unsigned flags, int llv_fd)
 {
-	return msp430_uart_putc(c);
+	/* TODO:
+	 * Possibly store some info here, maybe even use *path to specify port options
+	 * Possibly just check init_done?
+	 */
+	return (init_done == 1) ? 0 : -1;
 }
 
-/* Override fputs to allow printf et al to be routed over the serial port */
-int fputs(const char *ptr, register FILE *fp)
+int msp430_uart_close(int dev_fd)
 {
-	return msp430_uart_puts(ptr);
+	/* TODO: tidy any storage and possibly hold UART in reset? */
+    return 0;
+}
+
+int msp430_uart_read(int dev_fd, char *buf, unsigned count)
+{
+    /* Reads not allowed */
+	return -1;
+}
+
+int msp430_uart_write(int dev_fd, const char *buf, unsigned count)
+{
+	unsigned int i;
+
+	if (!init_done)
+		return -1;
+
+	for(i = 0; i < count; i++)
+		msp430_uart_putc(buf[i]);
+
+	return i;
+}
+
+
+off_t msp430_uart_lseek(int dev_fd, off_t offset, int origin)
+{
+	/* TODO: not sure this is correct */
+	return 0;
+}
+
+int msp430_uart_unlink(const char *path)
+{
+     return 0;
+}
+
+int msp430_uart_rename(const char *old_name, const char *new_name)
+{
+    return 0;
 }
 #endif
