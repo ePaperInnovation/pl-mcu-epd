@@ -114,23 +114,32 @@ int open_image(const char *dir, const char *file, FIL *f,
  */
 
 /* Defined in main.c */
-extern void abort_now(const char *abort_msg);
+extern void abort_now(const char *abort_msg, enum abort_error error_code);
 
 static void do_abort_msg(const char *file, unsigned line,
-			 const char *error_str, const char *message)
+			 const char *error_str, const char *message,
+			 enum abort_error error_code)
 {
-	fprintf(stderr, "%s, line %u: %s\n", file, line, message);
-	abort_now(error_str);
+	/* Following conversion of line to a string is a workaround
+	 * for a problem with fprintf(stderr, "%u", line) that only
+	 * occurs when NOT debugging and prevents further code execution
+	 * (possibly a heap size issue?)
+	 */
+	char temp[16];
+	sprintf(temp, "%u", line);
+	fprintf(stderr, "%s, line %s: %s\n", file, temp, message);
+
+	abort_now(error_str, error_code);
 }
 
 void do_abort_msg_assert(const char *file, unsigned line, const char *message)
 {
-	do_abort_msg(file, line, "Assertion failed\n", message);
+	do_abort_msg(file, line, "Assertion failed\n", message, ABORT_ASSERT);
 }
 
-void do_abort_msg_error(const char *file, unsigned line, const char *message)
+void do_abort_msg_error(const char *file, unsigned line, const char *message, enum abort_error error_code)
 {
-	do_abort_msg(file, line, "Fatal error\n", message);
+	do_abort_msg(file, line, "Fatal error\n", message, error_code);
 }
 
 void dump_hex(const void *data, uint16_t len)

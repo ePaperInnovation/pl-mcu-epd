@@ -262,10 +262,10 @@ static int msp430_gpio_pin_number(uint16_t pinmask)
 static void msp430_gpio_check_port(uint16_t port)
 {
 	if (port >= ARRAY_SIZE(msp430_gpio_defs))
-		abort_msg("Invalid port number");
+		abort_msg("Invalid port number", ABORT_MSP430_GPIO_INIT);
 
 	if (msp430_gpio_defs[port].in == NULL)
-		abort_msg("Port not available");
+		abort_msg("Port not available", ABORT_MSP430_GPIO_INIT);
 }
 
 static const struct io_config *msp430_gpio_get_port(unsigned gpio)

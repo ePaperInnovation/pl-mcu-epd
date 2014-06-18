@@ -211,7 +211,7 @@ int tps65185_wait_pok(struct tps65185_info *p)
 	reg_dump(pmic);
 #endif
 
-	abort_msg("TPS65185 POK feature not tested");
+	abort_msg("TPS65185 POK feature not tested", ABORT_UNDEFINED);
 
 	return 0;
 }

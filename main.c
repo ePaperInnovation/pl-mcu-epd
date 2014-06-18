@@ -294,28 +294,32 @@ int main_init(void)
 	FATFS sdcard;
 	unsigned i;
 
-	LOG("------------------------");
-	LOG("Starting pl-mcu-epd %s", VERSION);
-
 	g_plat.sys_gpio = &g_sys_gpio;
 
 	/* initialise GPIO interface */
 	if (msp430_gpio_init(&g_plat.gpio))
-		abort_msg("GPIO init failed");
+		abort_msg("GPIO init failed", ABORT_MSP430_GPIO_INIT);
 
 	/* initialise system GPIOs */
 	if (pl_gpio_config_list(&g_plat.gpio, g_gpios, ARRAY_SIZE(g_gpios)))
-		abort_msg("System GPIO init failed");
+		abort_msg("System GPIO init failed", ABORT_MSP430_GPIO_INIT);
+
+	/* initialise MSP430 UART */
+	if (msp430_uart_init(&g_plat.gpio, BR_115200, 'N', 8, 1))
+		abort_msg("UART init failed", ABORT_MSP430_COMMS_INIT);
+
+	LOG("------------------------");
+	LOG("Starting pl-mcu-epd %s", VERSION);
 
 	/* initialize HV-PMIC GPIOs */
 	if (pl_gpio_config_list(&g_plat.gpio, g_hvpmic_gpios,
 				ARRAY_SIZE(g_hvpmic_gpios)))
-		abort_msg("HV-PMIC GPIO init failed");
+		abort_msg("HV-PMIC GPIO init failed", ABORT_MSP430_GPIO_INIT);
 
 	/* initialise Epson GPIOs */
 	if (pl_gpio_config_list(&g_plat.gpio, g_epson_gpios,
 				ARRAY_SIZE(g_epson_gpios)))
-		abort_msg("Epson GPIO init failed");
+		abort_msg("Epson GPIO init failed", ABORT_MSP430_GPIO_INIT);
 
 	/* hard-reset Epson controller to avoid errors during soft reset */
 	s1d135xx_hard_reset(&g_plat.gpio, &g_s1d135xx_data);
@@ -324,32 +328,28 @@ int main_init(void)
 	for (i = 0; i < ARRAY_SIZE(g_epson_parallel); ++i) {
 		if (g_plat.gpio.config(g_epson_parallel[i],
 				       PL_GPIO_OUTPUT | PL_GPIO_INIT_L)) {
-			abort_msg("Epson parallel GPIO init failed");
+			abort_msg("Epson parallel GPIO init failed", ABORT_MSP430_GPIO_INIT);
 		}
 	}
 
-	/* initialise MSP430 UART */
-	if (msp430_uart_init(&g_plat.gpio, BR_115200, 'N', 8, 1))
-		abort_msg("UART init failed");
-
 	/* initialise MSP430 I2C master 0 */
 	if (msp430_i2c_init(&g_plat.gpio, 0, &host_i2c))
-		abort_msg("I2C init failed");
+		abort_msg("I2C init failed", ABORT_MSP430_COMMS_INIT);
 
 	/* initialise MSP430 SPI bus */
 	if (spi_init(&g_plat.gpio, SPI_CHANNEL, SPI_DIVISOR))
-		abort_msg("SPI init failed");
+		abort_msg("SPI init failed", ABORT_MSP430_COMMS_INIT);
 
 	/* initialise SD-card */
 	SDCard_plat = &g_plat;
 	f_chdrive(0);
 	if (f_mount(0, &sdcard) != FR_OK)
-		abort_msg("SD card init failed");
+		abort_msg("SD card init failed", ABORT_MSP430_COMMS_INIT);
 
 	/* load hardware information */
 #if CONFIG_HWINFO_EEPROM
 	if (probe_hwinfo(&g_plat, &hw_eeprom, &hwinfo_eeprom, HWINFO_DEFAULT))
-		abort_msg("hwinfo probe failed");
+		abort_msg("hwinfo probe failed", ABORT_HWINFO);
 #elif CONFIG_HWINFO_DEFAULT
 	LOG("Using default hwinfo");
 	g_plat.hwinfo = &g_hwinfo_default;
@@ -360,44 +360,52 @@ int main_init(void)
 
 	/* initialise platform I2C bus */
 	if (probe_i2c(&g_plat, &s1d135xx, &host_i2c, &disp_i2c))
-		abort_msg("Platform I2C init failed");
+		abort_msg("Platform I2C init failed", ABORT_I2C_INIT);
 
 	/* load display information */
 	disp_eeprom.i2c = g_plat.i2c;
 	if (probe_dispinfo(&dispinfo, &g_plat.epdc.wflib, &g_wflib_fatfs_file,
 			   g_wflib_fatfs_path, &disp_eeprom,
 			   &wflib_eeprom_ctx))
-		abort_msg("Failed to load dispinfo");
+		abort_msg("Failed to load dispinfo", ABORT_DISP_INFO);
 	g_plat.dispinfo = &dispinfo;
 	pl_dispinfo_log(&dispinfo);
 
 	/* initialise EPD HV-PSU and HV-PMIC */
 	if (probe_hvpmic(&g_plat, &vcom_cal, &g_epdpsu_gpio, &pmic_info))
-		abort_msg("HV-PMIC and EPD PSU init failed");
+		abort_msg("HV-PMIC and EPD PSU init failed", ABORT_HVPSU_INIT);
 
 	/* initialise EPDC */
 	if (probe_epdc(&g_plat, &s1d135xx))
-		abort_msg("EPDC init failed");
+		abort_msg("EPDC init failed", ABORT_EPDC_INIT);
 
 	/* run the application */
 	if (app_demo(&g_plat))
-		abort_msg("Application failed");
+		abort_msg("Application failed", ABORT_APPLICATION);
 
 	return 0;
 }
 
 /* When something fatal happens, this is called to print a message on stderr
- * and flash the "assert" LED forever.
+ * and flash the "assert" LED according to the behaviour for the error_code.
  */
-void abort_now(const char *abort_msg)
+void abort_now(const char *abort_msg, enum abort_error error_code)
 {
 	if (abort_msg != NULL)
-		fprintf(stderr, "%s", abort_msg);
+		fprintf(stderr, "%s\r\n", abort_msg);
+
+	/* Force LED off for case where error_code == 0 */
+	g_plat.gpio.set(g_plat.sys_gpio->assert_led, 0);
 
 	for (;;) {
-		g_plat.gpio.set(g_plat.sys_gpio->assert_led, 1);
-		mdelay(500);
-		g_plat.gpio.set(g_plat.sys_gpio->assert_led, 0);
-		mdelay(500);
+		int i;
+		mdelay(1500);
+		for (i = 0; i < error_code; i++)
+		{
+			g_plat.gpio.set(g_plat.sys_gpio->assert_led, 1);
+			mdelay(250);
+			g_plat.gpio.set(g_plat.sys_gpio->assert_led, 0);
+			mdelay(250);
+		}
 	}
 }

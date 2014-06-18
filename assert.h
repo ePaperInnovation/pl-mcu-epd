@@ -27,19 +27,42 @@
 #define _STR(x)  __STR(x)
 #define __STR(x) #x
 
+/* Defines how error will be signalled on status LED */
 enum abort_error {
-	ABORT_ERROR = 0,
-	ABORT_ASSERT,
+	ABORT_UNDEFINED = 0,     /* Undefined error */
+	ABORT_MSP430_GPIO_INIT,	 /* General error initialising GPIO */
+	ABORT_MSP430_COMMS_INIT, /* Error initialising MSP430 comms */
+	ABORT_HWINFO,            /* Error reading HWINFO EEPROM. Could be
+	                          * comms error or content error */
+	ABORT_I2C_INIT,          /* Error initialising I2C (Epson) */
+	ABORT_DISP_INFO,         /* Error reading display information. Could
+	                          * be many errors (comms error, content error
+	                          * missing or invalid file, etc).
+	                          * Also depends on preprocessor settings */
+	ABORT_HVPSU_INIT,        /* Error initialising HVPSU. Most likely to
+	                          * be a comms error, but could indicate a
+	                          * failed PMIC */
+	ABORT_EPDC_INIT,         /* Error initialising EPDC. Could be many
+	                          * errors (comms error, EPDC failure, failed
+	                          * to load init code, failed on one of several
+	                          * commands needed to initialise the EPDC,
+	                          * failed to load waveform, etc) */
+	ABORT_APPLICATION,       /* Failed while running application. Multiple
+	                          * causes for this, depending on application
+	                          * that is running. Most likely failures are
+	                          * due to missing/invalid files or hardware
+	                          * problems such as POK or comms failure */
+	ABORT_ASSERT,            /* Failed assert statement (debug use only) */
 };
 
 /* This is always enabled */
-#define abort_msg(_msg) do { \
-	do_abort_msg_error(__FILE__, __LINE__, _msg); \
+#define abort_msg(_msg, _error_code) do { \
+	do_abort_msg_error(__FILE__, __LINE__, _msg, _error_code); \
 } while (0)
 
 /* These are typically not called directly but via assert or abort_msg */
 extern void do_abort_msg_assert(const char *f, unsigned line, const char *msg);
-extern void do_abort_msg_error(const char *f, unsigned line, const char *msg);
+extern void do_abort_msg_error(const char *f, unsigned line, const char *msg, enum abort_error error_code);
 
 #if (defined(NDEBUG) || !GLOBAL_ASSERT) && !defined(LOCAL_ASSERT)
 #define assert(_e)
