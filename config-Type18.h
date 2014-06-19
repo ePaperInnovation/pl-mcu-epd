@@ -70,4 +70,7 @@
 #define CONFIG_DEMO_PATTERN           0  /** Not intended for Type19 displays  */
 #define CONFIG_DEMO_PATTERN_SIZE      16 /** Size of checker-board */
 
+/** Set to 1 to have stdout, stderr sent to serial port */
+#define CONFIG_UART_PRINTF		1
+
 #endif /* INCLUDE_CONFIG_H */

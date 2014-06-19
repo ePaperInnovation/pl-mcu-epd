@@ -33,15 +33,13 @@
 #include "msp430-defs.h"
 #include "msp430-uart.h"
 #include "msp430-gpio.h"
+#include "config.h"
 
 #define USCI_UNIT	A
 #define	USCI_CHAN	1
 // Pin definitions for this unit.
 #define	UART_TX                 MSP430_GPIO(5,6)
 #define	UART_RX                 MSP430_GPIO(5,7)
-
-// set to 1 to have stdout, stderr sent to serial port
-#define CONFIG_UART_PRINTF		0
 
 #if CONFIG_UART_PRINTF
 // protect from calls before intialisation is complete.

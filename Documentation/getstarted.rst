@@ -213,11 +213,21 @@ device used as the I2C master:
             I2C_MODE_SC18IS6XX, /* not currently supported */ 
     };
 
-.. Page break to get page formatting right
+**Configuration of serial interface**
+A serial interface is supported using a pin header on the MSP430 board into
+which can be plugged an FTDI active serial-to-USB cable. Alternatively the
+serial interface can be accessed via the USB port (the MSP430 board is
+fitted with a TUSB3410 USB to serial port controller). The code can be
+configured to route all standard output to the serial port rather than back to
+the debugger. This allows debug output still be seen when no debugger is
+attached. The following setting defines whether ``stdout`` and ``stderr`` are
+sent to the serial port or the debugger:
 
-.. raw:: pdf
+.. code-block:: c
 
-   PageBreak
+    /** Set to 1 to have stdout, stderr sent to serial port */
+    #define CONFIG_UART_PRINTF		1
+
 
 **Power mode demonstration**
 

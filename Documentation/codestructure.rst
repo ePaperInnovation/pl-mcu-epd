@@ -279,16 +279,18 @@ UART Interface
 ^^^^^^^^^^^^^^
 
 A serial interface is supported using a pin header on the MSP430 board into
-which can be plugged an FTDI active serial-to-USB cable. The code can be
+which can be plugged an FTDI active serial-to-USB cable. Alternatively the
+serial interface can be accessed via the USB port (the MSP430 board is
+fitted with a TUSB3410 USB to serial port controller). The code can be
 configured to route all standard output to the serial port rather than back to
 the debugger. This allows debug output still be seen when no debugger is
 attached. To enable this feature, edit the relevant line in
-``msp430/msp430-uart.c``:
+``config.h``:
 
 .. code-block:: c
 
-    // set to 1 to have stdout, stderr sent to serial port
-    #define CONFIG_UART_PRINTF		0
+    /** Set to 1 to have stdout, stderr sent to serial port */
+    #define CONFIG_UART_PRINTF		1
 
 
 
