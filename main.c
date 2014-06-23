@@ -78,7 +78,7 @@
 #define RUDDOCK_SHUTDOWN MSP430_GPIO(5,1)
 
 /* Version of pl-mcu-epd */
-static const char VERSION[] = "v007";
+static const char VERSION[] = "v008-RC2";
 
 /* Platform instance, to be passed to other modules */
 static struct pl_platform g_plat;
