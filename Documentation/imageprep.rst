@@ -6,21 +6,23 @@ Image Format
 For simplicity the code only supports image files in the PGM graphics file format.
 For details see: `http://en.wikipedia.org/wiki/Netpbm_format <http://en.wikipedia.org/wiki/Netpbm_format>`_ .
 
-This is a simple, uncompressed, file format that can be generated with GIMP (Linux or Windows, available at `http://www.gimp/org/ <http://www.gimp/org/>`_) or using
-the `Python Imaging Library <http://www.pythonware.com/products/pil/>`_.
+.. note::
 
-When displaying images as a slideshow (i.e. without a slides.txt file), the image files are expected to match the full display size so that the contents can be transferred directly from storage to the display controller. In the case of the Type19 “bracelet” displays
-the pixel data must also be reordered (see `Image Conversion Tools`_ below).
+ There are two different PGM formats - ASCII (magic number: P2) and binary/raw (magic number: P5). The code only supports the binary/raw format.
 
-When display images using a slides.txt sequence file the images can be any size up to the full display size, but must have a width that is exactly divisible by 2. 
+This is a simple, uncompressed, file format that can be generated with `GIMP <http://www.gimp.org/>`_ or using the `Python Imaging Library (PIL) <http://www.pythonware.com/products/pil/>`_. Both GIMP and PIL are available for Windows and Linux.
+
+When displaying images as a slideshow (i.e. without a ``slides.txt``), the image files are expected to match the full display size so that the contents can be transferred directly from storage to the display controller. In the case of the Type19 bracelet displays the pixel data must also be reordered (see `Image Conversion Tools`_ below).
+
+When displaying images using a ``slides.txt`` sequence file the images can be any size up to the full display size, but must have a width that is exactly divisible by 2. 
 
 The SD card content provided contains the original source PNG images which were used to create the PGM
-files should they be required.
+files.
 
 
 Image Conversion Tools
 ----------------------
-The code archive contains a python script, tools/prepare_pgm.py, which uses the Python Imaging Library (PIL) to
+The source code contains a python script, ``tools/prepare_pgm.py``, which uses the Python Imaging Library (PIL) to
 support the translation of PNG files to PGM format. The script can also reorder the pixel data as required
 for Type19 displays.
 
@@ -42,15 +44,15 @@ For Windows, use the most recent "Windows only" PIL for Python 2.7. When install
 destination directory is the same as the Python 2.7.5 installation directory.
 For Linux, use the most recent PIL source kit. Again, installation instructions can be found within the tarball.
 
-Execute the script from the command line in either operating system, passing the image to be converted as the first argument. If the target device is using a Type19 display, pass "--interleave" as the second argument in order to generate the correct pixel data ordering.
+Execute the script from the command line in either operating system, passing the image to be converted as the first argument. If the target device is using a Type19 display, pass ``--interleave`` as the second argument in order to generate the correct pixel data ordering.
 
-e.g. (Linux example):
+For example::
 
- ``$: python prepare_pgm.py image.png --interleave``
+ python prepare_pgm.py image.png --interleave
 
 For the above example, the output will be a file called ``image.pgm.``
 
-The output files should be copied to the SD Card in the img folder of the appropriate display type folder
+The output files should be copied to the SD Card in the img folder of the appropriate display type folder, 
 e.g.:
 
  ``0:/Type19/img/image.pgm``
@@ -58,12 +60,13 @@ e.g.:
 Sequence File
 -------------
 
-An optional plain text file can be put in the image directory to tell the
-software to run a specific sequence instead of simply going through all the
-images found.  If the file is found, the software will use it; otherwise the
-standard slideshow will be run.
+An optional plain text file named ``slides.txt`` can be put in the image
+directory ``0:/<Display-Type/img>`` to tell the software to run a specific
+sequence instead of simply going through all the images found.  If the file
+is found, the software will use it; otherwise the standard slideshow will be
+run.
 
-This sequencer supports regional updates, image compositing by copying areas of
+This sequence supports regional updates, image compositing by copying areas of
 existing files and can fill rectangles with a uniform grey level.  Then the
 waveform type and area coordinates are specified for each update, enabling more
 advanced operation of the system.
@@ -88,8 +91,6 @@ The format of the file can be summarised with the following characteristics:
 * blank lines are allowed
 * there is no limit to the length of the file other than what the file system
   infrastructure permits
-* the file needs to be named ``slides.txt`` and located in the same directory
-  as the image files
 
 The software will not keep more than one line in memory at a time, and it will
 automatically jump back to the beginning of the file when it has processed the
@@ -109,28 +110,45 @@ Supported commands
   in the area starting with the (``LEFT``, ``TOP``) pixel coordinates and the
   given ``WIDTH`` and ``HEIGHT``.  The software will wait until the update
   request has been processed by the controller, and then wait for ``DELAY``
-  milliseconds. Note that ``WIDTH`` must be exactly divisible by 2 and the
-  specified rectangle must not exceed the bounds of the display.
+  milliseconds. 
+
+  .. note:: 
+
+   ``WIDTH`` must be exactly divisible by 2 and the specified rectangle must
+   not exceed the bounds of the display.
+
 ``power, ON_OFF``
   Turn the display power either on or off based on the value of ``ON_OFF``,
   which can be either ``on`` or ``off``.  When turning the power off, the
   software will wait for any on-going update to complete.
+
 ``fill, LEFT, TOP, WIDTH, HEIGHT, GREY_LEVEL``
   Fill a rectangle starting with the (``LEFT``, ``TOP``) pixel coordinates and
   the given ``WIDTH`` and ``HEIGHT`` with the given ``GREY_LEVEL`` which is a
-  number between 0 and 15 - 0 being black and 15 white. Note that ``WIDTH`` must
-  be exactly divisible by 4 and the specified rectangle must not exceed the bounds
-  of the display.
+  number between 0 and 15 - 0 being black and 15 white.
+
+  .. note::
+
+   ``WIDTH`` must be exactly divisible by 4 and the specified rectangle must
+   not exceed the bounds of the display.
+
 ``image, FILE, LEFT_IN, TOP_IN, LEFT_OUT, TOP_OUT, WIDTH, HEIGHT``
   Copy an area from an image file ``FILE`` starting to read from (``LEFT_IN``,
   ``TOP_IN``) pixel coordinates into the EPD buffer at (``LEFT_OUT``,
   ``TOP_OUT``) pixel coordinates with the given ``WIDTH`` and ``HEIGHT``.
-  Note that ``WIDTH`` must be exactly divisible by 2 and the specified rectangles
-  must not exceed the bounds of the image file or the display.
+
+  .. note::
+
+   ``WIDTH`` must be exactly divisible by 2 and the specified rectangles
+   must not exceed the bounds of the image file or the display.
+
 ``sleep, DURATION``
   Sleep for the given ``DURATION`` in milliseconds.
 
-*Example with Type18 400x240 display*::
+Example sequence
+^^^^^^^^^^^^^^^^
+
+The following listing shows a sample sequence for Type18 400x240 displays::
 
   # Fill the screen with white and trigger a refresh update
   #
@@ -187,7 +205,7 @@ libraries:
 
 They all have a unique numerical identifier which can be different in each
 waveform library.  To get the identifier of a waveform for a given path string,
-use the ``pl_epdc_get_wfid()`` function in your application.
+use the function ``pl_epdc_get_wfid()`` (``pl/epdc.h``, ``pl/epdc.c``) in your application.
 
 .. raw:: pdf
 

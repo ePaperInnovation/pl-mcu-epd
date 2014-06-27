@@ -1,4 +1,4 @@
-﻿Getting Started
+Getting Started
 ===============
 This section covers setting up the hardware and software so that a given display type can be driven. Please follow the steps outlined in order to setup and build the software.
 
@@ -7,12 +7,14 @@ Hardware Setup
 --------------
 The software requires a processor board, Ruddock2 (optional if using the Parrot processor board), a display interface board and a display to match the interface board.
 
-If using the optional Ruddock2 board, ensure that:
+If using the Parrot board and the optional Ruddock2 board, ensure that:
 
-1. The “I2C isolate” 2-pin header, has no link fitted
-2. The P4 2-pin header, has a link fitted
-3. The switch SW7 is set to ON
-4. 5V power supply, 200mA for small displays, 2A for large displays
+1. The P5 “I2C isolate” 2-pin header on the Ruddock2, has no link fitted
+2. The P4 2-pin header on the Ruddock2, has a link fitted
+3. The switch SW7 on the Ruddock2 is set to ON
+4. 5V power supply, 200mA for small displays, 2A for large displays, is used
+   and the P16 3-pin header on the Parrot has a link fitted on position "JACK"
+   (1-2)
 	
 
 The processor board plugs into the Ruddock2 using the two parallel headers, note the processor board
@@ -34,19 +36,18 @@ The Plastic Logic reference code project uses Texas Instruments' Code Composer S
 
     git clone https://github.com/plasticlogic/pl-mcu-epd.git
 
+   .. important::
 
-.. important::
-
-   This project uses **DOS line endings**.  The ``.gitattributes`` file tells
-   Git to automatically convert text file line endings to DOS at commit time.
-   To avoid complications on Unix-like operating systems (Linux, MacOSX...)
-   please configure your text editor to use DOS line endings.
+    This project uses **DOS line endings**.  The ``.gitattributes`` file tells
+    Git to automatically convert text file line endings to DOS at commit time.
+    To avoid complications on Unix-like operating systems (Linux, MacOSX...)
+    please configure your text editor to use DOS line endings.
 
 
 2. Install `Code Composer Studio <http://processors.wiki.ti.com/index.php/Download_CCS>`_ from TI on MS Windows or GNU/Linux
-3. Create new CCS project:
+3. Create new CCS project
 
-   - Open this menu **File -> New -> CCS Project**
+   - Open the menu **File -> New -> CCS Project**
    - Project name: **pl-mcu-epd** (for example)
    - Project location: Ensure the location is different to that of the cloned repository
    - Output: **Executable**
@@ -57,12 +58,13 @@ The Plastic Logic reference code project uses Texas Instruments' Code Composer S
 
 4. Import the source code
 
-   - Open this menu: **File -> Import -> General**
+   - Open the menu **File -> Import -> General**
    - To import a clone repository, choose **File System**
    - To import a source archive, choose **Archive File**
 
-     (Note: When using a source archive, the source will need to be moved out
-     of the extra sub-directory that is created.)
+     .. note::
+      When using a source archive, the source will need to be moved out
+      of the extra sub-directory that is created.
 
    - Browse to select your pl-mcu-epd cloned repository or archive file
    - Select all the files (checkbox near pl-mcu-epd)
@@ -70,43 +72,44 @@ The Plastic Logic reference code project uses Texas Instruments' Code Composer S
 
 5. Compiler configuration
 
-   Firstly, click on the "Show Advanced Settings" link in the bottom left of the settings window.
+   - Open the menu **Project -> Properties**
+   - Click on the **Show Advanced Settings** link in the bottom left of the properties window
+   - The following project settings need to be modified:
 
-   The following project settings need to be modified:
-
-   * **CCS Build -> MSP430 Compiler -> Debug Options**
+     - **CCS Build -> MSP430 Compiler -> Debug Options**
         **Debugging Model:** Should be set to **'Full Symbolic Debug'**
 
-   * **CCS Build -> MSP430 Compiler -> Advanced Options -> Language Options:** 
+     - **CCS Build -> MSP430 Compiler -> Advanced Options -> Language Options:** 
         Check the box for **Enable Support for GCC Extensions**
 
-   * **CCS Build -> MSP430 Compiler -> Advanced Options -> Library Function Assumptions:** 
+     - **CCS Build -> MSP430 Compiler -> Advanced Options -> Library Function Assumptions:** 
         Set the level of printf support to **nofloat**
 
-   * **CCS Build -> MSP430 Compiler -> ULP Advisor:** 
-       Disable numbers **2** and **5** in the list
+     - **CCS Build -> MSP430 Compiler -> ULP Advisor:**
+        Disable the following items by unchecking the associated box:
 
-   * **CCS Build -> MSP430 Compiler -> Advanced Options -> Diagnostic Options:** 
-      Check the box for **Emit Diagnostic Identifier Numbers**
+         **2: Software (SW) delay**
 
-   * **CCS Build -> MSP430 Linker -> Basic Options**
-      **Stack Size:** Set to **160**
-      **Heap Size:** Set to **1000**
+         **5: Processing/power intensive operations**
 
-.. Padding to get page formatting right
+     - **CCS Build -> MSP430 Compiler -> Advanced Options -> Diagnostic Options:** 
+        Check the box for **Emit Diagnostic Identifier Numbers**
 
-|
-|
-|
-|
+     - **CCS Build -> MSP430 Linker -> Basic Options**
 
-   * **C/C++ General -> Paths and Symbols**
-      **Includes:** Add the following paths to the includes list (check all three boxes in the creation dialog window)
+        **Set C system stack size: 160**
+
+        **Heap size for C/C++ dynamic memory allocation: 1000**
+
+     - **C/C++ General -> Paths and Symbols**
+        **Includes:** Add the following paths to the includes list (check all three boxes in the creation dialog window)
+
          /${ProjName}/msp430 
 
-         /${ProjName} 
+         /${ProjName}
 
-      **Includes:** Re-order the includes list so that the order is as below:
+        **Includes:** Re-order the includes list so that the order is as below:
+
          /${ProjName}/msp430 
 
          ${CCS_BASE_ROOT}/msp430/include 
@@ -118,9 +121,10 @@ The Plastic Logic reference code project uses Texas Instruments' Code Composer S
 
 6. Setup ``config.h``
 
-   Finally, a ``config.h`` file must be created in the source location. A sample config file is supplied for each supported display type. Go to the cloned repository directory 
+   Finally, a ``config.h`` file must be created in the source location. A sample config file is supplied for each
+   supported display type. Go to the cloned repository directory 
    and copy one of the sample config files (e.g. ``config-Type18.h``) to ``config.h``. Go back to CCS, right click 
-   on the project in the Project Explorer and select **Add Files**. Select the newly created config.h file. 
+   on the project in the Project Explorer and select **Add Files**. Select the newly created ``config.h`` file. 
    When prompted, select the **copy file** radio button. The config file should now appear in the Project Explorer.
 
    More information on the various code configuration options can be found in the section `Configuring the Code`_.
@@ -132,7 +136,8 @@ Configuring the Code
 The code includes a number of features and demonstrations that can be configured at compile time via the use of preprocessor directives in the ``config.h`` file.
 
 
-**Configuration of the display interface board type and display type**
+Configuration of the display interface board type and display type
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The following example defines a Raven board with Type11 display:
 
@@ -149,14 +154,8 @@ The following example defines a Raven board with Type11 display:
      * as Type19.  */
     #define CONFIG_DISPLAY_TYPE           "Type11"
 
-.. Page break to get page formatting right
-
-.. raw:: pdf
-
-   PageBreak
-
-
-**Configuration of how hardware information is used**
+Configuration of how hardware information is used
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The Plastic Logic display interface boards (Raven, Hummingbird Z6/Z7) contain an EEPROM that can
 be used to store board-specific calibration data and other relevant information. The following
@@ -175,12 +174,13 @@ default if the information is not available:
     #define CONFIG_HWINFO_DEFAULT         1
 
 
-**Configuration of how display-specific data is used**
+Configuration of how display-specific data is used
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-All Plastic Logic displays require display-specific information such as waveform data and the
-required VCOM voltage. Some displays contain an EEPROM that can be used to store this information;
-alternatively the information can be provided on the SD card. The following settings define where
-the information will be read from:
+All Plastic Logic displays require display-specific information such as waveform data and VCOM
+voltage. Some displays contain an EEPROM that can be used to store this information; alternatively
+the information can be provided on the SD card. The following settings define where the information
+will be read from:
 
 .. code-block:: c
 
@@ -193,7 +193,8 @@ the information will be read from:
     #define CONFIG_DISP_DATA_SD_EEPROM    0 /**< Try SD card first, then EEPROM */
 
 
-**Configuration of I2C master**
+Configuration of I2C master
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A number of components are configured and accessed via I2C. The following setting defines the
 device used as the I2C master:
@@ -204,6 +205,10 @@ device used as the I2C master:
      * and plswmanual.pdf for possible values) */
     #define CONFIG_DEFAULT_I2C_MODE       I2C_MODE_HOST
 
+The possible values are defined in ``pl/hwinfo.h``:
+
+.. code-block:: c
+
     /** Possible values are as follows: */
     enum i2c_mode_id {
             I2C_MODE_NONE = 0,  /* invalid mode */
@@ -213,7 +218,9 @@ device used as the I2C master:
             I2C_MODE_SC18IS6XX, /* not currently supported */ 
     };
 
-**Configuration of serial interface**
+Configuration of serial interface
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 A serial interface is supported using a pin header on the MSP430 board into
 which can be plugged an FTDI active serial-to-USB cable. Alternatively the
 serial interface can be accessed via the USB port (the MSP430 board is
@@ -226,10 +233,10 @@ sent to the serial port or the debugger:
 .. code-block:: c
 
     /** Set to 1 to have stdout, stderr sent to serial port */
-    #define CONFIG_UART_PRINTF		1
+    #define CONFIG_UART_PRINTF         1
 
-
-**Power mode demonstration**
+Power mode demonstration
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 The following setting can be used to configure a demonstration of power state transitions:
 
@@ -238,7 +245,8 @@ The following setting can be used to configure a demonstration of power state tr
     /** Set to 1 to use the power state transition demo rather than the slideshow */
     #define CONFIG_DEMO_POWERMODES        1
 
-**Pattern demonstration**
+Pattern demonstration
+^^^^^^^^^^^^^^^^^^^^^
 
 The following settings can be used to display a checker-board pattern of the specified size:
 
@@ -252,15 +260,15 @@ The following settings can be used to display a checker-board pattern of the spe
 SD Card Setup
 -------------
 The micro SD card for the processor board must be formatted as a FAT/FAT16 file-system (not FAT32).
-The SD card contents contents (initialisation data and images) can be retrieved from the Plastic Logic GitHub repository (https://github.com/plasticlogic/pl-mcu-sd-card.git). Unzip this archive and place the resulting files on the SD card so that the root directory of the file-system contains the folders Type11, Type16, etc.
+The SD card contents (initialisation data and images) can be retrieved from the Plastic Logic GitHub repository (https://github.com/plasticlogic/pl-mcu-sd-card.git). Unzip this archive and place the resulting files on the SD card so that the root directory of the file-system contains the folders ``Type11``, ``Type16``, etc.
 
-The supplied content provides a safe set of configuration data for each type of display. In order to obtain the best image quality the ``waveform.bin`` (for S1D13541) or ``waveform.wbf`` (for S1D13524) and ``vcom`` files must be replaced with data specific to the display you are using. These files are located at:
+The supplied content provides a safe set of configuration data for each type of display. In order to obtain the best image quality the waveform binary file, ``waveform.bin`` (for S1D13541) or ``waveform.wbf`` (for S1D13524), and the text file ``vcom``, containing the VCOM voltage in mV, must be replaced with data specific to the display used. These files are located at:
 
- ``0:/<Display-Type>/display/waveform.bin`` *(for S1D13541)*
+ ``0:/<Display-Type>/display/waveform.bin``
 
- ``0:/<Display-Type>/display/waveform.wbf`` *(for S1D13524)*
+ ``0:/<Display-Type>/display/waveform.wbf``
 
- ``0:/<Display-Type>/display/vcom`` *(text file containing the VCOM voltage in mV)*
+ ``0:/<Display-Type>/display/vcom``
 
 Place the micro SD card in the micro SD card socket on the processor board.
 
@@ -271,7 +279,7 @@ Running the Code
 Once the code has been configured and built in Code Composer Studio, the resulting binary can be transferred to the Parrot board using the MSP-FET430UIF USB-JTAG programmer. Depending on the configuration, you should now be able to see one of the following:
 
 - A slideshow of stock images from the ``0:/<Display-Type>/img`` folder being shown on the display until execution is halted (with or without power sequencing). The slideshow will skip any files that do not have the extension ".pgm"
-- A sequence of images defined by the ``slides.txt`` file
+- A sequence of images defined by the ``0:/<Display-Type>/img/slides.txt`` file
 - A checkerboard image
 
 
@@ -280,7 +288,7 @@ Toolchains
 
 Code Composer Studio
 ^^^^^^^^^^^^^^^^^^^^
-This has been used extensively during development of the code in conjunction with the MSP-FET430UIF
+Code Composer Studio has been used extensively during development of the code in conjunction with the MSP-FET430UIF
 USB/JTAG programmer. Both have proved to be extremely reliable in use. There is a free version of the
 tools which restrict the size of code they will generate to 16KB. The full version can be evaluated free for 90
 days.

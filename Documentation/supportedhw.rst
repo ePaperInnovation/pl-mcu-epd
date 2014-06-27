@@ -18,8 +18,8 @@ Microchip EEPROMs
 ^^^^^^^^^^^^^^^^^
 The code supports I2C EEPROMs up to 64KB in size. The code currently supports two I2C EEPROM types:
 
-1. 24LC014 – this is a small 128B EEPROM fitted to later display interface boards and is used to store power supply calibration data. This permits accurate VCOM voltages to be achieved when the display interface board is swapped. It also stores other hardware configuration information.
-2. 24AA256 – this is a 32KB EEPROM found on some display types. It is intended to store waveform information so that the necessary information to drive a display travels with the display. This allows the system to ensure the correct waveform information is used for the display. Since waveforms can exceed 32KB in size, the data stored on this EEPROM is compressed using the LZSS compression algorithm.
+1. **24LC014** – this is a small 128B EEPROM fitted to later display interface boards and is used to store power supply calibration data. This permits accurate VCOM voltages to be achieved when the display interface board is swapped. It also stores other hardware configuration information.
+2. **24AA256** – this is a 32KB EEPROM found on some display types. It is intended to store waveform information so that the necessary information to drive a display travels with the display. This allows the system to ensure the correct waveform information is used for the display. Since waveforms can exceed 32KB in size, the data stored on this EEPROM is compressed using the LZSS compression algorithm.
 
 EEPROM types can be added by extending the table that defines the device characteristics (in ``i2c-eeprom.c``) and extending the enumeration of EEPROM types (in ``i2c-eeprom.h``).
 
@@ -33,7 +33,7 @@ The measured temperature register can be read automatically by the Epson control
 
 
 Maxim MAX17135 HVPMIC
-^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
 The Maxim PMIC is used on boards primarily intended to drive the 10.7” displays. Its key features are:
 
 - I2C interface for configuration of power sequence timings
@@ -44,7 +44,7 @@ The Maxim PMIC is used on boards primarily intended to drive the 10.7” display
 
 
 TI TPS65185 HVPMIC
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 The TI PMIC is used on boards intended to drive the small displays. Its key features are:
 
 - I2C interface for configuration of power sequence timings
@@ -56,8 +56,8 @@ The TI PMIC is used on boards intended to drive the small displays. Its key feat
 
 Epson Controllers
 -----------------
-Epson have a range of controllers designed to support the output of images onto electrophoretic (EPD)
-displays. The controllers differ in the size of display they can support, whether they have external or
+Epson have a range of controllers designed to support the output of images onto electrophoretic displays
+(EPD). The controllers differ in the size of display they can support, whether they have external or
 internal frame buffer memory, on-board or external power supplies and support for colour displays.
 
 The controllers can be accessed via SPI or a 16-bit parallel data bus.
@@ -69,13 +69,14 @@ SPI master, GPIO ports, and internal temperature sensor.
 Which options are available will ultimately depend on the controller selected and how it is connected to
 the display and other system components.
 
-The code supports the Epson S1D13524 and S1D13541 controllers in various configurations. The S1D13524
-controller supports large (up to 4096x4096 pixels greyscale) and colour displays and is fitted to a circuit board with its external SDRAM. The S1D13541
-controller supports smaller displays (up to 854x480 pixels greyscale) and is physically bonded to the display module.
+The code supports the Epson **S1D13524** and **S1D13541** controllers in various configurations. The S1D13524
+controller supports large (up to 4096x4096 pixels greyscale and colour) displays and is fitted to a circuit
+board with its external SDRAM. The S1D13541 controller supports smaller displays (up to 854x480 pixels greyscale)
+and is physically bonded to the display module.
 
 
-Power State Management
-^^^^^^^^^^^^^^^^^^^^^^
+Power State Management Epson S1D13541
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The Epson S1D13541 controller can be configured to one of several power states; helping to minimise power use 
 when appropriate. 
 
@@ -100,21 +101,16 @@ These power states are:
    - Source/gate driver powered off 
    - Power save status bit set to 0
 
-
-
-Fig 4-1-1, below, shows the possible power state transitions.
+The figure below shows the possible power state transitions.
 
 .. image:: pwr_transitions.jpeg
    :width: 75%
 
-*Fig 4-1-1: Power State Transition Diagram*
+Below is a breakdown of the actions that must be taken for each of the power state transitions.
 
 
-Below is a breakdown of the actions that must be taken for each of the power state transitions:
-
-
-Run -> Standby:
-***************
+Run -> Standby
+**************
 
 1. STBY command (CMD(0x04), no parameters) issued to Epson controller
 2. Wait for HRDY = 1
@@ -127,22 +123,22 @@ Sleep -> Standby
 3. STBY command (CMD(0x04), no parameters) issued to Epson controller
 4. Wait for HRDY = 1
 
-Run/Standby -> Sleep:
-*********************
+Run/Standby -> Sleep
+********************
 
 1. SLP command (CMD(0x05), no parameters) issued to Epson controller
 2. Wait for HRDY = 1
 3. Set REG[0x0006] bit 8 to 0 for minimum power supply
 4. Set CLK_EN GPIO to false to disable clock
 
-Standby -> Run:
-***************
+Standby -> Run
+**************
 
 1. RUN command (CMD(0x02), no parameters) issued to Epson controller
 2. Wait for HRDY = 1
 
-Sleep -> Run:
-*************
+Sleep -> Run
+************
 
 1. Set CLK_EN GPIO to true to re-enable clock
 2. Set REG[0x0006] bit 8 to 1 for normal power supply
@@ -152,19 +148,23 @@ Sleep -> Run:
 Run/Standby/Sleep -> Power Off
 ******************************
 
-Note: Any data in the image buffer will be lost when going into off mode. If the current displayed image
-is to be retained when powering back up, the contents of the image buffer should be copied to a suitable
-location (e.g. an SD card) before continuing with the power off. This image can then be loaded back into 
-the image buffer when coming out of power off mode.
-
 1. SLP command (CMD(0x05), no parameters) issued to Epson controller
 2. Set CLK_EN GPIO to false to disable clock
 3. Set 3V3_EN GPIO to false to disable 3V3 power supply
 
-Power Off -> Standby Mode:
-**************************
+.. note::
 
-Note: after each of the following commands, the host should wait for HRDY to be 1 before continuing
+ Any data in the image buffer will be lost when going into off mode. If the current displayed image
+ is to be retained when powering back up, the contents of the image buffer should be copied to a suitable
+ location (e.g. an SD card) before continuing with the power off. This image can then be loaded back into
+ the image buffer when coming out of power off mode.
+
+Power Off -> Standby
+********************
+
+.. note::
+
+ After each of the following commands, the host should wait for HRDY to be 1 before continuing.
 
 1. Set 3V3_EN GPIO to true to enable 3V3 power supply
 2. Set CLK_EN GPIO to true to enable clock
@@ -185,7 +185,7 @@ white initialisation waveform, or image data copied to a safe medium before powe
 Power State Demo
 ****************
 
-A power state demo can be launched using the Plastic Logic reference code by including the following in config.h:
+A power state demo can be launched using the Plastic Logic reference code by including the following in ``config.h``:
 
 .. code-block:: c
 
@@ -204,7 +204,6 @@ This demo will transition through the power states with the following behaviour:
 - Go through power on initialise
 
 
-
 Plastic Logic Evaluation Hardware
 ---------------------------------
 Display Types
@@ -216,16 +215,21 @@ required.
 | Display Type | Resolution | Notes                                                |
 +==============+============+======================================================+
 | Type11       | 1280x960   | External Controller                                  |
-|              |            | Use the Mercury display connector board              |
+|              |            |                                                      |
+|              |            | Requires the Mercury display connector board         |
 +--------------+------------+------------------------------------------------------+
-| Type16       | 320x240    | Bonded Controller                                    |
+| Type16       |  320x240   | Bonded Controller                                    |
+|              |            |                                                      |
 |              |            | 4.7" @85ppi, 2.7" @150ppi                            |
 +--------------+------------+------------------------------------------------------+
-| Type18       | 400x240    | Bonded Controller                                    |
+| Type18       |  400x240   | Bonded Controller                                    |
+|              |            |                                                      |
 |              |            | 4.0" @115ppi                                         |
 +--------------+------------+------------------------------------------------------+
-| Type19       | 720x120    | Bonded Controller                                    |
+| Type19       |  720x120   | Bonded Controller                                    |
+|              |            |                                                      |
 |              |            | 4.9" @150ppi                                         |
+|              |            |                                                      |
 |              |            | Requires pixel data to be reordered                  |
 +--------------+------------+------------------------------------------------------+
 
@@ -264,7 +268,7 @@ be safely exchanged. The board has a 128B EEPROM which can be used as non-volati
 
 HB Z6/Z7
 ^^^^^^^^
-The Z6 and Z7 are intended to drive a S1D13541 small display controller which is bonded to the display itself. The boards differ in the display connector used. The Z7 board is used to drive the Type19 "Bracelet" display and the Z6 is used to drive all other Plastic Logic small displays. The boards have a TI PMIC and a 128B EEPROM for storing power supply calibration data. The VCOM DAC in the PMIC is used to set the VCOM value for the display. All versions of the Z7 board have the provision to turn off 3V3 power to the display controller; this feature is absent on version 6.1 of the Z6 but has been introduced as of version 6.3, along with the ability to control the clock enable and PMIC wake signals.
+The Z6 and Z7 are intended to drive a S1D13541 small display controller which is bonded to the display itself. The boards differ in the display connector used. The Z7 board is used to drive the Type19 bracelet display and the Z6 is used to drive all other Plastic Logic small displays. The boards have a TI PMIC and a 128B EEPROM for storing power supply calibration data. The VCOM DAC in the PMIC is used to set the VCOM value for the display. All versions of the Z7 board have the provision to turn off 3V3 power to the display controller; this feature is absent on version 6.1 of the Z6 but has been introduced as of version 6.3, along with the ability to control the clock enable and PMIC wake signals.
 
 
 Raven

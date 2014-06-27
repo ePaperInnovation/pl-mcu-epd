@@ -14,6 +14,11 @@ The project is in active development and feedback is welcomed on new features or
 or documentation. Please send feedback via your sales/support representative.
 
 
+.. raw:: pdf
+
+   PageBreak
+
+
 Scope
 =====
 
@@ -21,14 +26,19 @@ This document does not attempt to describe the detailed operation of any particu
 Epson display controller as this information is readily available, or may require an NDA to disclose. Prior
 experience with embedded programming is expected and discussion will focus on the specifics of this code
 base.
-The code is able to drive a slideshow of full size, pre-rendered, images in the PGM file format to a chosen
-display (the slideshow is defined using the ``slides.txt`` file). Due to restrictions on resources the code is not currently able to manipulate the images in any
+The code is able to drive a slideshow of pre-rendered images in the PGM file format to a chosen
+display.  Due to restrictions on resources the code is not currently able to manipulate the images in any
 way.
 The code focusses on functionality and does not pretend to implement best practice for any specific
 microcontroller. Data transfer speed improvements are planned for subsequent
 releases.
 The code attempts to strike a balance between minimising microcontroller resource usage while preserving
 portability, good coding practices and the provision of good debug support (e.g. use of assertions).
+
+
+.. raw:: pdf
+
+   PageBreak
 
 
 Licensing
@@ -51,6 +61,7 @@ Sample code - This is sample source code made freely available by the microcontr
 copyright notices vary from source file to source file but are not restrictive other than limiting the use of
 such processor specific sample code to a given range of processor devices. Please see Appendix A for
 license text.
+
  
 .. raw:: pdf
 
