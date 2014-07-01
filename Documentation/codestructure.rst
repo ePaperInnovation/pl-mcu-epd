@@ -109,8 +109,9 @@ code as “modes” (``pl_epdc_temp_mode`` in ``pl/epdc.h``):
 2. **Internal** – The display controller will use its built-in temperature sensor, if it has one, to measure the temperature. The S1D13541 controller contains such a temperature sensor, which requires an external NTC thermistor to be fitted (as shown on the Z6 and Z7 reference schematics).
 3. **External** – The display controller will communicate directly with an LM75-compatible I2C temperature sensor to obtain the temperature.
 
-To trigger the acquisition or processing of temperature data the controller's ``measure_temperature()``
-function is called. On completion a new temperature will be in effect. On the S1D13541 controller an indication
+To trigger the acquisition or processing of temperature data the controller's ``update_temp()``
+function is called (either ``s1d13524_update_temp()`` or ``s1d13541_update_temp()``).
+On completion a new temperature will be in effect. On the S1D13541 controller an indication
 that the waveform data must be reloaded is given if the temperature measured has moved outside the
 range of the currently cached waveform data.
 
@@ -128,8 +129,7 @@ procedure. The output of the calibration procedure must be made available to the
 when it is initialised (``vcom_init()`` in ``vcom.c``). The display interface boards either store this
 data in an EEPROM on the board or it is measured once and stored in the code.
 
-The VCOM calibration procedure is described in the document “Electronics for small displays” available
-from Plastic Logic.
+The VCOM calibration procedure is described in the document “How to integrate VCOM calibration” available from Plastic Logic.
 
 
 Putting it all Together
@@ -229,13 +229,13 @@ has been completed and the platform configuration is stable.
 I2C Interface
 ^^^^^^^^^^^^^
 
-A single I2C interface is supported. I2C is only supported in UCSB modules and
-the chosen UCSB module is defined in the ``msp430/esp430-i2c.c`` source file by
+A single I2C interface is supported. I2C is only supported in USCI modules and
+the chosen UCSI module is defined in the ``msp430/mlsp430-i2c.c`` source file by
 setting the macros ``USCI_UNIT`` and ``USCI_CHAN`` as required.  The code will
 then reconfigure itself to reference the correct I2C unit. In addition to
 specifying which UCSI module to use the I2C SDA and SCL pins need to be
-connected to the USCI unit by defining the appropriate pins as ``PIN_SPECIAL``
-in the ``gpio_request()`` call.
+connected to the USCI unit by defining the appropriate pins as ``PL_GPIO_SPECIAL``
+in the ``pl_gpio_config_list()`` call.
 
 
 SPI Interface – Epson
@@ -246,8 +246,8 @@ is defined in the ``msp430/msp430-spi.c`` source file by setting the macros
 ``USCI_UNI`` and ``USCI_CHAN`` as required. The code will then reconfigure
 itself to reference the correct SPI unit. In addition to specifying which USCI
 module to use the SPI_CLK, SPI_MOSI and SPI_MISO pins need to be connected to
-the USCI unit by defining the appropriate pins as ``PIN_SPECIAL`` in the
-``gpio_request()`` call. Note that it is possible to use both the USCI_A and
+the USCI unit by defining the appropriate pins as ``PL_GPIO_SPECIAL`` in the
+``pl_gpio_config_list()`` call. Note that it is possible to use both the USCI_A and
 USCI_B units, i.e. USCI_A0 and USCI_B0 are physically different hardware units.
 
 A single SPI interface is supported for Epson controller
@@ -267,8 +267,8 @@ is defined in the ``msp430/msp430-sdcard.c`` source file by setting the macros
 ``USCI_UNI`` and ``USCI_CHAN`` as required. The code will then reconfigure
 itself to reference the correct SPI unit. In addition to specifying which USCI
 module to use the SPI_CLK, SPI_MOSI and SPI_MISO pins need to be connected to
-the USCI unit by defining the appropriate pins as ``PIN_SPECIAL`` in the
-``gpio_request()`` call. Note that it is possible to use both the USCI_A and
+the USCI unit by defining the appropriate pins as ``PL_GPIO_SPECIAL`` in the
+``pl_gpio_config_list()`` call. Note that it is possible to use both the USCI_A and
 USCI_B units. i.e. USCI_A0 and USCI_B0 are physically different hardware units.
 
 A single SPI interface is supported for transferring data from the micro SD
@@ -278,19 +278,13 @@ card slot. This interface runs at 20Mbps reliably.
 UART Interface
 ^^^^^^^^^^^^^^
 
-A serial interface is supported using a pin header on the MSP430 board into
-which can be plugged an FTDI active serial-to-USB cable. Alternatively the
-serial interface can be accessed via the USB port (the MSP430 board is
-fitted with a TUSB3410 USB to serial port controller). The code can be
-configured to route all standard output to the serial port rather than back to
-the debugger. This allows debug output still be seen when no debugger is
-attached. To enable this feature, edit the relevant line in
-``config.h``:
+UART mode is supported in the USCI_A module and the code handling this can be found
+in the ``msp430\msp430-uart.c`` source file. In the sample code, the UART interface
+is used only to handle ``stderr`` and ``stdout``, and then only if
+``CONFIG_UART_PRINTF`` is defined (in ``config.h``). In Code Composer Studio it is
+not possible simply to override putc() and puts(), and instead a device has to be
+registered (see ``msp430_uart_register_files()``). 
 
-.. code-block:: c
-
-    /** Set to 1 to have stdout, stderr sent to serial port */
-    #define CONFIG_UART_PRINTF		1
 
 
 

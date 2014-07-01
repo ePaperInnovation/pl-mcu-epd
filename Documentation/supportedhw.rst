@@ -70,7 +70,7 @@ Which options are available will ultimately depend on the controller selected an
 the display and other system components.
 
 The code supports the Epson **S1D13524** and **S1D13541** controllers in various configurations. The S1D13524
-controller supports large (up to 4096x4096 pixels greyscale and colour) displays and is fitted to a circuit
+controller supports large (up to 2560x2048 greyscale pixels or 2560x2048 RGBW colour sub-pixels) displays and is fitted to a circuit
 board with its external SDRAM. The S1D13541 controller supports smaller displays (up to 854x480 pixels greyscale)
 and is physically bonded to the display module.
 

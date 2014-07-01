@@ -12,8 +12,17 @@ EPD
   Electrophoretic display. Such displays retain the last image driven to them and only require
   power to change the image
 
+EPDC
+  Electrophoretic display controller. A specialised display timing controller required for
+  updating electrophoretic displays. The EPDC is responsible for applying the correct waveform
+  to each pixel, according to the current and target images
+
 FFC
   Flexible flat cable (http://en.wikipedia.org/wiki/Flat_Flex_Cable)
+
+GPIO
+  General-purpose input/output. A user-controllable pin that can be defined at runtime as either
+  an input or an output
 
 Hummingbird Z6
   An evaluation board from Plastic Logic that interfaces between a Plastic Logic small display
@@ -26,6 +35,14 @@ Hummingbird Z7
 HVPMIC
   High voltage power management IC. A chip that converts a single (typically battery) voltage
   into the various higher voltages required by the display
+
+I2C
+  Inter-Integrated Circuit, a standard two-wire multimaster serial bus intended for communication
+  with low-speed peripherals
+
+Mercury board
+  An interface board from Plastic Logic that connects a Plastic Logic 10.7" display (e.g. Type11)
+  to a Raven board via a 50-way FFC
 
 MSP430
   A low-power microcontroller from Texas Instruments
@@ -57,6 +74,13 @@ S1D13524
 S1D13541
   A combined EPD controller chip and source driver from Epson, designed for use with displays
   up to a resolution of 854x480 pixels
+
+SPI
+  Serial Peripheral Interface, a standard four-wire serial bus that operates in full duplex mode 
+
+USCI
+  Universal Serial Communication Interface. MSP430 serial communications interface that supports
+  multiple serial communication modes with one hardware module
 
 VCOM
   Display-specific common electrode voltage. Each Plastic Logic display is supplied with the correct

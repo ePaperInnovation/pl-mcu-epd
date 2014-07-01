@@ -1,6 +1,25 @@
 Relevant Data Sheets and Additional Resources
 =============================================
 
+Plastic Logic Documents
+-----------------------
+
+Detailed schematics and design documents are available from Plastic Logic for
+all of the boards supported by this software. Other relevant documents are:
+
+Electronics for small displays
+  An overview of the electronics required to drive a small displays
+
+Plastic Logic Software Manual
+  A detailed description of the EEPROM data formats and some associated software tools
+
+How to integrate VCOM calibration
+  A detailed description of calibrating and setting the VCOM voltage
+
+
+Third Party Datasheets and Resources
+------------------------------------
+
 TI TPS65185 HVPMIC
   http://www.ti.com/product/tps65185
 
@@ -28,12 +47,6 @@ Epson S1D13541 EPDC (NDA required for full datasheet)
 TI MSP430 tools and software
   http://www.ti.com/lsds/ti/microcontroller/16-bit_msp430/tools_software.page
   
-
-Detailed schematics and design documents are available from Plastic Logic for
-all of the boards supported by this software.
-
-An overview of the electronics required to drive a small displays is available
-in the document “Electronics for small displays” available from Plastic Logic.
 
 .. raw:: pdf 
 

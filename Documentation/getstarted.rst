@@ -221,14 +221,13 @@ The possible values are defined in ``pl/hwinfo.h``:
 Configuration of serial interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A serial interface is supported using a pin header on the MSP430 board into
-which can be plugged an FTDI active serial-to-USB cable. Alternatively the
-serial interface can be accessed via the USB port (the MSP430 board is
-fitted with a TUSB3410 USB to serial port controller). The code can be
-configured to route all standard output to the serial port rather than back to
-the debugger. This allows debug output still be seen when no debugger is
-attached. The following setting defines whether ``stdout`` and ``stderr`` are
-sent to the serial port or the debugger:
+A serial interface is supported via the USB port (the Parrot board is
+fitted with a TUSB3410 USB to serial port controller). Alternatively a
+FTDI active serial-to-USB cable can be plugged into a pin header on the
+Parrot board. The code can be configured to route all standard output to
+the serial port rather than back to the debugger. This allows debug output
+still to be seen when no debugger is attached. The following setting defines
+whether ``stdout`` and ``stderr`` are sent to the serial port or the debugger:
 
 .. code-block:: c
 
@@ -281,6 +280,58 @@ Once the code has been configured and built in Code Composer Studio, the resulti
 - A slideshow of stock images from the ``0:/<Display-Type>/img`` folder being shown on the display until execution is halted (with or without power sequencing). The slideshow will skip any files that do not have the extension ".pgm"
 - A sequence of images defined by the ``0:/<Display-Type>/img/slides.txt`` file
 - A checkerboard image
+
+
+Error codes
+^^^^^^^^^^^
+
+If a fatal error occurs while running the code, the type of error is indicated via the status
+LED. Specifically the status LED will be flashed on/off a number of times, followed by a delay,
+after which the pattern will repeat. The error types are as follows (see also ``assert.h``):
+
+
++----------+----------------------------------------------+
+| Flashes  | Description                                  |
++==========+==============================================+
+| 1        | General error initialising GPIO              |
++----------+----------------------------------------------+
+| 2        | Error initialising MSP430 comms              |
++----------+----------------------------------------------+
+| 3        | Error reading HWINFO EEPROM.                 |
+|          | Could be a comms error or a content error    |
++----------+----------------------------------------------+
+| 4        | Error initialising I2C (Epson)               |
++----------+----------------------------------------------+
+| 5        | Error reading display information. Could     |
+|          | be many errors (comms error, content error,  |
+|          | missing or invalid file, etc).               |
+|          | Also depends on preprocessor settings        |
++----------+----------------------------------------------+
+| 6        | Error initialising HVPSU. Most likely to be  |
+|          | a comms error, but could indicate a failed   |
+|          | PMIC                                         |
++----------+----------------------------------------------+
+| 7        | Error initialising EPDC. Could be many       |
+|          | errors (comms error, EPDC failure, failed    |
+|          | to load init code, failed on one of several  |
+|          | commands needed to initialise the EPDC,      |
+|          | failed to load waveform, etc)                |
++----------+----------------------------------------------+
+| 8        | Failed while running application. Multiple   |
+|          | causes for this, depending on application    |
+|          | that is running. Most likely failures are    |
+|          | due to missing/invalid files or hardware     |
+|          | problems such as POK or comms failure        |
++----------+----------------------------------------------+
+| 9        | Failed assert statement (debug use only)     |
++----------+----------------------------------------------+
+| 0 (off)  | Undefined error                              |
++----------+----------------------------------------------+
+| 0 (on)   | No error                                     |
++----------+----------------------------------------------+
+
+Additional information relating to the error can be obtained by inspecting ``stderr`` via the
+debugger or the serial port (depending on how ``CONFIG_UART_PRINTF`` has been defined).
 
 
 Toolchains
