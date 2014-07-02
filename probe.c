@@ -124,17 +124,21 @@ int probe_dispinfo(struct pl_dispinfo *dispinfo, struct pl_wflib *wflib,
 	return (pl_dispinfo_init_fatfs(dispinfo) ||
 		pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path));
 #elif CONFIG_DISP_DATA_EEPROM_SD
-	if (pl_dispinfo_init_eeprom(dispinfo, e))
-		return (pl_dispinfo_init_fatfs(dispinfo) ||
-			pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path));
-	else
-		return pl_wflib_init_eeprom(wflib, e_ctx, e, dispinfo);
+	int retval;
+	retval = (pl_dispinfo_init_eeprom(dispinfo, e) ||
+			pl_wflib_init_eeprom(wflib, e_ctx, e, dispinfo) );
+	if (retval)
+		retval = (pl_dispinfo_init_fatfs(dispinfo) ||
+			pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path) );
+	return retval;
 #elif CONFIG_DISP_DATA_SD_EEPROM
-	if (pl_dispinfo_init_fatfs(dispinfo))
-		return (pl_dispinfo_init_eeprom(dispinfo, e) ||
-			pl_wflib_init_eeprom(wflib, e_ctx, e, dispinfo));
-	else
-		return pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path);
+	int retval;
+	retval = (pl_dispinfo_init_fatfs(dispinfo) ||
+			pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path) );
+	if (retval)
+		retval = (pl_dispinfo_init_eeprom(dispinfo, e) ||
+			pl_wflib_init_eeprom(wflib, e_ctx, e, dispinfo) );
+	return retval;
 #endif
 }
 
