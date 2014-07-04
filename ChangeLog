@@ -1,3 +1,53 @@
+Release v007 -> 008 - 2014-07-02
+
+Andrew Cox (12):
+      pl-mcu: Added checkerboard pattern demo for '524 controller.
+      gitattributes: Re-add shell scripts to files treated as binaries
+      pl-mcu-epd: Added missing pin configs for Ruddock board and PMIC FLT
+      pl-mcu-epd: Remove call to disable temp sensor before PMIC timings set
+      pl-mcu-epd: Update waveform path for S1D13524 controller to use .wbf
+      pl-mcu-epd: Disable the power save mode before enabling i2c clocks
+      pl-mcu-epd: Add INIT command parameters required for new Epson binaries
+      pl-mcu-epd: Use MSP430 as I2C master as a safer default
+      pl-mcu-epd: Store temperature mode when setting mode on '534 controller
+      pl-mcu-epd: Fix VERBOSE_TEMPERATURE section for '534 controller
+      pl-mcu-epd: Change default '524 temperature mode from manual to external.
+      pl-mcu-epd: Update version to v008-RC2
+
+David Gammie (17):
+      Fixed several bugs relating to sequencer operation with S1D13524.
+      Fixed default hwinfo temperature sensor setting for Z6/Z7
+      Removed unused code files
+      Removed redundant TODO comment for a temperature feature that has     now been implemented.
+      Upgraded checkerboard support (also allows use with type 18)
+      Modified file parser to allow VCOM files without line break
+      Tidied default config.h files to remove references unsupported features.     Improved comments describing I2C master options.
+      Updated documentation with feedback from Dirk
+      Added glossary.     Corrected various minor typos and formatting issues.
+      Fixed commenting error in config files
+      Added support for register override file
+      Improvements to error reporting.
+      Fixed serial port output (defined by CONFIG_UART_PRINTF)
+      Moved definition of CONFIG_UART_PRINTF to main config.h file
+      Further minor improvements to documentation
+      Removed dot-cproject file
+      Restructured display info probe logic. When data can be read from     either SD card or EEPROM, the code now checks both dispinfo and     wflib are OK before trying the alternative source of data.
+
+Dirk Bandelow (5):
+      Documentation: fix compiler configuration in ccs setup
+      .gitattributes: remove sh from binary file types to allow text diff
+      Documentation/index.rst: remove auto generated date
+      setver.h: add date generation
+      Documentation: improve formatting and make some minor content changes
+
+Guillaume Tucker (6):
+      remove libc error codes and fix copyright notice
+      remove types.h and use stdint everywhere
+      utils.h: save 100 bytes by removing the colon in LOG
+      assert.h: tidy-up and reduce code size
+      fix and optimise swap32 and swap16 to reduce code size
+      FatFS: tweak settings to reduce code size
+
 Release v006 -> v007 - 2014-03-20
 
 Guillaume Tucker (181):
