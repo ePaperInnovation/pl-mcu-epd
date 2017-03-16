@@ -12,7 +12,7 @@ For details see: `http://en.wikipedia.org/wiki/Netpbm_format <http://en.wikipedi
 
 This is a simple, uncompressed, file format that can be generated with `GIMP <http://www.gimp.org/>`_ or using the `Python Imaging Library (PIL) <http://www.pythonware.com/products/pil/>`_. Both GIMP and PIL are available for Windows and Linux.
 
-When displaying images as a slideshow (i.e. without a ``slides.txt``), the image files are expected to match the full display size so that the contents can be transferred directly from storage to the display controller. In the case of the Type19 bracelet displays the pixel data must also be reordered (see `Image Conversion Tools`_ below).
+When displaying images as a slideshow (i.e. without a ``slides.txt``), the image files are expected to match the full display size so that the contents can be transferred directly from storage to the display controller. In the case of the S049_T1.1 bracelet displays the pixel data must also be reordered (see `Image Conversion Tools`_ below).
 
 When displaying images using a ``slides.txt`` sequence file the images can be any size up to the full display size, but must have a width that is exactly divisible by 2. 
 
@@ -24,7 +24,7 @@ Image Conversion Tools
 ----------------------
 The source code contains a python script, ``tools/prepare_pgm.py``, which uses the Python Imaging Library (PIL) to
 support the translation of PNG files to PGM format. The script can also reorder the pixel data as required
-for Type19 displays.
+for S049_T1.1 displays.
 
 The script requires Python version 2.7.5 and a compatible version of the Python Imaging Library (PIL), and
 works in both Linux and Windows.
@@ -44,7 +44,7 @@ For Windows, use the most recent "Windows only" PIL for Python 2.7. When install
 destination directory is the same as the Python 2.7.5 installation directory.
 For Linux, use the most recent PIL source kit. Again, installation instructions can be found within the tarball.
 
-Execute the script from the command line in either operating system, passing the image to be converted as the first argument. If the target device is using a Type19 display, pass ``--interleave`` as the second argument in order to generate the correct pixel data ordering.
+Execute the script from the command line in either operating system, passing the image to be converted as the first argument. If the target device is using a S049_T1.1 display, pass ``--interleave`` as the second argument in order to generate the correct pixel data ordering.
 
 For example::
 
@@ -55,7 +55,7 @@ For the above example, the output will be a file called ``image.pgm.``
 The output files should be copied to the SD Card in the img folder of the appropriate display type folder, 
 e.g.:
 
- ``0:/Type19/img/image.pgm``
+ ``0:/S049_T1.1/img/image.pgm``
 
 Sequence File
 -------------
@@ -148,7 +148,7 @@ Supported commands
 Example sequence
 ^^^^^^^^^^^^^^^^
 
-The following listing shows a sample sequence for Type18 400x240 displays::
+The following listing shows a sample sequence for S040_T1.1 400x240 displays::
 
   # Fill the screen with white and trigger a refresh update
   #

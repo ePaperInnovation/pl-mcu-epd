@@ -55,19 +55,28 @@ enum pl_epdc_temp_mode {
 	PL_EPDC_TEMP_INTERNAL,
 };
 
+enum pl_update_mode {
+	UPDATE_FULL      	 = 0, //0x33,
+	UPDATE_FULL_AREA 	 = 1, //0x34,
+	UPDATE_PARTIAL      = 2, //0x35,
+	UPDATE_PARTIAL_AREA = 3, //0x36,
+};
+
 struct pl_area;
 struct pl_dispinfo;
 struct pl_epdpsu;
 
 struct pl_wfid {
-	const char *path;
-	int id;
+	int id_from;
+	int id_to;
+//	const char *path;
+//	int id;
 };
 
 struct pl_epdc{
 	int (*clear_init)(struct pl_epdc *p);
 	int (*load_wflib)(struct pl_epdc *p);
-	int (*update)(struct pl_epdc *p, int wfid, const struct pl_area *area);
+	int (*update)(struct pl_epdc *p, int wfid, enum pl_update_mode mode, const struct pl_area *area);
 	int (*wait_update_end)(struct pl_epdc *p);
 	int (*set_power)(struct pl_epdc *p, enum pl_epdc_power_state state);
 	int (*set_temp_mode)(struct pl_epdc *p, enum pl_epdc_temp_mode mode);
@@ -75,7 +84,7 @@ struct pl_epdc{
 	int (*fill)(struct pl_epdc *p, const struct pl_area *area, uint8_t g);
 	int (*pattern_check)(struct pl_epdc *p, uint16_t size);
 	int (*load_image)(struct pl_epdc *p, const char *path,
-			  const struct pl_area *area, int left, int top);
+			  struct pl_area *area, int left, int top);
 	int (*set_epd_power)(struct pl_epdc *p, int on);
 
 	const struct pl_wfid *wf_table;
@@ -90,20 +99,22 @@ struct pl_epdc{
 };
 
 /* --- Waveform management --- */
-
+#if 0
 /** Waveform string elements */
 #define WF_INIT "init"
 #define WF_REFRESH "refresh"
 #define WF_DELTA "delta"
 #define WF_MONO "mono"
+#endif
 
+#if 0
 /** Optimised look-up path strings - use for improved performance */
 extern const char wf_init[];          /**< init */
 extern const char wf_refresh[];       /**< refresh */
 extern const char wf_delta[];         /**< delta */
 extern const char wf_refresh_mono[];  /**< refresh/mono */
 extern const char wf_delta_mono[];    /**< delta/mono */
-
+#endif
 /** Get a waveform identifier or -1 if not found */
 extern int pl_epdc_get_wfid(struct pl_epdc *p, const char *wf_path);
 
@@ -115,7 +126,7 @@ extern int pl_epdc_get_wfid(struct pl_epdc *p, const char *wf_path);
  * # Turn the EPD PSU off
  */
 extern int pl_epdc_single_update(struct pl_epdc *epdc, struct pl_epdpsu *psu,
-				 int wfid, const struct pl_area *area);
+				 int wfid, enum pl_update_mode mode, const struct pl_area *area);
 
 #if PL_EPDC_STUB
 /** Initialise a stub implementation for debugging purposes */

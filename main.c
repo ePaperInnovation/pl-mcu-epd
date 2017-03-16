@@ -78,7 +78,7 @@
 #define RUDDOCK_SHUTDOWN MSP430_GPIO(5,1)
 
 /* Version of pl-mcu-epd */
-static const char VERSION[] = "v008";
+static const char VERSION[] = "v010";
 
 /* Platform instance, to be passed to other modules */
 static struct pl_platform g_plat;
@@ -198,74 +198,61 @@ static const uint16_t g_epson_parallel[] = {
 	EPSON_TFT_HSYNC, EPSON_TFT_VSYNC, EPSON_TFT_DE, EPSON_TFT_CLK,
 };
 
-static const struct s1d135xx_data g_s1d135xx_data = {
-	EPSON_RESET, EPSON_CS_0, EPSON_HIRQ,
-#if SPI_HRDY_USED
-	EPSON_HRDY,
-#else
-	PL_GPIO_NONE,
-#endif
-#if SPI_HDC_USED
-	EPSON_HDC,
-#else
-	PL_GPIO_NONE,
-#endif
-	EPSON_CLK_EN, EPSON_VCC_EN
-};
-
+static struct s1d135xx_data init_g_s1d135xx_data(void){
+	struct s1d135xx_data g_s1d135xx_data = {
+		EPSON_RESET, EPSON_CS_0, EPSON_HIRQ, PL_GPIO_NONE, PL_GPIO_NONE, EPSON_CLK_EN, EPSON_VCC_EN };
+	if (SPI_HRDY_USED)
+		g_s1d135xx_data.hrdy = EPSON_HRDY;
+	if (SPI_HDC_USED)
+		g_s1d135xx_data.hdc = EPSON_HDC;
+	return g_s1d135xx_data;
+}
 /* --- SPI bus configuration --- */
 
 #define SPI_CHANNEL 0
 #define SPI_DIVISOR 1
 
-/* --- hardware info --- */
-
-#if CONFIG_HWINFO_DEFAULT
-
-#if CONFIG_PLAT_Z6
-#define BOARD_MAJ 6
-#define BOARD_MIN 3
-#elif CONFIG_PLAT_Z7
-#define BOARD_MAJ 7
-#define BOARD_MIN 2
-#endif
-
-static const struct pl_hwinfo g_hwinfo_default = {
-	/* version */
-	PL_HWINFO_VERSION,
-#if CONFIG_PLAT_Z6 || CONFIG_PLAT_Z7
-	/* vcom */
-	{ 127, 4172, 381, 12490, 25080, -32300, 56886 },
-	/* board */
-	{ "HB", BOARD_MAJ, BOARD_MIN, 0, HV_PMIC_TPS65185, 0, 0, 0,
-	  CONFIG_DEFAULT_I2C_MODE, TEMP_SENSOR_NONE, 0, EPDC_S1D13541, 1, 1 },
-#elif CONFIG_PLAT_RAVEN
-	/* vcom */
-	{ 63, 4586, 189, 9800, 27770, -41520, 70000 },
-	/* board */
-	{ "Raven", 1, 0, 0, HV_PMIC_MAX17135, 0, 0, 0,
-	  CONFIG_DEFAULT_I2C_MODE, TEMP_SENSOR_LM75, 0, EPDC_S1D13524, 1, 1 },
-#else
-# error "Sorry, no default hardware data available for this platform."
-#endif
+static struct pl_hwinfo init_hw_info_default(void){
+	int BOARD_MAJ = 0;
+	int BOARD_MIN = 0;
+	if(CONFIG_HWINFO_DEFAULT){
+		if (global_config.board == CONFIG_PLAT_Z6){
+			BOARD_MAJ =6;
+			BOARD_MAJ =3;
+		}else if(global_config.board == CONFIG_PLAT_Z7){
+			BOARD_MAJ =7;
+			BOARD_MIN =2;
+		}
+	}
+	struct pl_hwinfo g_hwinfo_default;
+	g_hwinfo_default.version = PL_HWINFO_VERSION;
+	if (global_config.board == CONFIG_PLAT_Z6 || global_config.board == CONFIG_PLAT_Z7){
+		struct pl_hw_vcom_info vcom = { 127, 4172, 381, 12490, 25080, -32300, 56886 };
+		g_hwinfo_default.vcom = vcom;
+		struct pl_hw_board_info board = { "HB", BOARD_MAJ, BOARD_MIN, 0, HV_PMIC_TPS65185, 0, 0, 0,
+								global_config.i2c_mode, TEMP_SENSOR_NONE, 0, EPDC_S1D13541, 1, 1 };
+		g_hwinfo_default.board = board;
+	}else if(global_config.board == CONFIG_PLAT_RAVEN){
+		struct pl_hw_vcom_info vcom = { 63, 4586, 189, 9800, 27770, -41520, 70000 };
+		g_hwinfo_default.vcom = vcom;
+		struct pl_hw_board_info board = { "Raven", 1, 0, 0, HV_PMIC_MAX17135, 0, 0, 0,
+				global_config.i2c_mode, TEMP_SENSOR_LM75, 0, EPDC_S1D13524, 1, 1 };
+		g_hwinfo_default.board = board;
+	}else{
+		LOG("Sorry, no default hardware data available for this platform.");
+		exit(-1);
+	}
 	/* CRC16 (not used when not reading from actual EEPROM) */
-	0xFFFF,
+	g_hwinfo_default.crc = 0xFFFF;
+	return g_hwinfo_default;
 };
-
-#define HWINFO_DEFAULT (&g_hwinfo_default)
-
-#else /* !CONFIG_HWINFO_DEFAULT */
-#define HWINFO_DEFAULT (NULL)
-
-#endif /* CONFIG_HWINFO_DEFAULT */
-
 /* --- waveform library and display info --- */
-
-#if CONFIG_PLAT_RAVEN
-    static const char g_wflib_fatfs_path[] = "display/waveform.wbf";
-#else
-    static const char g_wflib_fatfs_path[] = "display/waveform.bin";
-#endif
+static const char* g_wflib_fatfs_path(void){
+	if (global_config.board == CONFIG_PLAT_RAVEN)
+		return "display/waveform.wbf";
+	else
+		return "display/waveform.bin";
+}
 
 static FIL g_wflib_fatfs_file;
 
@@ -275,17 +262,19 @@ int main_init(void)
 {
 	struct pl_i2c host_i2c;
 	struct pl_i2c disp_i2c;
-#if CONFIG_HWINFO_EEPROM
+
+	struct s1d135xx_data g_s1d135xx_data = init_g_s1d135xx_data();
+	//if(CONFIG_HWINFO_EEPROM){
 	const struct i2c_eeprom hw_eeprom = {
 		&host_i2c, I2C_HWINFO_EEPROM_ADDR, EEPROM_24LC014,
 	};
-#endif
+	//}
 	struct i2c_eeprom disp_eeprom = {
 		NULL, I2C_DISPINFO_EEPROM_ADDR, EEPROM_24AA256
 	};
-#if CONFIG_HWINFO_EEPROM
+	//if(CONFIG_HWINFO_EEPROM){
 	struct pl_hwinfo hwinfo_eeprom;
-#endif
+	//}
 	struct pl_wflib_eeprom_ctx wflib_eeprom_ctx;
 	struct pl_dispinfo dispinfo;
 	struct vcom_cal vcom_cal;
@@ -346,16 +335,23 @@ int main_init(void)
 	if (f_mount(0, &sdcard) != FR_OK)
 		abort_msg("SD card init failed", ABORT_MSP430_COMMS_INIT);
 
+	/* read configuration */
+	if(read_config("config.txt", &global_config))
+		abort_msg("Read config file failed!",ABORT_CONFIG);
+
+	struct pl_hwinfo g_hwinfo_default = init_hw_info_default();
+
 	/* load hardware information */
-#if CONFIG_HWINFO_EEPROM
-	if (probe_hwinfo(&g_plat, &hw_eeprom, &hwinfo_eeprom, HWINFO_DEFAULT))
-		abort_msg("hwinfo probe failed", ABORT_HWINFO);
-#elif CONFIG_HWINFO_DEFAULT
-	LOG("Using default hwinfo");
-	g_plat.hwinfo = &g_hwinfo_default;
-#else
-#error "Invalid hwinfo build configuration, check CONFIG_HWINFO_ options"
-#endif
+	if(CONFIG_HWINFO_EEPROM){
+		if (probe_hwinfo(&g_plat, &hw_eeprom, &hwinfo_eeprom, &g_hwinfo_default))
+			abort_msg("hwinfo probe failed", ABORT_HWINFO);
+	}else if(CONFIG_HWINFO_DEFAULT){
+		LOG("Using default hwinfo");
+		g_plat.hwinfo = &g_hwinfo_default;
+	}else{
+		LOG( "Invalid hwinfo build configuration, check CONFIG_HWINFO_ options");
+		exit(-1);
+	}
 	pl_hwinfo_log(g_plat.hwinfo);
 
 	/* initialise platform I2C bus */
@@ -365,7 +361,7 @@ int main_init(void)
 	/* load display information */
 	disp_eeprom.i2c = g_plat.i2c;
 	if (probe_dispinfo(&dispinfo, &g_plat.epdc.wflib, &g_wflib_fatfs_file,
-			   g_wflib_fatfs_path, &disp_eeprom,
+			   g_wflib_fatfs_path(), &disp_eeprom,
 			   &wflib_eeprom_ctx))
 		abort_msg("Failed to load dispinfo", ABORT_DISP_INFO);
 	g_plat.dispinfo = &dispinfo;

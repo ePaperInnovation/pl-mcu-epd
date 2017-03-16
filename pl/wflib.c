@@ -203,9 +203,8 @@ static int pl_wflib_eeprom_xfer(struct pl_wflib *wflib, pl_wflib_wr_t wr,
 		return -1;
 	}
 
-#if CONFIG_LITTLE_ENDIAN
-	swap16(&crc);
-#endif
+	if(global_config.endianess == CONFIG_LITTLE_ENDIAN)
+		swap16(&crc);
 
 	if (crc != rd_ctx.crc) {
 		LOG("CRC mismatch: %04X instead of %04X", rd_ctx.crc, crc);

@@ -53,6 +53,7 @@ enum abort_error {
 	                          * due to missing/invalid files or hardware
 	                          * problems such as POK or comms failure */
 	ABORT_ASSERT,            /* Failed assert statement (debug use only) */
+	ABORT_CONFIG,			 /* Failed to read config file */
 };
 
 /* This is always enabled */

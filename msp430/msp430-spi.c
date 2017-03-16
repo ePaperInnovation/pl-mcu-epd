@@ -153,7 +153,7 @@ void spi_read_bytes(uint8_t *buff, size_t size)
 
     while (size--) {
         while (!(UCxnIFG & UCTXIFG));				// Wait for TX buff empty
-        UCxnTXBUF = 0xff;							// Write dummy byte to generate spi clock
+        UCxnTXBUF = 0x00;							// Write dummy byte to generate spi clock
         while (!(UCxnIFG & UCRXIFG));				// Wait for RX buffer (full)
         *buff++ = UCxnRXBUF;						// store the byte
     }

@@ -54,11 +54,12 @@ static int epson_epdc_clear_init(struct pl_epdc *epdc)
 }
 
 static int epson_epdc_update(struct pl_epdc *epdc, int wfid,
-			     const struct pl_area *area)
+				enum pl_update_mode mode,
+			    const struct pl_area *area)
 {
 	struct s1d135xx *p = epdc->data;
 
-	return s1d135xx_update(p, wfid, area);
+	return s1d135xx_update(p, wfid, mode, area);
 }
 
 static int epson_epdc_wait_update_end(struct pl_epdc *epdc)

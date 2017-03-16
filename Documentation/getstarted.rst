@@ -119,13 +119,10 @@ The Plastic Logic reference code project uses Texas Instruments' Code Composer S
          ${CG_TOOL_ROOT}/include 
 
 
-6. Setup ``config.h``
+6. Setup ``config.txt``
 
-   Finally, a ``config.h`` file must be created in the source location. A sample config file is supplied for each
-   supported display type. Go to the cloned repository directory 
-   and copy one of the sample config files (e.g. ``config-Type18.h``) to ``config.h``. Go back to CCS, right click 
-   on the project in the Project Explorer and select **Add Files**. Select the newly created ``config.h`` file. 
-   When prompted, select the **copy file** radio button. The config file should now appear in the Project Explorer.
+   Finally, a ``config.txt`` file must be placed on the SD-Card. A sample config file is supplied for each
+   supported display type. 
 
    More information on the various code configuration options can be found in the section `Configuring the Code`_.
 
@@ -139,7 +136,7 @@ The code includes a number of features and demonstrations that can be configured
 Configuration of the display interface board type and display type
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The following example defines a Raven board with Type11 display:
+The following example defines a Raven board with D107_T2.1 display:
 
 .. code-block:: c
 
@@ -151,8 +148,8 @@ The following example defines a Raven board with Type11 display:
 
     /** Set this to manually specify the display type when it could not be detected
      * at run-time.  This is especially useful for displays without an EEPROM such
-     * as Type19.  */
-    #define CONFIG_DISPLAY_TYPE           "Type11"
+     * as S049_T1.1.  */
+    #define CONFIG_DISPLAY_TYPE           "D107_T2.1"
 
 Configuration of how hardware information is used
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -252,14 +249,14 @@ The following settings can be used to display a checker-board pattern of the spe
 .. code-block:: c
 
     /** Set to 1 to use the pattern demo rather than the slideshow */
-    #define CONFIG_DEMO_PATTERN           1  /** Not intended for Type19 displays  */
+    #define CONFIG_DEMO_PATTERN           1  /** Not intended for S049_T1.1 displays  */
     #define CONFIG_DEMO_PATTERN_SIZE      32 /** Size of checker-board */
 
 
 SD Card Setup
 -------------
 The micro SD card for the processor board must be formatted as a FAT/FAT16 file-system (not FAT32).
-The SD card contents (initialisation data and images) can be retrieved from the Plastic Logic GitHub repository (https://github.com/plasticlogic/pl-mcu-sd-card.git). Unzip this archive and place the resulting files on the SD card so that the root directory of the file-system contains the folders ``Type11``, ``Type16``, etc.
+The SD card contents (initialisation data and images) can be retrieved from the Plastic Logic GitHub repository (https://github.com/plasticlogic/pl-mcu-sd-card.git). Unzip this archive and place the resulting files on the SD card so that the root directory of the file-system contains the folders ``D107_T2.1``, ``S040_T1.1``, etc.
 
 The supplied content provides a safe set of configuration data for each type of display. In order to obtain the best image quality the waveform binary file, ``waveform.bin`` (for S1D13541) or ``waveform.wbf`` (for S1D13524), and the text file ``vcom``, containing the VCOM voltage in mV, must be replaced with data specific to the display used. These files are located at:
 
@@ -324,6 +321,8 @@ after which the pattern will repeat. The error types are as follows (see also ``
 |          | problems such as POK or comms failure        |
 +----------+----------------------------------------------+
 | 9        | Failed assert statement (debug use only)     |
++----------+----------------------------------------------+
+| 10       | Failed to read the config file               |
 +----------+----------------------------------------------+
 | 0 (off)  | Undefined error                              |
 +----------+----------------------------------------------+

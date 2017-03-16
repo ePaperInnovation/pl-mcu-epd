@@ -68,16 +68,26 @@ enum s1d13524_cmd {
 	S1D13524_CMD_INIT_CTLR_MODE     = 0x0E,
 	S1D13524_CMD_RD_WF_INFO         = 0x30,
 };
-
+#if 1
 static const struct pl_wfid epson_epdc_wf_table_s1d13524[] = {
-	{ wf_refresh,      2 },
-	{ wf_delta,        3 },
-	{ wf_delta_mono,   4 },
-	{ wf_refresh_mono, 1 },
-	{ wf_init,         0 },
+	/*
+	{ wf_refresh,      0 },
+	{ wf_delta,        1 },
+	{ wf_delta_mono,   2 },
+	{ wf_refresh_mono, 3 },
+	{ wf_init,         15 },
 	{ NULL,           -1 }
+	//*/
+	//* old
+	{ 2,	2 },
+	{ 3,	3 },
+	{ 4,	4 },
+	{ 1,	1 },
+	{ 0,	0 },
+	{ -1,	 -1 }
+	//*/
 };
-
+#endif
 /* -- private functions -- */
 
 static int s1d13524_check_rev(struct s1d135xx *p);
@@ -216,7 +226,7 @@ static int s1d13524_pattern_check(struct pl_epdc *epdc, uint16_t size)
 }
 
 static int s1d13524_load_image(struct pl_epdc *epdc, const char *path,
-			       const struct pl_area *area, int left, int top)
+			       struct pl_area *area, int left, int top)
 {
 	struct s1d135xx *p = epdc->data;
 

@@ -160,7 +160,7 @@ static int load_image(struct pl_epdc *epdc, const struct sequencer_item *item,
 	    item->area.top, item->area.width, item->area.height);
 #endif
 
-	return epdc->load_image(epdc, path, &item->area, item->left_in,
+	return epdc->load_image(epdc, path, (struct pl_area*) &item->area, item->left_in,
 				item->top_in);
 }
 
@@ -208,8 +208,11 @@ exit_now:
 
 static int cmd_update(struct pl_platform *plat, const char *line)
 {
+	// update structure: update, wfid, update_mode, area->left, area->top, area->width, area->height,delay_ms
 	struct pl_epdc *epdc = &plat->epdc;
-	char waveform[16];
+	//char waveform[16];
+	//char update_mode[16];
+	int update_mode;
 	struct pl_area area;
 	int delay_ms;
 	const char *opt;
@@ -218,7 +221,14 @@ static int cmd_update(struct pl_platform *plat, const char *line)
 	int wfid;
 
 	opt = line;
-	len = parser_read_str(opt, SEP, waveform, sizeof(waveform));
+	len = parser_read_int(opt, SEP, &wfid);
+
+	if (len < 0)
+		return -1;
+
+	opt += len;
+	//len = parser_read_str(opt, SEP, update_mode, sizeof(update_mode));
+	len = parser_read_int(opt, SEP, &update_mode);
 
 	if (len <= 0)
 		return -1;
@@ -235,14 +245,12 @@ static int cmd_update(struct pl_platform *plat, const char *line)
 	if (len < 0)
 		return -1;
 
-	wfid = pl_epdc_get_wfid(epdc, waveform);
-
 	if (wfid < 0) {
-		LOG("Invalid waveform name: %s", waveform);
+		LOG("Invalid waveform id name: %i", wfid);
 		return -1;
 	}
 
-	if (epdc->update(epdc, wfid, &area))
+	if (epdc->update(epdc, wfid, update_mode, &area))
 		return -1;
 
 	mdelay(delay_ms);

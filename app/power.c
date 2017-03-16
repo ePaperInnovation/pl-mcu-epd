@@ -37,12 +37,12 @@ int app_power(struct pl_platform *plat, const char *path)
 {
 	struct pl_epdc *epdc = &plat->epdc;
 	struct pl_epdpsu *psu = &plat->psu;
-	int wfid; /* = pl_epdc_get_wfid(epdc, wf_refresh);*/
+	int wfid = 2;
 	char full_path[MAX_PATH_LEN];
 	DIR dir;
 	FILINFO f;
 
-	wfid = pl_epdc_get_wfid(epdc, wf_refresh);
+	//wfid = pl_epdc_get_wfid(epdc, wf_refresh);
 
 	if (wfid < 0)
 		return -1;
@@ -81,7 +81,7 @@ int app_power(struct pl_platform *plat, const char *path)
 		if (epdc->set_power(epdc, PL_EPDC_RUN))
 			return -1;
 
-		if (pl_epdc_single_update(epdc, psu, wfid, NULL))
+		if (pl_epdc_single_update(epdc, psu, wfid, UPDATE_FULL, NULL))
 			return -1;
 
 		msleep(2000);
@@ -111,7 +111,7 @@ int app_power(struct pl_platform *plat, const char *path)
 		if (epdc->set_power(epdc, PL_EPDC_RUN))
 			return -1;
 
-		if (pl_epdc_single_update(epdc, psu, wfid, NULL))
+		if (pl_epdc_single_update(epdc, psu, wfid, UPDATE_FULL, NULL))
 			return -1;
 
 		/* --- OFF mode and then resume --- */
@@ -128,7 +128,7 @@ int app_power(struct pl_platform *plat, const char *path)
 		if (epdc->set_power(epdc, PL_EPDC_RUN))
 			return -1;
 
-		if (pl_epdc_single_update(epdc, psu, wfid, NULL))
+		if (pl_epdc_single_update(epdc, psu, wfid, UPDATE_FULL, NULL))
 			return -1;
 
 		msleep(1000);

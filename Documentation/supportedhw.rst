@@ -214,19 +214,23 @@ required.
 +--------------+------------+------------------------------------------------------+
 | Display Type | Resolution | Notes                                                |
 +==============+============+======================================================+
-| Type11       | 1280x960   | External Controller                                  |
+| D107_T2.1    | 1280x960   | External Controller                                  |
 |              |            |                                                      |
 |              |            | Requires the Mercury display connector board         |
 +--------------+------------+------------------------------------------------------+
-| Type16       |  320x240   | Bonded Controller                                    |
+| D107_T3.1    | 1280x960   | External Controller                                  |
 |              |            |                                                      |
-|              |            | 4.7" @85ppi, 2.7" @150ppi                            |
+|              |            | Requires the Sojus7.2 display connector board        |
 +--------------+------------+------------------------------------------------------+
-| Type18       |  400x240   | Bonded Controller                                    |
+| S047_T3.1    |  800x450   | External Controller                                  |
+|              |            |                                                      |
+|              |            | Requires the Helios display connector board          |
++--------------+------------+------------------------------------------------------+
+| S040_T1.1    |  400x240   | Bonded Controller                                    |
 |              |            |                                                      |
 |              |            | 4.0" @115ppi                                         |
 +--------------+------------+------------------------------------------------------+
-| Type19       |  720x120   | Bonded Controller                                    |
+| S049_T1.1    |  720x120   | Bonded Controller                                    |
 |              |            |                                                      |
 |              |            | 4.9" @150ppi                                         |
 |              |            |                                                      |
@@ -268,12 +272,12 @@ be safely exchanged. The board has a 128B EEPROM which can be used as non-volati
 
 HB Z6/Z7
 ^^^^^^^^
-The Z6 and Z7 are intended to drive a S1D13541 small display controller which is bonded to the display itself. The boards differ in the display connector used. The Z7 board is used to drive the Type19 bracelet display and the Z6 is used to drive all other Plastic Logic small displays. The boards have a TI PMIC and a 128B EEPROM for storing power supply calibration data. The VCOM DAC in the PMIC is used to set the VCOM value for the display. All versions of the Z7 board have the provision to turn off 3V3 power to the display controller; this feature is absent on version 6.1 of the Z6 but has been introduced as of version 6.3, along with the ability to control the clock enable and PMIC wake signals.
+The Z6 and Z7 are intended to drive a S1D13541 small display controller which is bonded to the display itself. The boards differ in the display connector used. The Z7 board is used to drive the S049_T1.1 bracelet display and the Z6 is used to drive all other Plastic Logic small displays. The boards have a TI PMIC and a 128B EEPROM for storing power supply calibration data. The VCOM DAC in the PMIC is used to set the VCOM value for the display. All versions of the Z7 board have the provision to turn off 3V3 power to the display controller; this feature is absent on version 6.1 of the Z6 but has been introduced as of version 6.3, along with the ability to control the clock enable and PMIC wake signals.
 
 
 Raven
 ^^^^^
-The Raven board is designed to drive 10.7” Type11 displays. The board has an Epson S1D13524
+The Raven board is designed to drive 10.7” D107_T2.1, D107_T3.1 and S047_T2.1 displays. The board has an Epson S1D13524
 controller and associated memory, a Maxim PMIC, a 128B EEPROM for storing power supply calibration
 data and an LM75 temperature sensor. The VCOM DAC in the PMIC is used to set the VCOM value for the
 display.

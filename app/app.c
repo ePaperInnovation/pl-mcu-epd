@@ -59,8 +59,10 @@ int app_clear(struct pl_platform *plat)
 {
 	struct pl_epdpsu *psu = &plat->psu;
 	struct pl_epdc *epdc = &plat->epdc;
-
 	LOG("Clearing the screen");
+
+	if (psu->on(psu))
+		return -1;
 
 	if (epdc->fill(epdc, NULL, PL_WHITE))
 		return -1;
@@ -68,10 +70,8 @@ int app_clear(struct pl_platform *plat)
 	if (epdc->clear_init(epdc))
 		return -1;
 
-	if (psu->on(psu))
-		return -1;
 
-	if (epdc->update(epdc, pl_epdc_get_wfid(epdc, wf_init), NULL))
+	if (epdc->update(epdc, 0, UPDATE_FULL, NULL))
 		return -1;
 
 	if (epdc->wait_update_end(epdc))

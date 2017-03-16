@@ -3,8 +3,8 @@ Plastic Logic Micro-Controller E-Paper Reference
 ================================================
 
 :Description: Plastic Logic Micro-Controller E-Paper Reference Manual
-:Date: 04 July 2014
-:Revision: v008
+:Date: 21 September 2016
+:Revision: v010
 
 .. Global document settings
 
@@ -22,7 +22,7 @@ Plastic Logic Micro-Controller E-Paper Reference
 
       Page ###Page###
 
-   Copyright (C) 2013-2014 Plastic Logic Limited.  All rights reserved.
+   Copyright (C) 2013-2016 Plastic Logic Limited.  All rights reserved.
 
 
 .. Table of contents

@@ -47,28 +47,26 @@
 #define I2C_PMIC_ADDR_TPS65185 0x68
 #define I2C_PMIC_ADDR_MAX17135 0x48
 
-#if CONFIG_HWINFO_EEPROM
 int probe_hwinfo(struct pl_platform *plat, const struct i2c_eeprom *hw_eeprom,
 		 struct pl_hwinfo *hwinfo_eeprom,
 		 const struct pl_hwinfo *hwinfo_default)
 {
-#if CONFIG_HWINFO_DEFAULT
-	if (pl_hwinfo_init(hwinfo_eeprom, hw_eeprom)) {
-		LOG("WARNING: EEPROM failed, using default HW info");
-		plat->hwinfo = hwinfo_default;
-	} else {
+	if (CONFIG_HWINFO_DEFAULT){
+		if (pl_hwinfo_init(hwinfo_eeprom, hw_eeprom)) {
+			LOG("WARNING: EEPROM failed, using default HW info");
+			plat->hwinfo = hwinfo_default;
+		} else {
+			plat->hwinfo = hwinfo_eeprom;
+		}
+	}else{
+		if (pl_hwinfo_init(hwinfo_eeprom, hw_eeprom))
+			return -1;
+
 		plat->hwinfo = hwinfo_eeprom;
 	}
-#else
-	if (pl_hwinfo_init(hwinfo_eeprom, hw_eeprom))
-		return -1;
-
-	plat->hwinfo = hwinfo_eeprom;
-#endif
 
 	return 0;
 }
-#endif
 
 int probe_i2c(struct pl_platform *plat, struct s1d135xx *s1d135xx,
 	      struct pl_i2c *host_i2c, struct pl_i2c *disp_i2c)
@@ -117,29 +115,30 @@ int probe_dispinfo(struct pl_dispinfo *dispinfo, struct pl_wflib *wflib,
 		   const struct i2c_eeprom *e,
 		   struct pl_wflib_eeprom_ctx *e_ctx)
 {
-#if CONFIG_DISP_DATA_EEPROM_ONLY
-	return (pl_dispinfo_init_eeprom(dispinfo, e) ||
-		pl_wflib_init_eeprom(wflib, e_ctx, e, dispinfo));
-#elif CONFIG_DISP_DATA_SD_ONLY
-	return (pl_dispinfo_init_fatfs(dispinfo) ||
-		pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path));
-#elif CONFIG_DISP_DATA_EEPROM_SD
 	int retval;
-	retval = (pl_dispinfo_init_eeprom(dispinfo, e) ||
-			pl_wflib_init_eeprom(wflib, e_ctx, e, dispinfo) );
-	if (retval)
-		retval = (pl_dispinfo_init_fatfs(dispinfo) ||
-			pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path) );
-	return retval;
-#elif CONFIG_DISP_DATA_SD_EEPROM
-	int retval;
-	retval = (pl_dispinfo_init_fatfs(dispinfo) ||
-			pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path) );
-	if (retval)
+
+	if (CONFIG_DISP_DATA_EEPROM_ONLY){
+		return (pl_dispinfo_init_eeprom(dispinfo, e) ||
+			pl_wflib_init_eeprom(wflib, e_ctx, e, dispinfo));
+	}else if (CONFIG_DISP_DATA_SD_ONLY){
+		return (pl_dispinfo_init_fatfs(dispinfo) ||
+			pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path));
+	}else if (CONFIG_DISP_DATA_EEPROM_SD){
+
 		retval = (pl_dispinfo_init_eeprom(dispinfo, e) ||
-			pl_wflib_init_eeprom(wflib, e_ctx, e, dispinfo) );
-	return retval;
-#endif
+				pl_wflib_init_eeprom(wflib, e_ctx, e, dispinfo) );
+		if (retval)
+			retval = (pl_dispinfo_init_fatfs(dispinfo) ||
+				pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path) );
+		return retval;
+	}else if (CONFIG_DISP_DATA_SD_EEPROM){
+		retval = (pl_dispinfo_init_fatfs(dispinfo) ||
+				pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path) );
+		if (retval)
+			retval = (pl_dispinfo_init_eeprom(dispinfo, e) ||
+				pl_wflib_init_eeprom(wflib, e_ctx, e, dispinfo) );
+		return retval;
+	}
 }
 
 /* interim solution */

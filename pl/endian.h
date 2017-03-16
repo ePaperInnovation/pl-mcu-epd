@@ -39,13 +39,9 @@ extern void swap16(void *x);
 /** Apply swap16 to an array of 16-bit words */
 extern void swap16_array(int16_t **x, uint16_t n);
 
-#if CONFIG_LITTLE_ENDIAN
 #define htobe16(_x) _swap_bytes(_x)
 #define htole16(_x) (_x)
 #define be16toh(_x) _swap_bytes(_x)
 #define le16toh(_x) (_x)
-#else
-# error "BIG ENDIAN NOT SUPPORTED, only tested on MSP430 little-endian 16-bit"
-#endif
 
 #endif /* PL_ENDIAN_H */

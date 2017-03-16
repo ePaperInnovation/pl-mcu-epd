@@ -121,6 +121,7 @@ static int msp430_i2c_write(struct pl_i2c *i2c, uint8_t i2c_addr,
 			    const uint8_t *data, uint8_t count, uint8_t flags)
 {
 	int result = -1;
+	int timeout = 0;
 	unsigned int gie = __get_SR_register() & GIE; //Store current GIE state
 
 	__disable_interrupt();              	// Make this operation atomic
@@ -139,7 +140,13 @@ static int msp430_i2c_write(struct pl_i2c *i2c, uint8_t i2c_addr,
 		UCxnTXBUF = *data++;				// preload first byte
 		count--;
 
-		while (UCxnCTL1 & UCTXSTT);			// wait for START to complete
+		while (UCxnCTL1 & UCTXSTT){			// wait for START to complete
+			timeout++;
+			if(timeout > 1000){
+				return -1;
+			}
+		}
+
 		if (UCxnIFG & UCNACKIFG)			// bail if NACK'd
 			goto error;
 	}

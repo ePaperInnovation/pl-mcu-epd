@@ -26,11 +26,11 @@ GPIO
 
 Hummingbird Z6
   An evaluation board from Plastic Logic that interfaces between a Plastic Logic small display
-  (e.g. Type18) and a host processor board (e.g. Parrot or Parrot + Ruddock2)
+  (e.g. S040_T1.1) and a host processor board (e.g. Parrot or Parrot + Ruddock2)
 
 Hummingbird Z7
   An evaluation board from Plastic Logic that interfaces between a Plastic Logic bracelet display 
-  (e.g. Type19) and a host processor board (e.g. Parrot or Parrot + Ruddock2)
+  (e.g. S049_T1.1) and a host processor board (e.g. Parrot or Parrot + Ruddock2)
 
 HVPMIC
   High voltage power management IC. A chip that converts a single (typically battery) voltage
@@ -41,7 +41,7 @@ I2C
   with low-speed peripherals
 
 Mercury board
-  An interface board from Plastic Logic that connects a Plastic Logic 10.7" display (e.g. Type11)
+  An interface board from Plastic Logic that connects a Plastic Logic 10.7" display (e.g. D107_T2.1)
   to a Raven board via a 50-way FFC
 
 MSP430
@@ -61,7 +61,7 @@ PNG
 
 Raven board
   An evaluation board from Plastic Logic that interfaces between a Plastic Logic 10.7" display
-  (e.g. Type11) and a host processor board (e.g. Parrot or Parrot + Ruddock2)
+  (e.g. D107_T2.1) and a host processor board (e.g. Parrot or Parrot + Ruddock2)
 
 Ruddock2 board
   An evaluation board from Plastic Logic that interfaces between the Parrot board and one of the

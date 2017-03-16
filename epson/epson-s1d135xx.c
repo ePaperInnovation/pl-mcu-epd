@@ -30,6 +30,7 @@
 #include <pl/endian.h>
 #include <pl/types.h>
 #include <stdlib.h>
+#include <string.h>
 #include "msp430-spi.h" /* until this becomse <pl/spi.h> */
 #include "assert.h"
 
@@ -56,26 +57,28 @@
 #define S1D135XX_PWR_CTRL_CHECK_ON      0x2200
 
 enum s1d135xx_cmd {
-	S1D135XX_CMD_INIT_SET         = 0x00, /* to load init code */
-	S1D135XX_CMD_RUN              = 0x02,
-	S1D135XX_CMD_STBY             = 0x04,
-	S1D135XX_CMD_SLEEP            = 0x05,
-	S1D135XX_CMD_INIT_STBY        = 0x06, /* init then standby */
-	S1D135XX_CMD_INIT_ROT_MODE    = 0x0B,
-	S1D135XX_CMD_READ_REG         = 0x10,
-	S1D135XX_CMD_WRITE_REG        = 0x11,
-	S1D135XX_CMD_BST_RD_SDR       = 0x1C,
-	S1D135XX_CMD_BST_WR_SDR       = 0x1D,
-	S1D135XX_CMD_BST_END_SDR      = 0x1E,
-	S1D135XX_CMD_LD_IMG           = 0x20,
-	S1D135XX_CMD_LD_IMG_AREA      = 0x22,
-	S1D135XX_CMD_LD_IMG_END       = 0x23,
-	S1D135XX_CMD_WAIT_DSPE_TRG    = 0x28,
-	S1D135XX_CMD_WAIT_DSPE_FREND  = 0x29,
-	S1D135XX_CMD_UPD_INIT         = 0x32,
-	S1D135XX_CMD_UPDATE_FULL      = 0x33,
-	S1D135XX_CMD_UPDATE_FULL_AREA = 0x34,
-	S1D135XX_CMD_EPD_GDRV_CLR     = 0x37,
+	S1D135XX_CMD_INIT_SET         	 = 0x00, /* to load init code */
+	S1D135XX_CMD_RUN              	 = 0x02,
+	S1D135XX_CMD_STBY             	 = 0x04,
+	S1D135XX_CMD_SLEEP            	 = 0x05,
+	S1D135XX_CMD_INIT_STBY        	 = 0x06, /* init then standby */
+	S1D135XX_CMD_INIT_ROT_MODE    	 = 0x0B,
+	S1D135XX_CMD_READ_REG         	 = 0x10,
+	S1D135XX_CMD_WRITE_REG        	 = 0x11,
+	S1D135XX_CMD_BST_RD_SDR       	 = 0x1C,
+	S1D135XX_CMD_BST_WR_SDR       	 = 0x1D,
+	S1D135XX_CMD_BST_END_SDR      	 = 0x1E,
+	S1D135XX_CMD_LD_IMG           	 = 0x20,
+	S1D135XX_CMD_LD_IMG_AREA      	 = 0x22,
+	S1D135XX_CMD_LD_IMG_END       	 = 0x23,
+	S1D135XX_CMD_WAIT_DSPE_TRG    	 = 0x28,
+	S1D135XX_CMD_WAIT_DSPE_FREND  	 = 0x29,
+	S1D135XX_CMD_UPD_INIT         	 = 0x32,
+	S1D135XX_CMD_UPDATE_FULL      	 = 0x33,
+	S1D135XX_CMD_UPDATE_FULL_AREA 	 = 0x34,
+	S1D135XX_CMD_UPDATE_PARTIAL      = 0x35,
+	S1D135XX_CMD_UPDATE_PARTIAL_AREA = 0x36,
+	S1D135XX_CMD_EPD_GDRV_CLR     	 = 0x37,
 };
 
 static int get_hrdy(struct s1d135xx *p);
@@ -138,14 +141,20 @@ int s1d135xx_check_prod_code(struct s1d135xx *p, uint16_t ref_code)
 
 int s1d135xx_load_init_code(struct s1d135xx *p)
 {
-	static const char init_code_path[] = "bin/Ecode.bin";
+	/*static const */char init_code_path[64] = "";
+	strcat(init_code_path, "bin/");
+	strcat(init_code_path, global_config.config_display_type);
+	strcat(init_code_path, ".bin");
 	FIL init_code_file;
 	uint16_t checksum;
 	int stat;
 
-	if (f_open(&init_code_file, init_code_path, FA_READ) != FR_OK)
-		return -1;
-
+	if (f_open(&init_code_file, (const char*) init_code_path, FA_READ) != FR_OK){
+		LOG("Cannot open %s!\tRetry bin/Ecode.bin\n", init_code_path);
+		if (f_open(&init_code_file, "bin/Ecode.bin", FA_READ) != FR_OK){
+			return -1;
+		}
+	}
 	if (s1d135xx_wait_idle(p))
 		return -1;
 
@@ -297,7 +306,7 @@ int s1d135xx_pattern_check(struct s1d135xx *p, uint16_t height, uint16_t width, 
 }
 
 int s1d135xx_load_image(struct s1d135xx *p, const char *path, uint16_t mode,
-			unsigned bpp, const struct pl_area *area, int left,
+			unsigned bpp, struct pl_area *area, int left,
 			int top)
 {
 	struct pnm_header hdr;
@@ -311,14 +320,24 @@ int s1d135xx_load_image(struct s1d135xx *p, const char *path, uint16_t mode,
 		return -1;
 
 	set_cs(p, 0);
-
+#if 0 // Area display bug at 4.7" display
 	if (area != NULL) {
 		send_cmd_area(p, S1D135XX_CMD_LD_IMG_AREA, mode, area);
 	} else {
 		send_cmd(p, S1D135XX_CMD_LD_IMG);
 		send_param(mode);
 	}
+#else
+	if(area == NULL){
+		area = (struct pl_area*) malloc(sizeof(struct pl_area));
+		area->top = 0;
+		area->left = 0;
+		area->width = p->xres;
+		area->height = p->yres;
+	}
 
+	send_cmd_area(p, S1D135XX_CMD_LD_IMG_AREA, mode, area);
+#endif
 	set_cs(p, 1);
 
 	if (s1d135xx_wait_idle(p))
@@ -328,10 +347,12 @@ int s1d135xx_load_image(struct s1d135xx *p, const char *path, uint16_t mode,
 	send_cmd(p, S1D135XX_CMD_WRITE_REG);
 	send_param(S1D135XX_REG_HOST_MEM_PORT);
 
-	if (area == NULL)
+	if (area == NULL){
 		stat = transfer_file(&img_file);
-	else
+	}else{
 		stat = transfer_image(&img_file, area, left, top, hdr.width);
+		free(area);
+	}
 
 	set_cs(p, 1);
 	f_close(&img_file);
@@ -347,7 +368,7 @@ int s1d135xx_load_image(struct s1d135xx *p, const char *path, uint16_t mode,
 	return s1d135xx_wait_idle(p);
 }
 
-int s1d135xx_update(struct s1d135xx *p, int wfid, const struct pl_area *area)
+int s1d135xx_update(struct s1d135xx *p, int wfid, enum pl_update_mode mode,  const struct pl_area *area)
 {
 #if VERBOSE
 	if (area != NULL)
@@ -356,16 +377,18 @@ int s1d135xx_update(struct s1d135xx *p, int wfid, const struct pl_area *area)
 	else
 		LOG("update %d", wfid);
 #endif
-
+	uint8_t command = S1D135XX_CMD_UPDATE_FULL + mode;
 	set_cs(p, 0);
 
 	/* wfid = S1D135XX_WF_MODE(wfid); */
 
 	if (area != NULL) {
-		send_cmd_area(p, S1D135XX_CMD_UPDATE_FULL_AREA,
+		if(!(command % 2 == 0))
+			command++;
+		send_cmd_area(p, command,
 			      S1D135XX_WF_MODE(wfid), area);
 	} else {
-		send_cmd(p, S1D135XX_CMD_UPDATE_FULL);
+		send_cmd(p, command);
 		send_param(S1D135XX_WF_MODE(wfid));
 	}
 
@@ -386,7 +409,7 @@ int s1d135xx_wait_update_end(struct s1d135xx *p)
 
 int s1d135xx_wait_idle(struct s1d135xx *p)
 {
-	unsigned long timeout = 1000000;
+	unsigned long timeout = 100000;
 
 	while (!get_hrdy(p) && --timeout);
 
@@ -455,7 +478,21 @@ int s1d135xx_set_epd_power(struct s1d135xx *p, int on)
 		return -1;
 
 	s1d135xx_write_reg(p, S1D135XX_REG_PWR_CTRL, arg);
-
+/*	if (s1d135xx_wait_idle(p))
+		return -1;
+	tmp = s1d135xx_read_reg(p, 0x0232);
+	if (s1d135xx_wait_idle(p))
+		return -1;
+	if(on){
+		s1d135xx_write_reg(p, 0x0232, tmp | 0x0003);
+		if (s1d135xx_wait_idle(p))
+			return -1;
+	}else{
+		s1d135xx_write_reg(p, 0x0232, tmp & 0xFFFC);
+		if (s1d135xx_wait_idle(p))
+			return -1;
+	}
+	//*/
 	do {
 		tmp = s1d135xx_read_reg(p, S1D135XX_REG_PWR_CTRL);
 	} while (tmp & S1D135XX_PWR_CTRL_BUSY);

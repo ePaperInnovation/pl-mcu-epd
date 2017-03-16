@@ -60,10 +60,6 @@ enum config_data_source {
 	CONFIG_DISP_DATA_EEPROM_SD,    /**< Try EEPROM first, then SD card */
 	CONFIG_DISP_DATA_SD_EEPROM    /**< Try SD card first, then EEPROM */
 };
-/** Set this to manually specify the display type when it could not be detected
- * at run-time.  This is especially useful for displays without an EEPROM such
- * as Type19.  */
-//#define CONFIG_DISPLAY_TYPE           "S040_T1.1"
 
 /** Set to 1 to use the power state transition demo rather than the slideshow */
 #define CONFIG_DEMO_POWERMODES        0
@@ -76,11 +72,12 @@ enum config_data_source {
 #define CONFIG_UART_PRINTF		0
 
 struct config {
-	enum endianess endianess; // most likely always true
+	enum endianess endianess; // most likely always little endian
 	enum i2c_mode_id i2c_mode;
 	enum config_data_source data_source; //SD-Card or EEPROM or both
 	enum config_platform_board board; //HBZ6, 7, 8, 9 or Raven
 	char config_display_type[16];
+	int waveform_version;
 };
 
 extern struct config global_config;

@@ -37,7 +37,7 @@
 #include "utils.h"
 
 /* Set to 1 to enable verbose log messages */
-#define VERBOSE 0
+#define VERBOSE 1
 
 int pl_hwinfo_init(struct pl_hwinfo *info, const struct i2c_eeprom *eeprom)
 {
@@ -53,9 +53,8 @@ int pl_hwinfo_init(struct pl_hwinfo *info, const struct i2c_eeprom *eeprom)
 	crc = crc16_run(crc16_init, (const uint8_t *)info,
 			(sizeof(info->version) + sizeof(info->vcom) +
 			 sizeof(info->board)));
-#if CONFIG_LITTLE_ENDIAN
-	swap16(&info->crc);
-#endif
+	if(global_config.endianess == CONFIG_LITTLE_ENDIAN)
+		swap16(&info->crc);
 
 	if (crc != info->crc) {
 		LOG("CRC mismatch: %04X instead of %04X", crc, info->crc);
@@ -72,7 +71,7 @@ int pl_hwinfo_init(struct pl_hwinfo *info, const struct i2c_eeprom *eeprom)
 	board = &info->board;
 	board->board_type[8] = '\0';
 
-#if CONFIG_LITTLE_ENDIAN
+	if(global_config.endianess ==  CONFIG_LITTLE_ENDIAN)
 	{
 		int16_t *data16[] = {
 			&vcom->dac_x1, &vcom->dac_y1,
@@ -86,7 +85,6 @@ int pl_hwinfo_init(struct pl_hwinfo *info, const struct i2c_eeprom *eeprom)
 		swap16_array(data16, ARRAY_SIZE(data16));
 		swap32_array(data32, ARRAY_SIZE(data32));
 	}
-#endif
 
 	return 0;
 }

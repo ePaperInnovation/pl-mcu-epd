@@ -28,6 +28,7 @@
 #include <pl/epdc.h>
 #include <stdlib.h>
 #include "assert.h"
+#include "config.h"
 
 #define LOG_TAG "s1d13541"
 #include "utils.h"
@@ -66,15 +67,25 @@ enum s1d13541_reg {
 enum s1d13541_cmd {
 	S1D13541_CMD_RD_TEMP               = 0x12,
 };
-
-static const struct pl_wfid s1d13541_wf_table[] = {
-	{ wf_refresh,      1 },
-	{ wf_delta,        3 },
-	{ wf_delta_mono,   2 },
-	{ wf_refresh_mono, 4 },
-	{ wf_init,         0 },
-	{ NULL,           -1 }
+#if 1
+static const struct pl_wfid s1d13541_wf_table_old[] = {
+	{ 2,      1 },
+	{ 3,        3 },
+	{ 4,   2 },
+	{ 1, 4 },
+	{ 0,         0 },
+	{ -1,           -1 }
 };
+static const struct pl_wfid s1d13541_wf_table_new[] = {
+	{ 2,      2 }, //2
+	{ 3,        3 }, //1
+	{ 4,   1 }, //4
+	{ 1, 1 }, //6
+	{ 0,         0 }, //0
+	{ -1,           -1 } //-1
+};
+
+#endif
 
 /* -- private functions -- */
 
@@ -180,7 +191,7 @@ static int s1d13541_pattern_check(struct pl_epdc *epdc, uint16_t size)
 
 
 static int s1d13541_load_image(struct pl_epdc *epdc, const char *path,
-			       const struct pl_area *area, int left, int top)
+			       struct pl_area *area, int left, int top)
 {
 	struct s1d135xx *p = epdc->data;
 
@@ -245,7 +256,12 @@ int epson_epdc_init_s1d13541(struct pl_epdc *epdc)
 	epdc->fill = s1d13541_fill;
 	epdc->pattern_check = s1d13541_pattern_check;
 	epdc->load_image = s1d13541_load_image;
-	epdc->wf_table = s1d13541_wf_table;
+	if(global_config.waveform_version == 0){
+		epdc->wf_table = s1d13541_wf_table_old;
+	}else{
+		epdc->wf_table = s1d13541_wf_table_new;
+	}
+	//epdc->wf_table = s1d13541_wf_table;
 	epdc->xres = s1d135xx_read_reg(p, S1D13541_REG_LINE_DATA_LENGTH);
 	epdc->yres = s1d135xx_read_reg(p, S1D13541_REG_FRAME_DATA_LENGTH);
 

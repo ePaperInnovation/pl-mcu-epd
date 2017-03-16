@@ -7,6 +7,5 @@ lnk_*.cmd
 targetConfigs
 Debug
 Release
-config.h
 *.pdf
 doc

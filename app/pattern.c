@@ -40,9 +40,9 @@ int app_pattern(struct pl_platform *plat)
 {
 	struct pl_epdc *epdc = &plat->epdc;
 	struct pl_epdpsu *psu = &plat->psu;
-	int wfid; /* = pl_epdc_get_wfid(epdc, wf_refresh);*/
+	int wfid = 2;
 
-	wfid = pl_epdc_get_wfid(epdc, wf_refresh);
+	//wfid = pl_epdc_get_wfid(epdc, wf_refresh);
 
 	if (wfid < 0)
 		return -1;
@@ -56,7 +56,7 @@ int app_pattern(struct pl_platform *plat)
 	if (psu->on(psu))
 		return -1;
 
-	if (epdc->update(epdc, wfid, NULL))
+	if (epdc->update(epdc, wfid, UPDATE_FULL, NULL))
 		return -1;
 
 	if (epdc->wait_update_end(epdc))
