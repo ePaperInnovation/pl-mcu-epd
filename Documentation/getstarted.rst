@@ -9,7 +9,7 @@ The software requires a processor board, Ruddock2 (optional if using the Parrot 
 
 If using the Parrot board and the optional Ruddock2 board, ensure that:
 
-1. The P5 “I2C isolate” 2-pin header on the Ruddock2, has no link fitted
+1. The P5 â€œI2C isolateâ€� 2-pin header on the Ruddock2, has no link fitted
 2. The P4 2-pin header on the Ruddock2, has a link fitted
 3. The switch SW7 on the Ruddock2 is set to ON
 4. 5V power supply, 200mA for small displays, 2A for large displays, is used
@@ -130,26 +130,71 @@ The Plastic Logic reference code project uses Texas Instruments' Code Composer S
 
 Configuring the Code
 --------------------
-The code includes a number of features and demonstrations that can be configured at compile time via the use of preprocessor directives in the ``config.h`` file.
 
+The code includes a number of features and demonstrations that can be configured at run time via the use of settings in the ``config.txt`` file.
 
 Configuration of the display interface board type and display type
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The following example defines a Raven board with D107_T2.1 display:
 
-.. code-block:: c
+.. code-block::
 
-    /** Set one of the following to 1 to manually select the platform.
-     * This will be used if no platform can be discovered at runtime.  */
-    #define CONFIG_PLAT_RAVEN             1 /**< Raven board */
-    #define CONFIG_PLAT_Z6                0 /**< Hummingbird Z6.x board */
-    #define CONFIG_PLAT_Z7                0 /**< Hummingbird Z7.x board */
+	# Set one of the following to 1 to manually select the platform.
+	# This will be used if no platform can be discovered at runtime.
+	#  CONFIG_PLAT_RAVEN             < Raven board
+	#  CONFIG_PLAT_Z6                < Hummingbird Z6.x board
+	#  CONFIG_PLAT_Z7                < Hummingbird Z7.x board
+	board CONFIG_PLAT_RAVEN
+	# Set this to manually specify the display type when it could not be detected
+	# at run-time.  This is especially useful for displays without an EEPROM such
+	# as S049_T1.1.  */
+	display_type            D107_T2.1
 
-    /** Set this to manually specify the display type when it could not be detected
-     * at run-time.  This is especially useful for displays without an EEPROM such
-     * as S049_T1.1.  */
-    #define CONFIG_DISPLAY_TYPE           "D107_T2.1"
+Configuration of how display-specific data is used
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+All Plastic Logic displays require display-specific information such as waveform data and VCOM
+voltage. Some displays contain an EEPROM that can be used to store this information; alternatively
+the information can be provided on the SD card. The following settings define where the information
+will be read from:
+
+.. code-block::
+
+	# Each display has a type and some associated data such as a VCOM voltage and
+	# waveform library.  This can either be stored in the display EEPROM or on the
+	# SD card.  The display type may also be manually specified with
+	# CONFIG_DISPLAY_TYPE.
+	#
+	# Set data_source to one of the following values in order to choose where the data
+	# should be read from:
+	#	CONFIG_DISP_DATA_EEPROM_ONLY,  < Only use display EEPROM
+	#	CONFIG_DISP_DATA_SD_ONLY,      < Only use SD card
+	#	CONFIG_DISP_DATA_EEPROM_SD,    < Try EEPROM first, then SD card
+	#	CONFIG_DISP_DATA_SD_EEPROM     < Try SD card first, then EEPROM
+	
+	data_source CONFIG_DISP_DATA_EEPROM_SD
+
+
+Configuration of I2C master
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A number of components are configured and accessed via I2C. The following setting defines the
+device used as the I2C master:
+
+.. code-block::
+
+	# Default I2C master mode used with CONFIG_HWINFO_DEFAULT
+	#	I2C_MODE_NONE,      /* invalid mode */
+	#	I2C_MODE_HOST,      /* use the host */
+	#	I2C_MODE_DISP,      /* use SPI-I2C bridge on the display (S1D13541) */
+	#	I2C_MODE_S1D13524,  /* use SPI-I2C bridge on the S1D13524 */
+	#	I2C_MODE_SC18IS6XX, /* not currently supported */
+
+	i2c_mode I2C_MODE_HOST
+
+The code also includes a number of features and demonstrations that can be configured at compile time via the use of preprocessor directives in the ``config.h`` file.
+
 
 Configuration of how hardware information is used
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -171,49 +216,6 @@ default if the information is not available:
     #define CONFIG_HWINFO_DEFAULT         1
 
 
-Configuration of how display-specific data is used
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-All Plastic Logic displays require display-specific information such as waveform data and VCOM
-voltage. Some displays contain an EEPROM that can be used to store this information; alternatively
-the information can be provided on the SD card. The following settings define where the information
-will be read from:
-
-.. code-block:: c
-
-    /**
-     * Set one of the following values to 1 in order to choose where the data
-     * should be read from: */
-    #define CONFIG_DISP_DATA_EEPROM_ONLY  0 /**< Only use display EEPROM */
-    #define CONFIG_DISP_DATA_SD_ONLY      0 /**< Only use SD card */
-    #define CONFIG_DISP_DATA_EEPROM_SD    1 /**< Try EEPROM first, then SD card */
-    #define CONFIG_DISP_DATA_SD_EEPROM    0 /**< Try SD card first, then EEPROM */
-
-
-Configuration of I2C master
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-A number of components are configured and accessed via I2C. The following setting defines the
-device used as the I2C master:
-
-.. code-block:: c
-
-    /** Default I2C master mode used with CONFIG_HWINFO_DEFAULT (see pl/hwinfo.h
-     * and plswmanual.pdf for possible values) */
-    #define CONFIG_DEFAULT_I2C_MODE       I2C_MODE_HOST
-
-The possible values are defined in ``pl/hwinfo.h``:
-
-.. code-block:: c
-
-    /** Possible values are as follows: */
-    enum i2c_mode_id {
-            I2C_MODE_NONE = 0,  /* invalid mode */
-            I2C_MODE_HOST,      /* use the host */
-            I2C_MODE_DISP,      /* use SPI-I2C bridge on the display (S1D13541) */
-            I2C_MODE_S1D13524,  /* use SPI-I2C bridge on the S1D13524 */
-            I2C_MODE_SC18IS6XX, /* not currently supported */ 
-    };
 
 Configuration of serial interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -348,17 +350,17 @@ features, e.g. Fat file system support then the free version may be sufficient.
 
 A very useful feature of the IDE is the ability to use standard printf type functions and have the output
 displayed in a console window within the IDE. In order for this to work the amount of memory set aside for
-the stack and heap must be increased and the “cio” functionality must be enabled in the project build
+the stack and heap must be increased and the â€œcioâ€� functionality must be enabled in the project build
 configuration.
 
-A small amount of source code in the platform common layer was taken from Plastic Logic’s equivalent
+A small amount of source code in the platform common layer was taken from Plastic Logicâ€™s equivalent
 Linux drivers. The code uses anonymous unions extensively and in order to get the code to compile it was
 necessary to add a compiler flag (``--gcc``) to tell it to behave more like gcc.
 
 
 msp430-gcc
 ^^^^^^^^^^
-There is an open source msp430 tool chain available – msp430-gcc. Some work has been done to support this tool 
+There is an open source msp430 tool chain available â€“ msp430-gcc. Some work has been done to support this tool 
 chain but the work is not yet complete. Much of the code compiles cleanly however there are some issues related 
 to pragmas used to declare interrupt handlers. Full support for this tool chain will depend on customer demand.
 

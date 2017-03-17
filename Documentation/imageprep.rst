@@ -105,12 +105,12 @@ effects with appropriate sequencing of the drawing and display update commands.
 Supported commands
 ^^^^^^^^^^^^^^^^^^^
 
-``update, WAVEFORM, LEFT, TOP, WIDTH, HEIGHT, DELAY``
-  Update the display with the given ``WAVEFORM`` (see `Waveform identifiers`_)
-  in the area starting with the (``LEFT``, ``TOP``) pixel coordinates and the
-  given ``WIDTH`` and ``HEIGHT``.  The software will wait until the update
-  request has been processed by the controller, and then wait for ``DELAY``
-  milliseconds. 
+``update, WAVEFORM, UPDATE_MODE, LEFT, TOP, WIDTH, HEIGHT, DELAY``
+  Update the display with the given ``WAVEFORM`` (see `Waveform identifiers`_) 
+  with the ``UPDATE_MODE``  (see `Update Modes`_)   in the area starting with
+  the (``LEFT``, ``TOP``) pixel coordinates and the   given ``WIDTH`` and ``HEIGHT``.
+  The software will wait until the update request has been processed by the 
+  controller, and then wait for ``DELAY`` milliseconds. 
 
   .. note:: 
 
@@ -155,7 +155,7 @@ The following listing shows a sample sequence for S040_T1.1 400x240 displays::
   #                              x,    y,    w,    h, gl
   fill,                          0,    0,  400,  240, 15
   power,  on
-  update, refresh,               0,    0,  400,  240, 50
+  update, 2, 0,                  0,    0,  400,  240, 50
   power,  off
 
   # Load some image data in 4 different areas
@@ -168,12 +168,12 @@ The following listing shows a sample sequence for S040_T1.1 400x240 displays::
 
   # Update the same 4 areas with a small delay in between each
   #
-  #       waveform,           left,  top,  wid,  hgt, delay
+  #    waveform, update mode, left,  top,  wid,  hgt, delay
   power,  on
-  update, refresh,             290,   20,  100,  120, 50
-  update, refresh,              10,   10,  140,  180, 50
-  update, refresh,             155,    0,  130,   90, 50
-  update, refresh,             150,  150,  240,   80, 50
+  update, 2, 0,                290,   20,  100,  120, 50
+  update, 2, 0,                 10,   10,  140,  180, 50
+  update, 2, 0,                155,    0,  130,   90, 50
+  update, 2, 0,                150,  150,  240,   80, 50
   power,  off
 
 .. _Waveform identifiers:
@@ -185,19 +185,14 @@ The following waveforms are always available in Plastic Logic's waveform
 libraries:
 
 +------------------+--------+--------------------------------------+----------+
-| Path             | Grey \ | Description                          | Length \ |
+| Waveform ID      | Grey \ | Description                          | Length \ |
 |                  | levels |                                      | (ms) *   |
 +==================+========+======================================+==========+
-| ``refresh``      | 16     | All pixels are updated.              | 670      |
+| ``2``            | 16     | All pixels are updated.              | 670      |
 +------------------+--------+--------------------------------------+----------+
-| ``delta``        | 16     | Only changing pixels are updated.    | 670      |
+| ``4``            | 2      | All b&w pixels are updated.          | 250      |
 +------------------+--------+--------------------------------------+----------+
-| ``refresh/mono`` | 2      | All b&w pixels are updated.          | 250      |
-+------------------+--------+--------------------------------------+----------+
-| ``delta/mono``   | 2      | Only changing b&w pixels are         | 250      |
-|                  |        | updated.                             |          |
-+------------------+--------+--------------------------------------+----------+
-| ``init``         | 2      | Use only to wipe the screen when     | 1300     |
+| ``0``            | 2      | Use only to wipe the screen when     | 1300     |
 |                  |        | the image content is lost.           |          |
 +------------------+--------+--------------------------------------+----------+
 
@@ -206,6 +201,26 @@ libraries:
 They all have a unique numerical identifier which can be different in each
 waveform library.  To get the identifier of a waveform for a given path string,
 use the function ``pl_epdc_get_wfid()`` (``pl/epdc.h``, ``pl/epdc.c``) in your application.
+
+.. _Waveform identifiers:
+
+Update modes
+^^^^^^^^^^^^^^^^^^^^^
+
+The following update modes are always available in Plastic Logic's waveform
+libraries:
+
++--------------+----+--------------------------------------+
+| Update Mode  | ID | Description                          |
+|              |    |                                      |
++==============+====+======================================+
+| ``Full``     | 0  | All pixels are updated.              |
++--------------+----+--------------------------------------+
+| ``Partial``  | 2  | Only changing pixels are updated.    |
++--------------+----+--------------------------------------+
+
+The update modes might be combined with all Waveform IDs except ID 0. 
+
 
 .. raw:: pdf
 

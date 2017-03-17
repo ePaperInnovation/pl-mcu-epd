@@ -116,7 +116,7 @@ extern const char wf_refresh_mono[];  /**< refresh/mono */
 extern const char wf_delta_mono[];    /**< delta/mono */
 #endif
 /** Get a waveform identifier or -1 if not found */
-extern int pl_epdc_get_wfid(struct pl_epdc *p, const char *wf_path);
+extern int pl_epdc_get_wfid(struct pl_epdc *p, int wf_from);
 
 /** Perform a typical single image update:
  * # Update temperature

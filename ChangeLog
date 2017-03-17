@@ -1,3 +1,15 @@
+Release v009 -> 010 - 2017-03-01
+
+Robert Pohlink 
+      Change display type naming from TypeX to more speaking ones (i.e. S040_T1.1 for Type18)
+      Add support for reconfiguration of the display type without the need to recompiling of the code so one implementation supports multiple displays
+      Add support for updated waveform design
+
+Release v008 -> 009 - 2016-07-01
+
+Matthias Tortschanoff (1)
+      Add support for 4.7" display
+
 Release v007 -> 008 - 2014-07-02
 
 Andrew Cox (12):

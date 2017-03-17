@@ -43,25 +43,18 @@ const char wf_refresh_mono[] = WF_REFRESH"/"WF_MONO;
 const char wf_delta_mono[] = WF_DELTA"/"WF_MONO;
 #endif
 
-#if 0
-int pl_epdc_get_wfid(struct pl_epdc *p, const char *wf_path)
+#if 1
+int pl_epdc_get_wfid(struct pl_epdc *p, int wf_from)
 {
 	const struct pl_wfid *wfid;
 
 	assert(p != NULL);
-		assert(wf_path != NULL);
-		/* Optimized string comparison first */
-		for (wfid = p->wf_table; wfid->path != NULL; ++wfid)
-			if (wfid->path == wf_path){
-				LOG("WFID: %i", wfid->id);
-				return wfid->id;
-			}
-		/* Full string compare now */
-		for (wfid = p->wf_table; wfid->path != NULL; ++wfid)
-			if (!strcmp(wfid->path, wf_path)){
-				LOG("WFID: %i", wfid->id);
-				return wfid->id;
-			}
+
+	for (wfid = p->wf_table; wfid->id_from != NULL; ++wfid)
+		if (wfid->id_from == wf_from){
+			LOG("WFID: %i", wfid->id_to);
+			return wfid->id_to;
+		}
 
 	return -1;
 }
