@@ -75,6 +75,9 @@ extern int is_file_present(const char *path);
 #define MAX_PATH_LEN 64
 
 extern int join_path(char *path, size_t n, const char *dir, const char *file);
+/* round up to 8 or 16 */
+extern uint16_t align8(uint16_t value);
+extern uint16_t align16(uint16_t value);
 
 struct pnm_header;
 extern int open_image(const char *dir, const char *file, FIL *f,

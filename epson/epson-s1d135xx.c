@@ -45,7 +45,7 @@
 /* Set to 1 to enable verbose update and EPD power on/off log messages */
 #define VERBOSE 0
 
-#define DATA_BUFFER_LENGTH              512
+#define DATA_BUFFER_LENGTH              1024
 
 #define S1D135XX_WF_MODE(_wf)           (((_wf) << 8) & 0x0F00)
 #define S1D135XX_XMASK                  0x0FFF
@@ -86,8 +86,9 @@ static int do_fill(struct s1d135xx *p, const struct pl_area *area,
 		   unsigned bpp, uint8_t g);
 static int wflib_wr(void *ctx, const uint8_t *data, size_t n);
 static int transfer_file(FIL *file);
+static int transfer_file_scrambled(FIL *file, int xres, uint8_t scramble);
 static int transfer_image(FIL *f, const struct pl_area *area, int left,
-			  int top, int width);
+			  int top, int width, int xres, uint8_t scramble);
 static void transfer_data(const uint8_t *data, size_t n);
 static void send_cmd_area(struct s1d135xx *p, uint16_t cmd, uint16_t mode,
 			  const struct pl_area *area);
@@ -101,6 +102,12 @@ static void set_hdc(struct s1d135xx *p, int state);
 /* ----------------------------------------------------------------------------
  * public functions
  */
+void log_area(struct pl_area *area, const char *area_name){
+#if VERBOSE
+	LOG("%s: t: %i, l: %i, h: %i, w: %i",
+			area_name, area->top, area->left, area->height, area->width);
+#endif
+}
 
 void s1d135xx_hard_reset(struct pl_gpio *gpio,
 			 const struct s1d135xx_data *data)
@@ -320,6 +327,10 @@ int s1d135xx_load_image(struct s1d135xx *p, const char *path, uint16_t mode,
 		return -1;
 
 	set_cs(p, 0);
+
+
+
+
 #if 0 // Area display bug at 4.7" display
 	if (area != NULL) {
 		send_cmd_area(p, S1D135XX_CMD_LD_IMG_AREA, mode, area);
@@ -329,14 +340,22 @@ int s1d135xx_load_image(struct s1d135xx *p, const char *path, uint16_t mode,
 	}
 #else
 	if(area == NULL){
-		area = (struct pl_area*) malloc(sizeof(struct pl_area));
-		area->top = 0;
-		area->left = 0;
-		area->width = p->xres;
-		area->height = p->yres;
+		if(p->scrambling){
+			send_cmd(p, S1D135XX_CMD_LD_IMG);
+			send_param(mode);
+		}else{
+			area = (struct pl_area*) malloc(sizeof(struct pl_area));
+			area->top = 0;
+			area->left = 0;
+			area->width = p->xres;
+			area->height = p->yres;
+			send_cmd_area(p, S1D135XX_CMD_LD_IMG_AREA, mode, area /* area_scrambled */);
+		}
+	}else{
+		send_cmd_area(p, S1D135XX_CMD_LD_IMG_AREA, mode, area /* area_scrambled */);
 	}
 
-	send_cmd_area(p, S1D135XX_CMD_LD_IMG_AREA, mode, area);
+
 #endif
 	set_cs(p, 1);
 
@@ -348,9 +367,13 @@ int s1d135xx_load_image(struct s1d135xx *p, const char *path, uint16_t mode,
 	send_param(S1D135XX_REG_HOST_MEM_PORT);
 
 	if (area == NULL){
-		stat = transfer_file(&img_file);
+		if(p->scrambling)
+			stat = transfer_file_scrambled(&img_file, hdr.width, p->scrambling);
+		else
+			stat = transfer_file(&img_file);
 	}else{
-		stat = transfer_image(&img_file, area, left, top, hdr.width);
+		stat = transfer_image(&img_file, area, left, top, hdr.width, hdr.width, p->scrambling);
+
 		free(area);
 	}
 
@@ -370,6 +393,7 @@ int s1d135xx_load_image(struct s1d135xx *p, const char *path, uint16_t mode,
 
 int s1d135xx_update(struct s1d135xx *p, int wfid, enum pl_update_mode mode,  const struct pl_area *area)
 {
+	struct pl_area area_scrambled;
 #if VERBOSE
 	if (area != NULL)
 		LOG("update area %d (%d, %d) %dx%d", wfid,
@@ -385,8 +409,35 @@ int s1d135xx_update(struct s1d135xx *p, int wfid, enum pl_update_mode mode,  con
 	if (area != NULL) {
 		if(!(command % 2 == 0))
 			command++;
-		send_cmd_area(p, command,
-			      S1D135XX_WF_MODE(wfid), area);
+		/*
+		 *
+		 */
+		if(p->scrambling){
+			LOG("//section1");
+			area_scrambled.left = area->left/2;
+			area_scrambled.width = area->width/4;
+			area_scrambled.top = area->top*2;
+			area_scrambled.height = area->height*2;
+			send_cmd_area(p, S1D135XX_CMD_UPDATE_FULL_AREA,
+					  S1D135XX_WF_MODE(wfid), &area_scrambled);
+			set_cs(p, 1);
+
+			send_cmd_cs(p, S1D135XX_CMD_WAIT_DSPE_TRG);
+
+			LOG("//section2");
+			set_cs(p, 0);
+			area_scrambled.left = 360-area->width/4-area->left/2;
+			area_scrambled.width = area->width/4;
+			area_scrambled.top = area->top*2;
+			area_scrambled.height = area->height*2;
+			//*/
+			send_cmd_area(p, command,
+						      S1D135XX_WF_MODE(wfid), &area_scrambled );
+		}else{
+			send_cmd_area(p, command,
+		      S1D135XX_WF_MODE(wfid), area);
+		}
+
 	} else {
 		send_cmd(p, command);
 		send_param(S1D135XX_WF_MODE(wfid));
@@ -703,11 +754,75 @@ static int transfer_file(FIL *file)
 	return 0;
 }
 
+static int transfer_file_scrambled(FIL *file, int xres, uint8_t scramble)
+{
+	// we need to scramble the image so we need to read the file line by line
+	uint8_t data[DATA_BUFFER_LENGTH];
+	uint8_t scrambled_data[DATA_BUFFER_LENGTH];
+	uint16_t idx0, idx1, idx2, idx3, aligned_xres, line_length = 0;
+	uint16_t i;
+
+	line_length = (((xres + 15)/16) * 16);
+	aligned_xres = (((xres/2 + 7)/8) * 8);
+	idx0 = aligned_xres - 1;
+	idx1 = idx0 + aligned_xres;
+	idx2 = aligned_xres - xres/2;
+	idx3 = aligned_xres + aligned_xres - xres/2;
+/*
+	LOG("aligned_xres: %i", aligned_xres);
+	LOG("line_length: %i", line_length);
+	LOG("idx0: %i", idx0);
+	LOG("idx1: %i", idx1);
+	LOG("idx2: %i", idx2);
+	LOG("idx3: %i", idx3);
+//*/
+	for (;;) {
+		size_t count;
+
+		if (f_read(file, data, xres, &count) != FR_OK)
+			return -1;
+
+		if (!count)
+			break;
+
+		for (i=0; i<xres; i+=4)
+		{
+			uint16_t idx = i/4;
+			//scrambled_data[align8(p->xres/2) - 1 - (int) (i/4)] = data[i];
+			scrambled_data[idx0 - idx] = data[i];
+			//scrambled_data[align8(p->xres/2) - 1 - (int) (i/4) + align8(p->xres/2)] = data[i + 1];
+			scrambled_data[idx1 - idx] = data[i+1];
+			//scrambled_data[(int) (i/4) + align8(p->xres/2) - p->xres/2] = data[i + 2];
+			scrambled_data[idx2 + idx] = data[i+2];
+			//scrambled_data[(int) (i/4) + align8(p->xres/2) - p->xres/2 + align8(p->xres/2)] = data[i + 3];
+			scrambled_data[idx3 + idx] = data[i+3];
+		}
+		transfer_data(scrambled_data, line_length);
+
+	}
+
+	return 0;
+}
+
 static int transfer_image(FIL *f, const struct pl_area *area, int left,
-			  int top, int width)
+			  int top, int width, int xres, uint8_t scramble)
 {
 	uint8_t data[DATA_BUFFER_LENGTH];
+	uint8_t scrambled_data[DATA_BUFFER_LENGTH];
+	uint16_t idx0, idx1, idx2, idx3, aligned_xres, line_length = 0;
+	log_area((struct pl_area*) area, __func__);
 	size_t line;
+
+	if(scramble){
+		line_length = align16(xres);
+		aligned_xres = align8(xres/2);
+		idx0 = aligned_xres - 1;
+		idx1 = idx0 + aligned_xres;
+		idx2 = aligned_xres - xres/2;
+		idx3 = aligned_xres + aligned_xres - xres/2;
+
+	}
+	uint8_t buffer_length = max(line_length, xres);
 
 	/* Simple bounds check */
 	if (width < area->width || width < (left + area->width)) {
@@ -728,14 +843,34 @@ static int transfer_image(FIL *f, const struct pl_area *area, int left,
 
 		/* Transfer data of interest in chunks */
 		while (remaining) {
-			size_t btr = (remaining <= DATA_BUFFER_LENGTH) ?
-					remaining : DATA_BUFFER_LENGTH;
+			size_t btr = (remaining <= buffer_length) ?
+					remaining : buffer_length;
 
 			if (f_read(f, data, btr, &count) != FR_OK)
 				return -1;
 
-			transfer_data(&data[0], btr);
+			if(scramble){
+				int i;
 
+				for (i=0;  i<area->width; i+=4)
+				{
+					uint16_t idx = i/4;
+					//scrambled_data[align8(p->xres/2) - 1 - (int) (i/4)] = data[i];
+					scrambled_data[idx0 - idx] = data[i];
+					//scrambled_data[align8(p->xres/2) - 1 - (int) (i/4) + align8(p->xres/2)] = data[i + 1];
+					scrambled_data[idx1 - idx] = data[i+1];
+					//scrambled_data[(int) (i/4) + align8(p->xres/2) - p->xres/2] = data[i + 2];
+					scrambled_data[idx2 + idx] = data[i+2];
+					//scrambled_data[(int) (i/4) + align8(p->xres/2) - p->xres/2 + align8(p->xres/2)] = data[i + 3];
+					scrambled_data[idx3 + idx] = data[i+3];
+				}
+
+			}
+			if(scramble){
+				transfer_data(&scrambled_data[0], btr);
+			}else{
+				transfer_data(&data[0], btr);
+			}
 			remaining -= btr;
 		}
 
@@ -813,4 +948,14 @@ static void set_hdc(struct s1d135xx *p, int state)
 
 	if (hdc != PL_GPIO_NONE)
 		pl_gpio_set(p->gpio, hdc, state);
+}
+
+int set_init_rot_mode(struct s1d135xx *p)
+{
+	set_cs(p, 0);
+	send_cmd(p, S1D135XX_CMD_INIT_ROT_MODE);
+	send_param(0x0400);
+	set_cs(p, 1);
+	mdelay(100);
+	return s1d135xx_wait_idle(p);
 }

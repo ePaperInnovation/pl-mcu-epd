@@ -338,6 +338,7 @@ int main_init(void)
 	/* read configuration */
 	if(read_config("config.txt", &global_config))
 		abort_msg("Read config file failed!",ABORT_CONFIG);
+	s1d135xx.scrambling = global_config.scrambling;
 
 	struct pl_hwinfo g_hwinfo_default = init_hw_info_default();
 
@@ -374,6 +375,11 @@ int main_init(void)
 	/* initialise EPDC */
 	if (probe_epdc(&g_plat, &s1d135xx))
 		abort_msg("EPDC init failed", ABORT_EPDC_INIT);
+
+	// debug -> read and print PROM content (MaterialID, WF-ID, VCOM)
+	uint8_t blob[16];
+	s1d13541_read_prom(&s1d135xx, blob);
+	s1d13541_extract_prom_blob(blob);
 
 	/* run the application */
 	if (app_demo(&g_plat))

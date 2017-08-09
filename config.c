@@ -145,6 +145,8 @@ int read_config(char* configfile, struct config *config){
 			config->endianess = get_endianess(endianess);
 		}else if(strcmp(config_name, "wf_version")==0){
 			len = parser_read_int(&line[len], SEP, &config->waveform_version);
+		}else if(strcmp(config_name, "scrambling")==0){
+			len = parser_read_int(&line[len], SEP, &config->scrambling);
 		}else{
 			f_close(&cfg);
 			return 0;

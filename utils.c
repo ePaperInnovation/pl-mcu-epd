@@ -190,3 +190,12 @@ void dump_hex(const void *data, uint16_t len)
 
 	puts(s);
 }
+
+uint16_t align8(uint16_t value){
+	return (((value + 7)/8) * 8);
+}
+
+uint16_t align16(uint16_t value){
+	return (((value + 15)/16) * 16);
+}
+

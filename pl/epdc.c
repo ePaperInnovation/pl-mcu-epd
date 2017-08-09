@@ -52,7 +52,7 @@ int pl_epdc_get_wfid(struct pl_epdc *p, int wf_from)
 
 	for (wfid = p->wf_table; wfid->id_from != NULL; ++wfid)
 		if (wfid->id_from == wf_from){
-			LOG("WFID: %i", wfid->id_to);
+			//LOG("WFID: %i", wfid->id_to);
 			return wfid->id_to;
 		}
 

@@ -73,6 +73,7 @@ struct s1d135xx_data {
 struct s1d135xx {
 	const struct s1d135xx_data *data;
 	struct pl_gpio *gpio;
+	uint8_t scrambling;
 	uint16_t hrdy_mask;
 	uint16_t hrdy_result;
 	int measured_temp;

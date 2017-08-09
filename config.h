@@ -77,6 +77,7 @@ struct config {
 	enum config_data_source data_source; //SD-Card or EEPROM or both
 	enum config_platform_board board; //HBZ6, 7, 8, 9 or Raven
 	char config_display_type[16];
+	int scrambling;
 	int waveform_version;
 };
 

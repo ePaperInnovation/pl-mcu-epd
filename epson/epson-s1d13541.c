@@ -53,6 +53,31 @@
 #define S1D13541_LD_IMG_8BPP            (3 << 4)
 #define S1D13541_WF_ADDR                0x00080000L
 
+#define S1D13541_PROM_STATUS             0x0500
+#define S1D13541_PROM_CTRL               0x0502
+#define S1D13541_PROM_ADR_PGR_DATA 0x0504
+#define S1D13541_PROM_READ_DATA          0x0506
+
+#define S1D13541_PROM_STATUS_IDLE               0x0
+#define S1D13541_PROM_STATUS_READ_BUSY          (1 << 8)
+#define S1D13541_PROM_STATUS_PGM_BUSY           (1 << 9)
+#define S1D13541_PROM_STATUS_ERASE_BUSY (1 << 10)
+#define S1D13541_PROM_STATUS_READ_MODE          (1 << 12)
+#define S1D13541_PROM_STATUS_PGM_MODE           (1 << 13)
+#define S1D13541_PROM_STATUS_ERASE_ALL_MODE     (1 << 14)
+
+#define S1D13541_PROM_READ_START                (1 << 0)
+#define S1D13541_PROM_READ_STOP                 (1 << 1)
+#define S1D13541_PROM_VCOM_READ                 (1 << 2)
+#define S1D13541_PROM_PGM_MODE_START            (1 << 4)
+#define S1D13541_PROM_PGM_OP_START                     (1 << 5)
+#define S1D13541_PROM_PGM_OP_STOP               (1 << 6)
+#define S1D13541_PROM_PGM_MODE_STOP             (1 << 7)
+#define S1D13541_PROM_ERASE_ALL_MODE_START      (1 << 8)
+#define S1D13541_PROM_ERASE_ALL_OP_START        (1 << 9)
+#define S1D13541_PROM_ERASE_ALL_OP_STOP (1 << 10)
+#define S1D13541_PROM_ERASE_ALL_MODE_STOP       (1 << 11)
+
 enum s1d13541_reg {
 	S1D13541_REG_CLOCK_CONFIG          = 0x0010,
 	S1D13541_REG_PROT_KEY_1            = 0x042C,
@@ -93,6 +118,7 @@ static int s1d13541_init_clocks(struct s1d135xx *p);
 static void update_temp(struct s1d135xx *p, uint16_t reg);
 static int update_temp_manual(struct s1d135xx *p, int manual_temp);
 static int update_temp_auto(struct s1d135xx *p, uint16_t temp_reg);
+static int wait_for_ack (struct s1d135xx *p, uint16_t status, uint16_t mask);
 
 /* -- pl_epdc interface -- */
 
@@ -235,6 +261,9 @@ int epson_epdc_init_s1d13541(struct pl_epdc *epdc)
 		return -1;
 	}
 
+	// mg033 & mg034
+	//s1d135xx_write_reg(p, 0x0140, 0);
+
 	s1d135xx_write_reg(p, S1D13541_REG_PROT_KEY_1, S1D13541_PROT_KEY_1);
 	s1d135xx_write_reg(p, S1D13541_REG_PROT_KEY_2, S1D13541_PROT_KEY_2);
 
@@ -333,4 +362,110 @@ static int update_temp_auto(struct s1d135xx *p, uint16_t temp_reg)
 	update_temp(p, temp_reg);
 
 	return 0;
+}
+
+int s1d13541_read_prom(struct s1d135xx *p, uint8_t * blob)
+{
+       int i = 0, j = 0;
+       uint16_t data = 0;
+       uint16_t addr_ = 0;
+
+       // wait for status: idle
+       if(wait_for_ack(p, S1D13541_PROM_STATUS_IDLE, 0xffff))
+              return -1;
+
+       for(i=0; i<8; i++)
+       {
+              for(j=0; j<2; j++)
+              {
+                     // set read address
+                     addr_ = ((i*2+j) << 8) & 0x0f00;
+                     s1d135xx_write_reg(p, S1D13541_PROM_ADR_PGR_DATA, addr_);
+
+                     // set read operation start trigger
+                     s1d135xx_write_reg(p, S1D13541_PROM_CTRL, S1D13541_PROM_READ_START);
+
+                     //wait for status: read mode start
+                     if(wait_for_ack(p, S1D13541_PROM_STATUS_READ_MODE, S1D13541_PROM_STATUS_READ_MODE))
+                           return -1;
+
+                     //wait for status: read operation finished
+                     if(wait_for_ack(p, 0x0000, S1D13541_PROM_STATUS_READ_BUSY))
+                           return -1;
+
+                     // set read operation start trigger
+                     data = s1d135xx_read_reg(p, S1D13541_PROM_READ_DATA);
+                     if(j)
+                           blob[i] |= data & 0x0f;
+                     else
+                           blob[i] = data << 4 & 0xf0;
+
+              }
+       }
+
+       // set read mode stop trigger
+       s1d135xx_write_reg(p, S1D13541_PROM_CTRL, S1D13541_PROM_READ_STOP);
+
+       //wait for status: read mode stop
+       if(wait_for_ack(p, 0x0000, S1D13541_PROM_STATUS_READ_MODE))
+              return -1;
+
+       return 0;
+}
+
+int s1d13541_extract_prom_blob(uint8_t *data)
+{
+       int bp = 0;
+       int sn = 0;
+       int wf = 0;
+       int vcom = 0;
+
+       char c_bp[7+1] = {0,};
+       char c_sn[7+1] = {0,};
+       char c_wf[6+1] = {0,};
+
+       // backplane batch ID
+       bp  = data[0] << 16;
+       bp |= data[1] << 8;
+       bp |= data[2];
+
+       // serial number
+       sn  = data[3] << 16;
+       sn |= data[4] << 8;
+       sn |= data[5];
+
+       ltoa(bp, c_bp);
+       ltoa(sn, c_sn);
+       printf("bp = %s\n", c_bp);
+       printf("sn = %s\n", c_sn);
+
+       // waveform version
+       wf = data[6] >> 2 & 0x3f;
+       ltoa(wf, c_wf);
+       printf("wf = %s\n", c_wf);
+
+       // vcom
+       vcom  = data[6] << 8 & 0x300 ;
+       vcom |= data[7]      & 0xff;
+       vcom *= 10; // since vcom was reduced to 10mV step size
+
+       printf("vcom = %d\n", vcom);
+
+       return 0;
+}
+
+static int wait_for_ack (struct s1d135xx *p, uint16_t status, uint16_t mask)
+{
+       unsigned long timeout = 50000;
+       uint16_t v = 0x0;
+
+       while ((v = s1d135xx_read_reg(p, S1D13541_PROM_STATUS) & mask) != status){
+              --timeout;
+              if (timeout == 0){
+                     LOG("PROM acknowledge timeout");
+                     return -1;
+              }
+       }
+
+       return 0;
 }
