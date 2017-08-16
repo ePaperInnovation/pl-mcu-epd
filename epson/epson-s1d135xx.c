@@ -819,12 +819,9 @@ static int transfer_image(FIL *f, const struct pl_area *area, int left,
 	uint16_t sl;
 	scramble = 0;
 
-		line_length = align16(xres);
-		aligned_xres = align8(xres/2);
-		idx0 = aligned_xres - 1;
-		idx1 = idx0 + aligned_xres;
-		idx2 = aligned_xres - xres/2;
-		idx3 = aligned_xres + aligned_xres - xres/2;
+	line_length = align16(xres);
+	aligned_xres = align8(xres/2);
+	idx0 = aligned_xres - 1;
 
 	sl =line_length/2;
 	uint8_t buffer_length = max(line_length, xres);

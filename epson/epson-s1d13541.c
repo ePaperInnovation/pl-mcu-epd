@@ -457,7 +457,7 @@ int s1d13541_extract_prom_blob(uint8_t *data)
 static int wait_for_ack (struct s1d135xx *p, uint16_t status, uint16_t mask)
 {
        unsigned long timeout = 50000;
-
+       uint16_t v;
        while ((v = s1d135xx_read_reg(p, S1D13541_PROM_STATUS) & mask) != status){
               --timeout;
               if (timeout == 0){
