@@ -415,8 +415,8 @@ int s1d13541_read_prom(struct s1d135xx *p, uint8_t * blob)
 
 int s1d13541_extract_prom_blob(uint8_t *data)
 {
-       int bp = 0;
-       int sn = 0;
+       int32_t bp = 0;
+       int32_t sn = 0;
        int wf = 0;
        int vcom = 0;
 
@@ -457,7 +457,6 @@ int s1d13541_extract_prom_blob(uint8_t *data)
 static int wait_for_ack (struct s1d135xx *p, uint16_t status, uint16_t mask)
 {
        unsigned long timeout = 50000;
-       uint16_t v = 0x0;
 
        while ((v = s1d135xx_read_reg(p, S1D13541_PROM_STATUS) & mask) != status){
               --timeout;

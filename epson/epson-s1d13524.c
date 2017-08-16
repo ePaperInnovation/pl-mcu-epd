@@ -70,22 +70,12 @@ enum s1d13524_cmd {
 };
 #if 1
 static const struct pl_wfid epson_epdc_wf_table_s1d13524[] = {
-	/*
-	{ wf_refresh,      0 },
-	{ wf_delta,        1 },
-	{ wf_delta_mono,   2 },
-	{ wf_refresh_mono, 3 },
-	{ wf_init,         15 },
-	{ NULL,           -1 }
-	//*/
-	//* old
 	{ 2,	2 },
 	{ 3,	3 },
 	{ 4,	4 },
 	{ 1,	1 },
 	{ 0,	0 },
 	{ -1,	 -1 }
-	//*/
 };
 #endif
 /* -- private functions -- */

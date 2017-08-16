@@ -1,1 +1,0 @@
-rst2pdf index.rst -s stylesheet.txt,vs.style -o pl-mcu-manual.pdf --repeat-table-rows  && evince pl-mcu-manual.pdf

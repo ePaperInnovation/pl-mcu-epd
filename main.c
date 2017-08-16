@@ -339,6 +339,7 @@ int main_init(void)
 	if(read_config("config.txt", &global_config))
 		abort_msg("Read config file failed!",ABORT_CONFIG);
 	s1d135xx.scrambling = global_config.scrambling;
+	s1d135xx.source_offset = global_config.source_offset;
 
 	struct pl_hwinfo g_hwinfo_default = init_hw_info_default();
 

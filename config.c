@@ -15,7 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
+/*
+ * config.c
+ *
+ * Author:
+ *   Robert Pohlink <robert.pohlink@plasticlogic.com>
+ *
+ */
 #include "config.h"
 #include "app/parser.h"
 #include <pl/types.h>
@@ -147,6 +153,8 @@ int read_config(char* configfile, struct config *config){
 			len = parser_read_int(&line[len], SEP, &config->waveform_version);
 		}else if(strcmp(config_name, "scrambling")==0){
 			len = parser_read_int(&line[len], SEP, &config->scrambling);
+		}else if(strcmp(config_name, "source_offset")==0){
+			len = parser_read_int(&line[len], SEP, &config->source_offset);
 		}else{
 			f_close(&cfg);
 			return 0;

@@ -35,17 +35,6 @@
 #define LOG_TAG "epson-epdc"
 #include "utils.h"
 
-#if 0 /* some E-Ink waveform libraries appear to use this convention */
-static const struct pl_wfid epson_epdc_wf_table_eink[] = {
-	{ wf_refresh,      2 },
-	{ wf_delta,        3 },
-	{ wf_delta_mono,   1 },
-	{ wf_refresh_mono, 3 },
-	{ wf_init,         0 },
-	{ NULL, 0 }
-};
-#endif
-
 static int epson_epdc_clear_init(struct pl_epdc *epdc)
 {
 	struct s1d135xx *p = epdc->data;

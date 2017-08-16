@@ -45,7 +45,7 @@
 /* Set to 1 to enable verbose update and EPD power on/off log messages */
 #define VERBOSE 0
 
-#define DATA_BUFFER_LENGTH              1024
+#define DATA_BUFFER_LENGTH              2048 // must be above maximum xres value for any supported display
 
 #define S1D135XX_WF_MODE(_wf)           (((_wf) << 8) & 0x0F00)
 #define S1D135XX_XMASK                  0x0FFF
@@ -86,9 +86,9 @@ static int do_fill(struct s1d135xx *p, const struct pl_area *area,
 		   unsigned bpp, uint8_t g);
 static int wflib_wr(void *ctx, const uint8_t *data, size_t n);
 static int transfer_file(FIL *file);
-static int transfer_file_scrambled(FIL *file, int xres, uint8_t scramble);
+static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres);
 static int transfer_image(FIL *f, const struct pl_area *area, int left,
-			  int top, int width, int xres, uint8_t scramble);
+			  int top, int width, int xres, uint16_t scramble, uint16_t source_offset);
 static void transfer_data(const uint8_t *data, size_t n);
 static void send_cmd_area(struct s1d135xx *p, uint16_t cmd, uint16_t mode,
 			  const struct pl_area *area);
@@ -218,7 +218,6 @@ int s1d135xx_load_wflib(struct s1d135xx *p, struct pl_wflib *wflib,
 
 	if (wflib->xfer(wflib, wflib_wr, p))
 		return -1;
-
 	if (s1d135xx_wait_idle(p))
 		return -1;
 
@@ -328,9 +327,6 @@ int s1d135xx_load_image(struct s1d135xx *p, const char *path, uint16_t mode,
 
 	set_cs(p, 0);
 
-
-
-
 #if 0 // Area display bug at 4.7" display
 	if (area != NULL) {
 		send_cmd_area(p, S1D135XX_CMD_LD_IMG_AREA, mode, area);
@@ -355,7 +351,6 @@ int s1d135xx_load_image(struct s1d135xx *p, const char *path, uint16_t mode,
 		send_cmd_area(p, S1D135XX_CMD_LD_IMG_AREA, mode, area /* area_scrambled */);
 	}
 
-
 #endif
 	set_cs(p, 1);
 
@@ -366,14 +361,12 @@ int s1d135xx_load_image(struct s1d135xx *p, const char *path, uint16_t mode,
 	send_cmd(p, S1D135XX_CMD_WRITE_REG);
 	send_param(S1D135XX_REG_HOST_MEM_PORT);
 
-	if (area == NULL){
-		if(p->scrambling)
-			stat = transfer_file_scrambled(&img_file, hdr.width, p->scrambling);
-		else
-			stat = transfer_file(&img_file);
+	if (area == NULL || p->source_offset){
+		stat = transfer_file_scrambled(p, &img_file, hdr.width);
 	}else{
-		stat = transfer_image(&img_file, area, left, top, hdr.width, hdr.width, p->scrambling);
-
+		stat = transfer_image(&img_file, area, left, top, hdr.width, hdr.width, p->scrambling, p->source_offset);
+	}
+	if(area){
 		free(area);
 	}
 
@@ -409,9 +402,6 @@ int s1d135xx_update(struct s1d135xx *p, int wfid, enum pl_update_mode mode,  con
 	if (area != NULL) {
 		if(!(command % 2 == 0))
 			command++;
-		/*
-		 *
-		 */
 		if(p->scrambling){
 			LOG("//section1");
 			area_scrambled.left = area->left/2;
@@ -529,7 +519,9 @@ int s1d135xx_set_epd_power(struct s1d135xx *p, int on)
 		return -1;
 
 	s1d135xx_write_reg(p, S1D135XX_REG_PWR_CTRL, arg);
-/*	if (s1d135xx_wait_idle(p))
+/*
+
+	if (s1d135xx_wait_idle(p))
 		return -1;
 	tmp = s1d135xx_read_reg(p, 0x0232);
 	if (s1d135xx_wait_idle(p))
@@ -543,7 +535,7 @@ int s1d135xx_set_epd_power(struct s1d135xx *p, int on)
 		if (s1d135xx_wait_idle(p))
 			return -1;
 	}
-	//*/
+//*/
 	do {
 		tmp = s1d135xx_read_reg(p, S1D135XX_REG_PWR_CTRL);
 	} while (tmp & S1D135XX_PWR_CTRL_BUSY);
@@ -754,50 +746,60 @@ static int transfer_file(FIL *file)
 	return 0;
 }
 
-static int transfer_file_scrambled(FIL *file, int xres, uint8_t scramble)
+/**
+ * This function pads the target (memory) with offset source and gate lines if needed.
+ * If no offset is defined (o_gl=-1, o_sl=-1) the source content will be placed in the right lower corner,
+ * while the left upper space is containing the offset lines.
+ */
+static void memory_padding(uint8_t *source, uint8_t *target,  int s_gl, int s_sl, int t_gl, int t_sl, int o_gl, int o_sl)
 {
+	int sl, gl;
+	int _gl_offset = 0;
+	int _sl_offset = 0;
+
+	if(o_gl > 0)
+		_gl_offset = o_gl;
+	else
+		_gl_offset = t_gl - s_gl;
+
+	if(o_sl > 0)
+		_sl_offset = o_sl;
+	else
+		_sl_offset = t_sl - s_sl;
+
+
+	for (gl=0; gl<s_gl; gl++)
+		for(sl=0; sl<s_sl; sl++)
+		{
+			target [(gl+_gl_offset)*t_sl+(sl+_sl_offset)] = source [gl*s_sl+sl];
+			source[gl*s_sl+sl] = 0xFF;
+		}
+}
+
+static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
+{
+	LOG("%s", __func__);
 	// we need to scramble the image so we need to read the file line by line
 	uint8_t data[DATA_BUFFER_LENGTH];
 	uint8_t scrambled_data[DATA_BUFFER_LENGTH];
-	uint16_t idx0, idx1, idx2, idx3, aligned_xres, line_length = 0;
-	uint16_t i;
-
-	line_length = (((xres + 15)/16) * 16);
-	aligned_xres = (((xres/2 + 7)/8) * 8);
-	idx0 = aligned_xres - 1;
-	idx1 = idx0 + aligned_xres;
-	idx2 = aligned_xres - xres/2;
-	idx3 = aligned_xres + aligned_xres - xres/2;
-/*
-	LOG("aligned_xres: %i", aligned_xres);
-	LOG("line_length: %i", line_length);
-	LOG("idx0: %i", idx0);
-	LOG("idx1: %i", idx1);
-	LOG("idx2: %i", idx2);
-	LOG("idx3: %i", idx3);
-//*/
+	uint16_t xpad = align8(p->source_offset/2)-(align8(p->source_offset) - p->source_offset);
 	for (;;) {
 		size_t count;
-
+		uint16_t gl = 1;
+		uint16_t sl = xres;
+		// read one line of the image
 		if (f_read(file, data, xres, &count) != FR_OK)
 			return -1;
 
 		if (!count)
 			break;
-
-		for (i=0; i<xres; i+=4)
-		{
-			uint16_t idx = i/4;
-			//scrambled_data[align8(p->xres/2) - 1 - (int) (i/4)] = data[i];
-			scrambled_data[idx0 - idx] = data[i];
-			//scrambled_data[align8(p->xres/2) - 1 - (int) (i/4) + align8(p->xres/2)] = data[i + 1];
-			scrambled_data[idx1 - idx] = data[i+1];
-			//scrambled_data[(int) (i/4) + align8(p->xres/2) - p->xres/2] = data[i + 2];
-			scrambled_data[idx2 + idx] = data[i+2];
-			//scrambled_data[(int) (i/4) + align8(p->xres/2) - p->xres/2 + align8(p->xres/2)] = data[i + 3];
-			scrambled_data[idx3 + idx] = data[i+3];
+		// scramble that line to up to 2 lines
+		if(scramble_array(data, scrambled_data, &gl, &sl ,p->scrambling)){
+			memory_padding(scrambled_data, data, gl, sl, gl, p->xres, 0, xpad );
+			transfer_data(data, p->xres*gl);
+		}else{
+			transfer_data(data, xres);
 		}
-		transfer_data(scrambled_data, line_length);
 
 	}
 
@@ -805,15 +807,18 @@ static int transfer_file_scrambled(FIL *file, int xres, uint8_t scramble)
 }
 
 static int transfer_image(FIL *f, const struct pl_area *area, int left,
-			  int top, int width, int xres, uint8_t scramble)
+			  int top, int width, int xres, uint16_t scramble, uint16_t source_offset)
 {
+	LOG("%s", __func__);
 	uint8_t data[DATA_BUFFER_LENGTH];
 	uint8_t scrambled_data[DATA_BUFFER_LENGTH];
-	uint16_t idx0, idx1, idx2, idx3, aligned_xres, line_length = 0;
+	uint16_t idx0, aligned_xres, line_length = 0;
 	log_area((struct pl_area*) area, __func__);
 	size_t line;
+	uint16_t gl = 2;
+	uint16_t sl;
+	scramble = 0;
 
-	if(scramble){
 		line_length = align16(xres);
 		aligned_xres = align8(xres/2);
 		idx0 = aligned_xres - 1;
@@ -821,7 +826,7 @@ static int transfer_image(FIL *f, const struct pl_area *area, int left,
 		idx2 = aligned_xres - xres/2;
 		idx3 = aligned_xres + aligned_xres - xres/2;
 
-	}
+	sl =line_length/2;
 	uint8_t buffer_length = max(line_length, xres);
 
 	/* Simple bounds check */
@@ -849,27 +854,10 @@ static int transfer_image(FIL *f, const struct pl_area *area, int left,
 			if (f_read(f, data, btr, &count) != FR_OK)
 				return -1;
 
-			if(scramble){
-				int i;
-
-				for (i=0;  i<area->width; i+=4)
-				{
-					uint16_t idx = i/4;
-					//scrambled_data[align8(p->xres/2) - 1 - (int) (i/4)] = data[i];
-					scrambled_data[idx0 - idx] = data[i];
-					//scrambled_data[align8(p->xres/2) - 1 - (int) (i/4) + align8(p->xres/2)] = data[i + 1];
-					scrambled_data[idx1 - idx] = data[i+1];
-					//scrambled_data[(int) (i/4) + align8(p->xres/2) - p->xres/2] = data[i + 2];
-					scrambled_data[idx2 + idx] = data[i+2];
-					//scrambled_data[(int) (i/4) + align8(p->xres/2) - p->xres/2 + align8(p->xres/2)] = data[i + 3];
-					scrambled_data[idx3 + idx] = data[i+3];
-				}
-
-			}
-			if(scramble){
-				transfer_data(&scrambled_data[0], btr);
+			if(scramble_array(data, scrambled_data, &gl, &sl ,scramble)){
+				transfer_data(scrambled_data, btr);
 			}else{
-				transfer_data(&data[0], btr);
+				transfer_data(data, btr);
 			}
 			remaining -= btr;
 		}

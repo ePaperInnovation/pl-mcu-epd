@@ -15,7 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
+/*
+ * config.h
+ *
+ * Author:
+ *   Robert Pohlink <robert.pohlink@plasticlogic.com>
+ *
+ */
 #ifndef INCLUDE_CONFIG_H
 #define INCLUDE_CONFIG_H 1
 
@@ -78,6 +84,7 @@ struct config {
 	enum config_platform_board board; //HBZ6, 7, 8, 9 or Raven
 	char config_display_type[16];
 	int scrambling;
+	int source_offset;
 	int waveform_version;
 };
 
