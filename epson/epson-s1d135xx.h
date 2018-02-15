@@ -28,6 +28,7 @@
 #define INCLUDE_EPSON_S1D135XX_H
 
 #include <pl/epdc.h>
+#include <pl/interface.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -73,6 +74,7 @@ struct s1d135xx_data {
 struct s1d135xx {
 	const struct s1d135xx_data *data;
 	struct pl_gpio *gpio;
+	struct pl_interface *interface;
 	uint16_t scrambling;
 	uint16_t source_offset;
 	uint16_t hrdy_mask;
@@ -115,5 +117,8 @@ extern void s1d135xx_cmd(struct s1d135xx *p, uint16_t cmd,
 extern uint16_t s1d135xx_read_reg(struct s1d135xx *p, uint16_t reg);
 extern void s1d135xx_write_reg(struct s1d135xx *p, uint16_t reg, uint16_t val);
 extern int s1d135xx_load_register_overrides(struct s1d135xx *p);
+
+extern int s1d13541_extract_prom_blob(uint8_t *data);
+extern int s1d13541_read_prom(struct s1d135xx *p, uint8_t * blob);
 
 #endif /* INCLUDE_EPSON_S1D135XX_H */

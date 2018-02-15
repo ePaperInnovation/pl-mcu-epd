@@ -24,6 +24,7 @@
  */
 
 #include <pl/gpio.h>
+#include <pl/interface.h>
 #include <msp430.h>
 #include "utils.h"
 #include "assert.h"
@@ -32,12 +33,6 @@
 #include "msp430-gpio.h"
 
 #define CONFIG_PLAT_RUDDOCK2	1
-#define	CONFIG_IF_PARALLEL		0
-
-#if CONFIG_IF_PARALLEL
-#define	READ_STROBE             MSP430_GPIO(3,4)
-#define	WRITE_STROBE            MSP430_GPIO(3,0)
-#endif
 
 #if CONFIG_PLAT_RUDDOCK2
 #define USCI_UNIT	A
@@ -49,21 +44,17 @@
 
 #endif
 
-
+int msp430_spi_read_bytes(uint8_t *buff, uint8_t size);
+int msp430_spi_write_bytes(uint8_t *buff, uint8_t size);
 /* We only support a single SPI bus and that bus is defined at compile
  * time.
  */
-int spi_init(struct pl_gpio *gpio, uint8_t spi_channel, uint16_t divisor)
+int msp430_spi_init(struct pl_gpio *gpio, uint8_t spi_channel, uint16_t divisor, struct pl_interface *iface)
 {
 	static const struct pl_gpio_config gpios[] = {
-#if CONFIG_IF_PARALLEL
-	{ READ_STROBE,   PL_GPIO_OUTPUT |  PL_GPIO_INIT_H },
-	{ WRITE_STROBE,  PL_GPIO_OUTPUT |  PL_GPIO_INIT_H },
-#else
 	{ SPI_SIMO,      PL_GPIO_SPECIAL | PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
 	{ SPI_SOMI,      PL_GPIO_SPECIAL | PL_GPIO_INPUT                   },
 	{ SPI_CLK,       PL_GPIO_SPECIAL | PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
-#endif
 	};
 
 	if (spi_channel != 0)
@@ -74,7 +65,6 @@ int spi_init(struct pl_gpio *gpio, uint8_t spi_channel, uint16_t divisor)
 	if (pl_gpio_config_list(gpio, gpios, ARRAY_SIZE(gpios)))
 		return -1;
 
-#if !CONFIG_IF_PARALLEL
 	// SPI setting, MSb first, 8bit, Master Mode, 3 pin SPI, Synch Mode
 	UCxnCTL0 |= (UCMST | UCSYNC | UCMSB | UCCKPH);
 
@@ -84,66 +74,19 @@ int spi_init(struct pl_gpio *gpio, uint8_t spi_channel, uint16_t divisor)
 	UCxnIE = 0x00;							// All interrupts disabled
 
 	UCxnCTL1 &= ~UCSWRST;                  	// Release state machine from reset
-#endif
+
+	iface->read = msp430_spi_read_bytes;
+	iface->write = msp430_spi_write_bytes;
 
 	return 0;
 }
 
-void spi_close(void)
+void msp430_spi_close(void)
 {
 	UCxnCTL1 |= UCSWRST;                      // Put state machine in reset
 }
 
-#if CONFIG_IF_PARALLEL
-// Higher level read register command needs to know not to ditch first word
-// in parallel port as its valid data.
-void spi_read_bytes(uint8_t *buff, size_t size)
-{
-	assert((size & 1) == 0);
-
-	// define ports as input
-	P6DIR = 0x00;
-	P4DIR = 0x00;
-
-	do {
-		gpio_set_value_lo(READ_STROBE);
-		__no_operation();
-		*buff++ = P6IN;
-		*buff++ = P4IN;
-		gpio_set_value_hi(READ_STROBE);
-		__no_operation();
-	} while (size -= 2);
-}
-void spi_write_bytes(uint8_t *buff, size_t size)
-{
-	assert((size & 1) == 0);
-
-	// define ports as output
-	P6DIR = 0xff;
-	P4DIR = 0xff;
-#if 0
-	{
-		uint8_t bit = 1;
-		while (bit)
-		{
-			P4OUT = bit;
-			P6OUT = bit;
-			bit <<= 1;
-		}
-	}
-#endif
-	do {
-		gpio_set_value_lo(WRITE_STROBE);
-		P6OUT = *buff++;
-		P4OUT = *buff++;
-		gpio_set_value_hi(WRITE_STROBE);
-		__no_operation();
-	} while (size -= 2);
-}
-
-#else
-
-void spi_read_bytes(uint8_t *buff, size_t size)
+int msp430_spi_read_bytes(uint8_t *buff, uint8_t size)
 {
 	unsigned int gie = __get_SR_register() & GIE;	// Store current GIE state
 
@@ -159,9 +102,11 @@ void spi_read_bytes(uint8_t *buff, size_t size)
     }
 
     __bis_SR_register(gie);                         // Restore original GIE state
+
+    return 0;
 }
 
-void spi_write_bytes(uint8_t *buff, size_t size)
+int msp430_spi_write_bytes(uint8_t *buff, uint8_t size)
 {
 	unsigned int gie = __get_SR_register() & GIE;   // Store current GIE state
 
@@ -179,7 +124,9 @@ void spi_write_bytes(uint8_t *buff, size_t size)
 
     UCxnRXBUF;                                      // Dummy read to empty RX buffer
                                                     // and clear any overrun conditions
-    __bis_SR_register(gie);                         // Restore original GIE state
+    __bis_SR_register(gie);
+    // Restore original GIE state
+    return 0;
 }
-#endif
+
 

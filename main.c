@@ -28,6 +28,7 @@
 #include <epson/epson-s1d135xx.h>
 #include <pl/platform.h>
 #include <pl/gpio.h>
+#include <pl/interface.h>
 #include <pl/hwinfo.h>
 #include <pl/wflib.h>
 #include <app/app.h>
@@ -238,6 +239,12 @@ static struct pl_hwinfo init_hw_info_default(void){
 		struct pl_hw_board_info board = { "Raven", 1, 0, 0, HV_PMIC_MAX17135, 0, 0, 0,
 				global_config.i2c_mode, TEMP_SENSOR_LM75, 0, EPDC_S1D13524, 1, 1 };
 		g_hwinfo_default.board = board;
+	}else if(global_config.board == CONFIG_PLAT_FALCON){
+		struct pl_hw_vcom_info vcom = { 63, 4586, 189, 9800, 27770, -41520, 70000 };
+		g_hwinfo_default.vcom = vcom;
+		struct pl_hw_board_info board = { "Falcon", 2, 0, 0, HV_PMIC_MAX17135, 0, 0, 0,
+				global_config.i2c_mode, TEMP_SENSOR_NONE, 0, EPDC_S1D13524, 1, 1 };
+		g_hwinfo_default.board = board;
 	}else{
 		LOG("Sorry, no default hardware data available for this platform.");
 		exit(-1);
@@ -255,6 +262,8 @@ static const char* g_wflib_fatfs_path(void){
 }
 
 static FIL g_wflib_fatfs_file;
+struct pl_interface epson_spi;
+struct pl_interface epson_parallel;
 
 /* --- main --- */
 
@@ -326,8 +335,15 @@ int main_init(void)
 		abort_msg("I2C init failed", ABORT_MSP430_COMMS_INIT);
 
 	/* initialise MSP430 SPI bus */
-	if (spi_init(&g_plat.gpio, SPI_CHANNEL, SPI_DIVISOR))
-		abort_msg("SPI init failed", ABORT_MSP430_COMMS_INIT);
+	if(global_config.interface_type == PARALLEL){
+		if (parallel_init(&g_plat.gpio, &epson_parallel))
+			abort_msg("Parallel Interface init failed", ABORT_MSP430_COMMS_INIT);
+		s1d135xx.interface = &epson_parallel;
+	}else{
+		if (spi_init(&g_plat.gpio, SPI_CHANNEL, SPI_DIVISOR, &epson_spi))
+			abort_msg("SPI init failed", ABORT_MSP430_COMMS_INIT);
+		s1d135xx.interface = &epson_spi;
+	}
 
 	/* initialise SD-card */
 	SDCard_plat = &g_plat;

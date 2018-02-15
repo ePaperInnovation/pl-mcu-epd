@@ -425,13 +425,13 @@ int s1d13541_extract_prom_blob(uint8_t *data)
        char c_wf[6+1] = {0,};
 
        // backplane batch ID
-       bp  = data[0] << 16;
-       bp |= data[1] << 8;
+       bp  = ((uint32_t) data[0]) << 16;
+       bp |= ((uint32_t) data[1]) << 8;
        bp |= data[2];
 
        // serial number
-       sn  = data[3] << 16;
-       sn |= data[4] << 8;
+       sn  = ((uint32_t) data[3]) << 16;
+       sn |= ((uint32_t) data[4]) << 8;
        sn |= data[5];
 
        ltoa(bp, c_bp);
@@ -460,6 +460,7 @@ static int wait_for_ack (struct s1d135xx *p, uint16_t status, uint16_t mask)
        uint16_t v;
        while ((v = s1d135xx_read_reg(p, S1D13541_PROM_STATUS) & mask) != status){
               --timeout;
+              v=v;
               if (timeout == 0){
                      LOG("PROM acknowledge timeout");
                      return -1;

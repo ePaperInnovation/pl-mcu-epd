@@ -31,7 +31,7 @@
 #include <pl/types.h>
 #include <stdlib.h>
 #include <string.h>
-#include "msp430-spi.h" /* until this becomse <pl/spi.h> */
+#include <pl/interface.h>
 #include "assert.h"
 
 /* until the i/o operations are abstracted */
@@ -85,17 +85,17 @@ static int get_hrdy(struct s1d135xx *p);
 static int do_fill(struct s1d135xx *p, const struct pl_area *area,
 		   unsigned bpp, uint8_t g);
 static int wflib_wr(void *ctx, const uint8_t *data, size_t n);
-static int transfer_file(FIL *file);
+static int transfer_file(struct s1d135xx *p, FIL *file);
 static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres);
-static int transfer_image(FIL *f, const struct pl_area *area, int left,
+static int transfer_image(struct s1d135xx *p, FIL *f, const struct pl_area *area, int left,
 			  int top, int width, int xres, uint16_t scramble, uint16_t source_offset);
-static void transfer_data(const uint8_t *data, size_t n);
+static void transfer_data(struct s1d135xx *p, const uint8_t *data, size_t n);
 static void send_cmd_area(struct s1d135xx *p, uint16_t cmd, uint16_t mode,
 			  const struct pl_area *area);
 static void send_cmd_cs(struct s1d135xx *p, uint16_t cmd);
 static void send_cmd(struct s1d135xx *p, uint16_t cmd);
-static void send_params(const uint16_t *params, size_t n);
-static void send_param(uint16_t param);
+static void send_params(struct s1d135xx *p, const uint16_t *params, size_t n);
+static void send_param(struct s1d135xx *p, uint16_t param);
 static void set_cs(struct s1d135xx *p, int state);
 static void set_hdc(struct s1d135xx *p, int state);
 
@@ -167,7 +167,7 @@ int s1d135xx_load_init_code(struct s1d135xx *p)
 
 	set_cs(p, 0);
 	send_cmd(p, S1D135XX_CMD_INIT_SET);
-	stat = transfer_file(&init_code_file);
+	stat = transfer_file(p, &init_code_file);
 	set_cs(p, 1);
 	f_close(&init_code_file);
 
@@ -181,7 +181,7 @@ int s1d135xx_load_init_code(struct s1d135xx *p)
 
 	set_cs(p, 0);
 	send_cmd(p, S1D135XX_CMD_INIT_STBY);
-	send_param(0x0500);
+	send_param(p, 0x0500);
 	set_cs(p, 1);
 	mdelay(100);
 
@@ -213,7 +213,7 @@ int s1d135xx_load_wflib(struct s1d135xx *p, struct pl_wflib *wflib,
 	params[3] = (size2 >> 16) & 0xFFFF;
 	set_cs(p, 0);
 	send_cmd(p, S1D135XX_CMD_BST_WR_SDR);
-	send_params(params, ARRAY_SIZE(params));
+	send_params(p, params, ARRAY_SIZE(params));
 	set_cs(p, 1);
 
 	if (wflib->xfer(wflib, wflib_wr, p))
@@ -263,7 +263,7 @@ int s1d135xx_fill(struct s1d135xx *p, uint16_t mode, unsigned bpp,
 		fill_area = a;
 	} else {
 		send_cmd(p, S1D135XX_CMD_LD_IMG);
-		send_param(mode);
+		send_param(p, mode);
 		full_area.top = 0;
 		full_area.left = 0;
 		full_area.width = p->xres;
@@ -283,7 +283,7 @@ int s1d135xx_pattern_check(struct s1d135xx *p, uint16_t height, uint16_t width, 
 
 	set_cs(p, 0);
 	send_cmd(p, S1D135XX_CMD_LD_IMG);
-	send_param(mode);
+	send_param(p, mode);
 	set_cs(p, 1);
 
 	if (s1d135xx_wait_idle(p))
@@ -291,13 +291,13 @@ int s1d135xx_pattern_check(struct s1d135xx *p, uint16_t height, uint16_t width, 
 
 	set_cs(p, 0);
 	send_cmd(p, S1D135XX_CMD_WRITE_REG);
-	send_param(S1D135XX_REG_HOST_MEM_PORT);
+	send_param(p, S1D135XX_REG_HOST_MEM_PORT);
 
 	for (i = 0; i < height; i++) {
 		k = i / checker_size;
 		for (j = 0; j < width; j += 2) {
 			val = (k + (j / checker_size)) % 2 ? 0xFFFF : 0x0;
-			send_param(val);
+			send_param(p, val);
 		}
 	}
 
@@ -332,13 +332,13 @@ int s1d135xx_load_image(struct s1d135xx *p, const char *path, uint16_t mode,
 		send_cmd_area(p, S1D135XX_CMD_LD_IMG_AREA, mode, area);
 	} else {
 		send_cmd(p, S1D135XX_CMD_LD_IMG);
-		send_param(mode);
+		send_param(p, mode);
 	}
 #else
 	if(area == NULL){
 		if(p->scrambling){
 			send_cmd(p, S1D135XX_CMD_LD_IMG);
-			send_param(mode);
+			send_param(p, mode);
 		}else{
 			area = (struct pl_area*) malloc(sizeof(struct pl_area));
 			area->top = 0;
@@ -359,12 +359,12 @@ int s1d135xx_load_image(struct s1d135xx *p, const char *path, uint16_t mode,
 
 	set_cs(p, 0);
 	send_cmd(p, S1D135XX_CMD_WRITE_REG);
-	send_param(S1D135XX_REG_HOST_MEM_PORT);
+	send_param(p, S1D135XX_REG_HOST_MEM_PORT);
 
 	if (area == NULL || p->source_offset){
 		stat = transfer_file_scrambled(p, &img_file, hdr.width);
 	}else{
-		stat = transfer_image(&img_file, area, left, top, hdr.width, hdr.width, p->scrambling, p->source_offset);
+		stat = transfer_image(p, &img_file, area, left, top, hdr.width, hdr.width, p->scrambling, p->source_offset);
 	}
 	if(area){
 		free(area);
@@ -430,7 +430,7 @@ int s1d135xx_update(struct s1d135xx *p, int wfid, enum pl_update_mode mode,  con
 
 	} else {
 		send_cmd(p, command);
-		send_param(S1D135XX_WF_MODE(wfid));
+		send_param(p, S1D135XX_WF_MODE(wfid));
 	}
 
 	set_cs(p, 1);
@@ -552,9 +552,14 @@ int s1d135xx_set_epd_power(struct s1d135xx *p, int on)
 void s1d135xx_cmd(struct s1d135xx *p, uint16_t cmd, const uint16_t *params,
 		  size_t n)
 {
+	/*size_t N=n;
+	LOG("Command: 0x%04X", cmd);
+	while(N--){
+		LOG("Param %i: 0x%04X", n-N, *params++);
+	}*/
 	set_cs(p, 0);
 	send_cmd(p, cmd);
-	send_params(params, n);
+	send_params(p, params, n);
 	set_cs(p, 1);
 }
 
@@ -564,9 +569,9 @@ uint16_t s1d135xx_read_reg(struct s1d135xx *p, uint16_t reg)
 
 	set_cs(p, 0);
 	send_cmd(p, S1D135XX_CMD_READ_REG);
-	send_param(reg);
-	spi_read_bytes((uint8_t *)&val, sizeof(uint16_t));
-	spi_read_bytes((uint8_t *)&val, sizeof(uint16_t));
+	send_param(p, reg);
+	p->interface->read((uint8_t *)&val, sizeof(uint16_t));
+	p->interface->read((uint8_t *)&val, sizeof(uint16_t));
 	set_cs(p, 1);
 
 	return be16toh(val);
@@ -578,7 +583,7 @@ void s1d135xx_write_reg(struct s1d135xx *p, uint16_t reg, uint16_t val)
 
 	set_cs(p, 0);
 	send_cmd(p, S1D135XX_CMD_WRITE_REG);
-	send_params(params, ARRAY_SIZE(params));
+	send_params(p, params, ARRAY_SIZE(params));
 	set_cs(p, 1);
 }
 
@@ -695,13 +700,13 @@ static int do_fill(struct s1d135xx *p, const struct pl_area *area,
 
 	set_cs(p, 0);
 	send_cmd(p, S1D135XX_CMD_WRITE_REG);
-	send_param(S1D135XX_REG_HOST_MEM_PORT);
+	send_param(p, S1D135XX_REG_HOST_MEM_PORT);
 
 	while (lines--) {
 		uint16_t x = pixels;
 
 		while (x--)
-			send_param(val16);
+			send_param(p, val16);
 	}
 
 	set_cs(p, 1);
@@ -720,14 +725,14 @@ static int wflib_wr(void *ctx, const uint8_t *data, size_t n)
 
 	set_cs(p, 0);
 	send_cmd(p, S1D135XX_CMD_WRITE_REG);
-	send_param(S1D135XX_REG_HOST_MEM_PORT);
-	transfer_data(data, n);
+	send_param(p, S1D135XX_REG_HOST_MEM_PORT);
+	transfer_data(p, data, n);
 	set_cs(p, 1);
 
 	return 0;
 }
 
-static int transfer_file(FIL *file)
+static int transfer_file(struct s1d135xx *p, FIL *file)
 {
 	uint8_t data[DATA_BUFFER_LENGTH];
 
@@ -740,7 +745,7 @@ static int transfer_file(FIL *file)
 		if (!count)
 			break;
 
-		transfer_data(data, count);
+		transfer_data(p, data, count);
 	}
 
 	return 0;
@@ -778,7 +783,7 @@ static void memory_padding(uint8_t *source, uint8_t *target,  int s_gl, int s_sl
 
 static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 {
-	LOG("%s", __func__);
+	//LOG("%s", __func__);
 	// we need to scramble the image so we need to read the file line by line
 	uint8_t data[DATA_BUFFER_LENGTH];
 	uint8_t scrambled_data[DATA_BUFFER_LENGTH];
@@ -796,9 +801,9 @@ static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 		// scramble that line to up to 2 lines
 		if(scramble_array(data, scrambled_data, &gl, &sl ,p->scrambling)){
 			memory_padding(scrambled_data, data, gl, sl, gl, p->xres, 0, xpad );
-			transfer_data(data, p->xres*gl);
+			transfer_data(p, data, p->xres*gl);
 		}else{
-			transfer_data(data, xres);
+			transfer_data(p, data, xres);
 		}
 
 	}
@@ -806,13 +811,13 @@ static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 	return 0;
 }
 
-static int transfer_image(FIL *f, const struct pl_area *area, int left,
+static int transfer_image(struct s1d135xx *p, FIL *f, const struct pl_area *area, int left,
 			  int top, int width, int xres, uint16_t scramble, uint16_t source_offset)
 {
-	LOG("%s", __func__);
+	//LOG("%s", __func__);
 	uint8_t data[DATA_BUFFER_LENGTH];
 	uint8_t scrambled_data[DATA_BUFFER_LENGTH];
-	uint16_t idx0, aligned_xres, line_length = 0;
+	uint16_t line_length = 0;
 	log_area((struct pl_area*) area, __func__);
 	size_t line;
 	uint16_t gl = 2;
@@ -820,11 +825,9 @@ static int transfer_image(FIL *f, const struct pl_area *area, int left,
 	scramble = 0;
 
 	line_length = align16(xres);
-	aligned_xres = align8(xres/2);
-	idx0 = aligned_xres - 1;
 
 	sl =line_length/2;
-	uint8_t buffer_length = max(line_length, xres);
+	uint16_t buffer_length = max(line_length, xres);
 
 	/* Simple bounds check */
 	if (width < area->width || width < (left + area->width)) {
@@ -852,9 +855,9 @@ static int transfer_image(FIL *f, const struct pl_area *area, int left,
 				return -1;
 
 			if(scramble_array(data, scrambled_data, &gl, &sl ,scramble)){
-				transfer_data(scrambled_data, btr);
+				transfer_data(p, scrambled_data, btr);
 			}else{
-				transfer_data(data, btr);
+				transfer_data(p, data, btr);
 			}
 			remaining -= btr;
 		}
@@ -867,14 +870,14 @@ static int transfer_image(FIL *f, const struct pl_area *area, int left,
 	return 0;
 }
 
-static void transfer_data(const uint8_t *data, size_t n)
+static void transfer_data(struct s1d135xx *p, const uint8_t *data, size_t n)
 {
 	const uint16_t *data16 = (const uint16_t *)data;
 
 	n /= 2;
 
 	while (n--)
-		send_param(*data16++);
+		send_param(p, *data16++);
 }
 
 static void send_cmd_area(struct s1d135xx *p, uint16_t cmd, uint16_t mode,
@@ -887,13 +890,18 @@ static void send_cmd_area(struct s1d135xx *p, uint16_t cmd, uint16_t mode,
 		(area->width & S1D135XX_XMASK),
 		(area->height & S1D135XX_YMASK),
 	};
-
+#if VERBOSE
+	LOG("%s: Command: 0x%04X", __func__, cmd);
+#endif
 	send_cmd(p, cmd);
-	send_params(args, ARRAY_SIZE(args));
+	send_params(p, args, ARRAY_SIZE(args));
 }
 
 static void send_cmd_cs(struct s1d135xx *p, uint16_t cmd)
 {
+#if VERBOSE
+	LOG("%s: Command: 0x%04X", __func__, cmd);
+#endif
 	set_cs(p, 0);
 	send_cmd(p, cmd);
 	set_cs(p, 1);
@@ -904,22 +912,22 @@ static void send_cmd(struct s1d135xx *p, uint16_t cmd)
 	cmd = htobe16(cmd);
 
 	set_hdc(p, 0);
-	spi_write_bytes((uint8_t *)&cmd, sizeof(uint16_t));
+	p->interface->write((uint8_t *)&cmd, sizeof(uint16_t));
 	set_hdc(p, 1);
 }
 
-static void send_params(const uint16_t *params, size_t n)
+static void send_params(struct s1d135xx *p, const uint16_t *params, size_t n)
 {
 	size_t i;
 
 	for (i = 0; i < n; ++i)
-		send_param(params[i]);
+		send_param(p, params[i]);
 }
 
-static void send_param(uint16_t param)
+static void send_param(struct s1d135xx *p, uint16_t param)
 {
 	param = htobe16(param);
-	spi_write_bytes((uint8_t *)&param, sizeof(uint16_t));
+	p->interface->write((uint8_t *)&param, sizeof(uint16_t));
 }
 
 static void set_cs(struct s1d135xx *p, int state)
@@ -939,7 +947,7 @@ int set_init_rot_mode(struct s1d135xx *p)
 {
 	set_cs(p, 0);
 	send_cmd(p, S1D135XX_CMD_INIT_ROT_MODE);
-	send_param(0x0400);
+	send_param(p, 0x0400);
 	set_cs(p, 1);
 	mdelay(100);
 	return s1d135xx_wait_idle(p);

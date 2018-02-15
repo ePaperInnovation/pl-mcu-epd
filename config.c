@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Plastic Logic
+ * Copyright (C) 2017 Plastic Logic
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,6 +43,13 @@ enum endianess get_endianess(char* str){
 		return CONFIG_BIG_ENDIAN;
 	else
 		return CONFIG_LITTLE_ENDIAN;
+}
+
+enum config_interface_type get_interface_type(char* str){
+	if(strcmp(str, "PARALLEL") == 0)
+		return PARALLEL;
+	else
+		return SPI;
 }
 
 enum config_platform_board get_board(char* str){
@@ -89,8 +96,8 @@ int read_config(char* configfile, struct config *config){
 		return -1;
 	}
 	char line[81];
-	int len;
-	long int lno;
+	int len = 0;
+	int lno;
 	char config_name[16];
 	while(!stat){
 		++lno;
@@ -105,13 +112,13 @@ int read_config(char* configfile, struct config *config){
 		if (!stat) {
 			f_lseek(&cfg, 0);
 			lno = 0;
-			continue;
+			return 0;
 		}
 
 		stat = 0;
-		if ((line[0] == '\0') || (line[0] == '#'))
+		if ((line[0] == '\n') || (line[0] == '\0') || (line[0] == '#'))
 			continue;
-		LOG("%s, %i", line, stat);
+		LOG("%s, %i, %i", line, lno, len);
 
 		len = parser_read_str(line, SEP, config_name, sizeof(config_name));
 
@@ -121,12 +128,62 @@ int read_config(char* configfile, struct config *config){
 			break;
 		}
 
-		if(config->i2c_mode == NULL && strcmp(config_name, "i2c_mode")==0){
+		if(strcmp(config_name, "display_type")==0){
+			char display_type[16] = {0,};
+			len = parser_read_str(&line[len], SEP, display_type, sizeof(display_type));
+			// evaluate string
+			strncpy(config->config_display_type , display_type, sizeof(display_type));
+
+			LOG("%s", display_type);
+			if(strncmp(display_type, "D107", 4) == 0 || strncmp(display_type, "S047", 4) == 0){
+				// D107 and D107C
+				config->i2c_mode = I2C_MODE_HOST;
+				config->board = CONFIG_PLAT_RAVEN;
+				config->data_source = CONFIG_DISP_DATA_SD_ONLY;
+				config->endianess = CONFIG_LITTLE_ENDIAN;
+				config->interface_type = SPI;
+			}else if(strncmp(display_type, "S079", 4) == 0){
+				// D107 and D107C
+				config->i2c_mode = I2C_MODE_HOST;
+				config->board = CONFIG_PLAT_RAVEN;
+				config->data_source = CONFIG_DISP_DATA_SD_ONLY;
+				config->endianess = CONFIG_LITTLE_ENDIAN;
+				config->interface_type = SPI;
+				config->scrambling = 32;
+			}else if(strncmp(display_type, "S115", 4) == 0){
+				// D107 and D107C
+				config->i2c_mode = I2C_MODE_HOST;
+				config->board = CONFIG_PLAT_RAVEN;
+				config->data_source = CONFIG_DISP_DATA_SD_ONLY;
+				config->endianess = CONFIG_LITTLE_ENDIAN;
+				config->interface_type = SPI;
+				config->scrambling = 36;
+			}else if(strncmp(display_type, "S040", 4) == 0){
+				config->i2c_mode = I2C_MODE_HOST;
+				config->board = CONFIG_PLAT_Z6;
+				config->data_source = CONFIG_DISP_DATA_EEPROM_SD;
+				config->endianess = CONFIG_LITTLE_ENDIAN;
+				config->interface_type = SPI;
+			}else if(strncmp(display_type, "D054", 4) == 0){
+				config->i2c_mode = I2C_MODE_HOST;
+				config->board = CONFIG_PLAT_Z6;
+				config->data_source = CONFIG_DISP_DATA_EEPROM_SD;
+				config->endianess = CONFIG_LITTLE_ENDIAN;
+				config->interface_type = SPI;
+				config->scrambling = 418;
+			}else if(strncmp(display_type, "S049", 4) == 0){
+				config->i2c_mode = I2C_MODE_HOST;
+				config->board = CONFIG_PLAT_Z7;
+				config->data_source = CONFIG_DISP_DATA_SD_ONLY;
+				config->endianess = CONFIG_LITTLE_ENDIAN;
+				config->interface_type = SPI;
+				config->scrambling = 96;
+			}
+		}else if(config->i2c_mode == NULL && strcmp(config_name, "i2c_mode")==0){
 			char i2c_mode[16] = {0,};
 			len = parser_read_str(&line[len], SEP, i2c_mode, sizeof(i2c_mode));
 			// evaluate string
 			config->i2c_mode = get_i2c_mode(i2c_mode);
-
 		}else if(strcmp(config_name, "data_source")==0){
 			char data_source[16] = {0,};
 			len = parser_read_str(&line[len], SEP, data_source, sizeof(data_source));
@@ -139,11 +196,6 @@ int read_config(char* configfile, struct config *config){
 			// evaluate string
 			config->board = get_board(board);
 
-		}else if(strcmp(config_name, "display_type")==0){
-			char display_type[16] = {0,};
-			len = parser_read_str(&line[len], SEP, config->config_display_type, sizeof(display_type));
-			// evaluate string
-			LOG("%s", display_type);
 		}else if(strcmp(config_name, "endianess")==0){
 			char endianess[16];
 			len = parser_read_str(&line[len], SEP, endianess, sizeof(endianess));
@@ -155,6 +207,23 @@ int read_config(char* configfile, struct config *config){
 			len = parser_read_int(&line[len], SEP, &config->scrambling);
 		}else if(strcmp(config_name, "source_offset")==0){
 			len = parser_read_int(&line[len], SEP, &config->source_offset);
+		}else if(strcmp(config_name, "interface_type")==0){
+			char interface_type[16];
+			len = parser_read_str(&line[len], SEP,interface_type, sizeof(interface_type));
+			config->interface_type = get_interface_type(interface_type);
+		}else /**/if(strcmp(config_name, "pmic_timings")==0){
+			int *timings[] = {
+					&config->pmic_timings[0],
+					&config->pmic_timings[1],
+					&config->pmic_timings[2],
+					&config->pmic_timings[3],
+					&config->pmic_timings[4],
+					&config->pmic_timings[5],
+					&config->pmic_timings[6],
+					&config->pmic_timings[7],
+					NULL
+			};
+			len = parser_read_int_list(&line[len], SEP,(int**) &timings);
 		}else{
 			f_close(&cfg);
 			return 0;

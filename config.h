@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013, 2014 Plastic Logic Limited
+ * Copyright (C) 2017 Plastic Logic Limited
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,16 @@
 #ifndef INCLUDE_CONFIG_H
 #define INCLUDE_CONFIG_H 1
 
+#define HVPMIC_NB_TIMINGS 8
+#define HVPMIC_TIMING_SEQ_UP_VGNEG 0
+#define HVPMIC_TIMING_SEQ_UP_VSNEG 1
+#define HVPMIC_TIMING_SEQ_UP_VSPOS 2
+#define HVPMIC_TIMING_SEQ_UP_VGPOS 3
+#define HVPMIC_TIMING_SEQ_DOWN_VGPOS 4
+#define HVPMIC_TIMING_SEQ_DOWN_VSPOS 5
+#define HVPMIC_TIMING_SEQ_DOWN_VSNEG 6
+#define HVPMIC_TIMING_SEQ_DOWN_VGNEG 7
+
 #include "pl/hwinfo.h"
 /*
  * This file contains global configuration values for the Plastic Logic
@@ -48,6 +58,7 @@ enum endianess {
 /** Set one of the following to 1 to manually select the platform.
  * This will be used no platform can be discovered at runtime.  */
 enum config_platform_board {
+	CONFIG_PLAT_FALCON,
 	CONFIG_PLAT_RAVEN, /**< Raven board */
 	CONFIG_PLAT_Z6, /**< Hummingbird Z6.x board */
 	CONFIG_PLAT_Z7  /**< Hummingbird Z7.x board */
@@ -67,6 +78,11 @@ enum config_data_source {
 	CONFIG_DISP_DATA_SD_EEPROM    /**< Try SD card first, then EEPROM */
 };
 
+enum config_interface_type {
+	SPI,
+	PARALLEL
+};
+
 /** Set to 1 to use the power state transition demo rather than the slideshow */
 #define CONFIG_DEMO_POWERMODES        0
 
@@ -78,6 +94,7 @@ enum config_data_source {
 #define CONFIG_UART_PRINTF		0
 
 struct config {
+	enum config_interface_type interface_type;
 	enum endianess endianess; // most likely always little endian
 	enum i2c_mode_id i2c_mode;
 	enum config_data_source data_source; //SD-Card or EEPROM or both
@@ -86,6 +103,7 @@ struct config {
 	int scrambling;
 	int source_offset;
 	int waveform_version;
+	int pmic_timings[8];
 };
 
 extern struct config global_config;

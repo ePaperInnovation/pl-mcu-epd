@@ -212,7 +212,7 @@ static int cmd_update(struct pl_platform *plat, const char *line)
 	struct pl_epdc *epdc = &plat->epdc;
 	//char waveform[16];
 	//char update_mode[16];
-	int update_mode;
+	enum pl_update_mode update_mode;
 	struct pl_area area;
 	int delay_ms;
 	const char *opt;
@@ -250,7 +250,10 @@ static int cmd_update(struct pl_platform *plat, const char *line)
 		return -1;
 	}
 
-	if (epdc->update(epdc, pl_epdc_get_wfid(epdc, wfid), update_mode, &area))
+	if (epdc->update(epdc,
+			pl_epdc_get_wfid(epdc, wfid),
+			update_mode,
+			&area))
 		return -1;
 
 	mdelay(delay_ms);

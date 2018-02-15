@@ -28,6 +28,7 @@
 #include "assert.h"
 #include "vcom.h"
 #include "pmic-max17135.h"
+#include "config.h"
 
 #define LOG_TAG "max17135"
 #include "utils.h"
@@ -181,13 +182,13 @@ static int max17135_load_timings(struct max17135_info *pmic)
 int max17135_configure(struct max17135_info *pmic, struct vcom_cal *cal,
 		       int power_sequence)
 {
-	uint8_t timings[HVPMIC_NB_TIMINGS];
+	uint8_t timings[HVPMIC_NB_TIMINGS], i;
 
 	assert(pmic);
 
 	/* cal may be null if not being used */
 	pmic->cal = cal;
-
+#if 0
 	switch (power_sequence)
 	{
 	case MAX17135_SEQ_0:
@@ -213,6 +214,11 @@ int max17135_configure(struct max17135_info *pmic, struct vcom_cal *cal,
 	default:
 		return -1;
 	}
+#else
+	for (i=0; i<8; i++){
+		timings[i] = global_config.pmic_timings[i];
+	}
+#endif
 
 	if (pl_i2c_reg_read_8(pmic->i2c, pmic->i2c_addr, HVPMIC_REG_PROD_REV,
 			      &pmic->hvpmic.prod_rev))

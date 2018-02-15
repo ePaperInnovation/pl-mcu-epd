@@ -23,8 +23,9 @@
  *
  */
 
-#ifndef MSP430_SPI_H_
-#define MSP430_SPI_H_
+#ifndef MSP430_PARALLEL_H_
+#define MSP430_PARALLEL_H_
+
 
 #include <stddef.h>
 #include <stdint.h>
@@ -33,7 +34,6 @@
 struct pl_gpio;
 
 // function prototypes
-extern int msp430_spi_init(struct pl_gpio *gpio, uint8_t spi_channel, uint16_t divisor, struct pl_interface *spi);
+extern int msp430_parallel_init(struct pl_gpio *gpio, struct pl_interface *iface);
 
-
-#endif /* MSP430_SPI_H_ */
+#endif /* MSP430_PARALLEL_H_ */
