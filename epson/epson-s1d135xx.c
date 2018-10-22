@@ -364,7 +364,7 @@ int s1d135xx_load_image(struct s1d135xx *p, const char *path, uint16_t mode,
 	if (area == NULL || p->source_offset){
 		stat = transfer_file_scrambled(p, &img_file, hdr.width);
 	}else{
-		stat = transfer_image(p, &img_file, area, left, top, hdr.width, hdr.width, p->scrambling, p->source_offset);
+		stat = transfer_image(p, &img_file, area, left, top, hdr.width, p->xres, p->scrambling, p->source_offset);
 	}
 	if(area){
 		free(area);
@@ -830,7 +830,7 @@ static int transfer_image(struct s1d135xx *p, FIL *f, const struct pl_area *area
 	uint16_t buffer_length = max(line_length, xres);
 
 	/* Simple bounds check */
-	if (width < area->width || width < (left + area->width)) {
+	if (xres < area->width || xres < (left + area->width)) {
 		LOG("Invalid combination of width/left/area");
 		return -1;
 	}
