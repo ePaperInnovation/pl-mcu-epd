@@ -50,7 +50,7 @@ extern int probe_dispinfo(struct pl_dispinfo *dispinfo, struct pl_wflib *wflib,
 			  const struct i2c_eeprom *e,
 			  struct pl_wflib_eeprom_ctx *e_ctx);
 extern int probe_hvpmic(struct pl_platform *plat, struct vcom_cal *vcom_cal,
-			struct pl_epdpsu_gpio *epdpsu_gpio,
+			struct pl_epdpsu_gpio *epdpsu_gpio, struct pl_epdpsu_i2c *epdpsu_i2c,
 			struct tps65185_info *pmic_info);
 extern int probe_epdc(struct pl_platform *plat, struct s1d135xx *s1d135xx);
 
