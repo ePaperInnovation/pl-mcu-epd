@@ -574,7 +574,7 @@ uint16_t s1d135xx_read_reg(struct s1d135xx *p, uint16_t reg)
 	p->interface->read((uint8_t *)&val, sizeof(uint16_t));
 	set_cs(p, 1);
 
-	return be16toh(val);
+	return be16toh(val);  // swap bytes after read
 }
 
 void s1d135xx_write_reg(struct s1d135xx *p, uint16_t reg, uint16_t val)
@@ -909,7 +909,7 @@ static void send_cmd_cs(struct s1d135xx *p, uint16_t cmd)
 
 static void send_cmd(struct s1d135xx *p, uint16_t cmd)
 {
-	cmd = htobe16(cmd);
+	cmd = htobe16(cmd); // swap bytes before writing
 
 	set_hdc(p, 0);
 	p->interface->write((uint8_t *)&cmd, sizeof(uint16_t));
@@ -926,7 +926,7 @@ static void send_params(struct s1d135xx *p, const uint16_t *params, size_t n)
 
 static void send_param(struct s1d135xx *p, uint16_t param)
 {
-	param = htobe16(param);
+	param = htobe16(param); // swap bytes before writing
 	p->interface->write((uint8_t *)&param, sizeof(uint16_t));
 }
 
