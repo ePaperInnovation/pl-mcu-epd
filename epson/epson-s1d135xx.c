@@ -788,14 +788,22 @@ static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 	uint8_t data[DATA_BUFFER_LENGTH];
 	uint8_t scrambled_data[DATA_BUFFER_LENGTH];
 	uint16_t xpad = p->source_offset;
+	uint16_t i = 0;
 
 	for (;;) {
 		size_t count;
 		uint16_t gl = 1;
 		uint16_t sl = xres;
-		// read one line of the image
-		if (f_read(file, data, xres, &count) != FR_OK)
-			return -1;
+
+		for(i=0; i < 2; i++)
+		{
+			// read one line of the image in two parts
+			if (f_read(file, data_1 + xres/2*i, xres/2, &count) != FR_OK)
+				return -1;
+
+			if (!count)
+				break;
+		}
 
 		if (!count)
 			break;
