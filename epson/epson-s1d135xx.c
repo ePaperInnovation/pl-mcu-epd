@@ -787,7 +787,8 @@ static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 	// we need to scramble the image so we need to read the file line by line
 	uint8_t data[DATA_BUFFER_LENGTH];
 	uint8_t scrambled_data[DATA_BUFFER_LENGTH];
-	uint16_t xpad = align8(p->source_offset/2)-(align8(p->source_offset) - p->source_offset);
+	uint16_t xpad = p->source_offset;
+
 	for (;;) {
 		size_t count;
 		uint16_t gl = 1;
