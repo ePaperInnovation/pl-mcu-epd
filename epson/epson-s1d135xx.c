@@ -45,7 +45,7 @@
 /* Set to 1 to enable verbose update and EPD power on/off log messages */
 #define VERBOSE 0
 
-#define DATA_BUFFER_LENGTH              2048 // must be above maximum xres value for any supported display
+#define DATA_BUFFER_LENGTH              1024 // must be above maximum xres value for any supported display
 
 #define S1D135XX_WF_MODE(_wf)           (((_wf) << 8) & 0x0F00)
 #define S1D135XX_XMASK                  0x0FFF
@@ -785,34 +785,48 @@ static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 {
 	//LOG("%s", __func__);
 	// we need to scramble the image so we need to read the file line by line
-	uint8_t data[DATA_BUFFER_LENGTH];
-	uint8_t scrambled_data[DATA_BUFFER_LENGTH];
+	uint8_t data_1[DATA_BUFFER_LENGTH];
+	uint8_t data_2[DATA_BUFFER_LENGTH];
 	uint16_t xpad = p->source_offset;
 	uint16_t i = 0;
+	uint16_t j = 0;
+	int half_xres = xres/2;
 
 	for (;;) {
 		size_t count;
 		uint16_t gl = 1;
 		uint16_t sl = xres;
 
-		for(i=0; i < 2; i++)
+		for(i=0; i<2; i++)
 		{
 			// read one line of the image in two parts
-			if (f_read(file, data_1 + xres/2*i, xres/2, &count) != FR_OK)
+			if (f_read(file, data_1 + half_xres*i, half_xres, &count) != FR_OK)
 				return -1;
 
 			if (!count)
 				break;
+
+			//the byte count has to be half xres for each of the two runs
+			byteCnt = half_xres/2;
+			//byte Offset has to be 1st:0, 2nd:
+			byteOffset = half_xres/2*i;
+
+			//the odd pixels are stored in the lower part --> (0x00ff)
+			//the even pixels are stored in the higher part --> (0xff00)
+			for(byteIdx = 0; byteIdx < byteCnt; byteIdx++)
+			{
+				data_2[byteOffset+byteIdx] = (data_1[byteIdx*2+1] & 0xF0) | (data_1[byteIdx*2] >> 4);
+			}
 		}
 
 		if (!count)
 			break;
 		// scramble that line to up to 2 lines
-		if(scramble_array(data, scrambled_data, &gl, &sl ,p->scrambling)){
-			memory_padding(scrambled_data, data, gl, sl, gl, p->xres, 0, xpad );
-			transfer_data(p, data, p->xres*gl);
+		if(scramble_array(data_1, data_2, &gl, &sl ,p->scrambling)){
+			memory_padding(data_2, data_1, gl, sl, gl, p->xres, 0, xpad );
+			transfer_data(p, data_1, p->xres*gl);
 		}else{
-			transfer_data(p, data, xres);
+			transfer_data(p, data_1, xres);
 		}
 
 	}
