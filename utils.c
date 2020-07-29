@@ -202,15 +202,24 @@ uint16_t align16(uint16_t value){
 
 static uint16_t calcPixelIndex(uint16_t gl, uint16_t sl, uint16_t slCount);
 
+static uint8_t get4BitPerPixelValue(uint8_t* data, uint16_t pixelIdx);
+
+static void set4BitPerPixelValue(uint8_t value, uint8_t* data, uint16_t pixelIdx);
+
 uint16_t scramble_array(uint8_t* source, uint8_t* target, uint16_t *glCount, uint16_t *slCount, uint16_t scramblingMode){
 
 	uint16_t sl,gl;
 	uint16_t targetIdx;
+	uint16_t targetOdd;
 	uint16_t sourceIdx;
+	uint16_t sourceOdd;
 	uint16_t _glCount = *glCount;
 	uint16_t _slCount = *slCount;
 	uint16_t __glCount;
 	uint16_t __slCount;
+	uint8_t targetValue;
+	uint8_t sourceValue;
+	uint8_t value;
 
 	if (scramblingMode == 0){
 		// no need to scramble image data, just copy
@@ -227,8 +236,11 @@ uint16_t scramble_array(uint8_t* source, uint8_t* target, uint16_t *glCount, uin
 
 				targetIdx = calcScrambledIndex(scramblingMode, gl, sl , &__glCount, &__slCount);
 				sourceIdx = calcPixelIndex(gl, sl, _slCount);
-				target[targetIdx] = source[sourceIdx];
-				source[sourceIdx] = 0xFF;
+
+				value = get4BitPerPixelValue(source, sourceIdx);
+				set4BitPerPixelValue(value, target, targetIdx);
+				set4BitPerPixelValue(0xf, source, sourceIdx);
+
 				//LOG("sourceIdx: %i, targetIdx: %i", sourceIdx, targetIdx);
 			}
 		}
@@ -334,3 +346,49 @@ static uint16_t calcPixelIndex(uint16_t gl, uint16_t sl, uint16_t slCount)
 {
 	return gl*slCount+sl;
 }
+
+static uint8_t get4BitPerPixelValue(uint8_t* data, uint16_t pixelIdx)
+{
+	// The pixelIdx starts at 0 and ends at source line cnt - 1.
+	// That means odd source lines stored at even pixelIdx,
+	// and even source lines stored at odd pixelIdx.
+	// Since source lines counted from 1 to end of source lines,
+	// and the source driver expects data of odd source lines in the lower 4bit of the byte,
+	// even pixelIdx are stored in the lower 4bit of the byte! ;)
+
+	uint8_t value;
+	uint8_t isOddIdx = pixelIdx % 2;
+
+	value = data[pixelIdx/2];
+
+	if(isOddIdx)
+		value = (value & 0xF0) >> 4;
+	else
+		value = (value & 0x0F);
+
+	// the return value range is 0x00 ... 0x0F
+
+	return value;
+}
+
+
+static void set4BitPerPixelValue(uint8_t value, uint8_t* data, uint16_t pixelIdx)
+{
+	// The pixelIdx starts at 0 and ends at source line cnt - 1.
+	// That means odd source lines stored at even pixelIdx,
+	// and even source lines stored at odd pixelIdx.
+	// Since source lines counted from 1 to end of source lines,
+	// and the source driver expects data of odd source lines in the lower 4bit of the byte,
+	// even pixelIdx are stored in the lower 4bit of the byte! ;)
+
+	// the input value range is 0x00 ... 0x0F
+
+	uint8_t targetValue;
+	uint8_t isOddIdx = pixelIdx % 2;
+
+	if(isOddIdx)
+		data[pixelIdx/2] = ((value << 4) & 0xF0) |  (data[pixelIdx/2] & 0x0F);
+	else
+		data[pixelIdx/2] = (data[pixelIdx/2] & 0xF0) | (value & 0x0F);
+}
+

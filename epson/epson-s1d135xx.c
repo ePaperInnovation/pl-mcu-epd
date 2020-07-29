@@ -781,15 +781,66 @@ static void memory_padding(uint8_t *source, uint8_t *target,  int s_gl, int s_sl
 		}
 }
 
+static void memory_padding_4BitPerPixel(uint8_t *source, uint8_t *target,  int s_gl, int s_sl, int t_gl, int t_sl, int o_gl, int o_sl)
+{
+	int sl, gl;
+	int _gl_offset = 0;
+	int _sl_offset = 0;
+	uint16_t value = 0;
+
+	uint8_t oddNbrOfSourceLineShift = o_sl % 2;
+	o_sl = o_sl / 2;
+	s_sl = s_sl / 2;
+	t_sl = t_sl / 2;
+
+	if(o_gl > 0)
+		_gl_offset = o_gl;
+	else
+		_gl_offset = t_gl - s_gl;
+
+	if(o_sl > 0)
+		_sl_offset = o_sl;
+	else
+		_sl_offset = t_sl - s_sl;
+
+	if(oddNbrOfSourceLineShift)
+	{
+		for (gl=0; gl<s_gl; gl++)
+			for(sl=0; sl<s_sl; sl++)
+			{
+				value  = target [(gl+_gl_offset)*t_sl+(sl+_sl_offset)] & 0x0F;
+				value |= (source [gl*s_sl+sl] << 4) & 0xF0;
+				target [(gl+_gl_offset)*t_sl+(sl+_sl_offset)] = value;
+
+				value  = target [(gl+_gl_offset)*t_sl+(sl+_sl_offset+1)] & 0xF0;
+				value |= (source [gl*s_sl+sl]) & 0x0F;
+				target [(gl+_gl_offset)*t_sl+(sl+_sl_offset+1)] = value;
+
+				source[gl*s_sl+sl] = 0xFF;
+			}
+	}
+	else
+	{
+		for (gl=0; gl<s_gl; gl++)
+			for(sl=0; sl<s_sl; sl++)
+			{
+				target [(gl+_gl_offset)*t_sl+(sl+_sl_offset)] = source [gl*s_sl+sl];
+				source[gl*s_sl+sl] = 0xFF;
+			}
+	}
+}
+
 static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 {
 	//LOG("%s", __func__);
 	// we need to scramble the image so we need to read the file line by line
 	uint8_t data_1[DATA_BUFFER_LENGTH];
 	uint8_t data_2[DATA_BUFFER_LENGTH];
-	uint16_t xpad = p->source_offset;
+	uint16_t xpad = 0; //p->source_offset;
 	uint16_t i = 0;
-	uint16_t j = 0;
+	uint16_t byteIdx;
+	uint16_t byteCnt;
+	uint16_t byteOffset;
 	int half_xres = xres/2;
 
 	for (;;) {
@@ -821,11 +872,15 @@ static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 
 		if (!count)
 			break;
+
 		// scramble that line to up to 2 lines
-		if(scramble_array(data_1, data_2, &gl, &sl ,p->scrambling)){
-			memory_padding(data_2, data_1, gl, sl, gl, p->xres, 0, xpad );
-			transfer_data(p, data_1, p->xres*gl);
-		}else{
+		if(scramble_array(data_2, data_1, &gl, &sl ,p->scrambling))
+		{
+			memory_padding_4BitPerPixel(data_1, data_2, gl, sl, gl, p->xres, 0, xpad);
+			transfer_data(p, data_2, p->xres*gl);
+		}
+		else
+		{
 			transfer_data(p, data_1, xres);
 		}
 
