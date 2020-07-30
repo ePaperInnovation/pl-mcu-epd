@@ -45,7 +45,8 @@
 /* Set to 1 to enable verbose update and EPD power on/off log messages */
 #define VERBOSE 0
 
-#define DATA_BUFFER_LENGTH              1024 // must be above maximum xres value for any supported display
+#define DATA_BUFFER_LENGTH              2048
+#define IMAGE_BUFFER_LENGTH				4096 // must be above maximum xres value for any supported display
 
 #define S1D135XX_WF_MODE(_wf)           (((_wf) << 8) & 0x0F00)
 #define S1D135XX_XMASK                  0x0FFF
@@ -834,8 +835,8 @@ static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 {
 	//LOG("%s", __func__);
 	// we need to scramble the image so we need to read the file line by line
-	uint8_t data_1[DATA_BUFFER_LENGTH];
-	uint8_t data_2[DATA_BUFFER_LENGTH];
+	uint8_t data_1[IMAGE_BUFFER_LENGTH];
+	uint8_t data_2[IMAGE_BUFFER_LENGTH];
 	uint16_t xpad = 0; //p->source_offset;
 	uint16_t i = 0;
 	uint16_t byteIdx;
@@ -891,7 +892,7 @@ static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 //		data_2[171] = 0x00;
 //		data_2[173] = 0x00;
 
-		sl = 1024 * 2;
+		sl = xres;
 		scramble_array(data_2, data_1, &gl, &sl, 36);
 
 		if(firstTime)
@@ -907,7 +908,7 @@ static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 			printf("1023 --> %#2x\n", data_1[1023]);
 		}
 
-		transfer_data(p, data_1, DATA_BUFFER_LENGTH);
+		transfer_data(p, data_1, p->xres);
 
 		continue;
 
@@ -931,8 +932,8 @@ static int transfer_image(struct s1d135xx *p, FIL *f, const struct pl_area *area
 			  int top, int width, int xres, uint16_t scramble, uint16_t source_offset)
 {
 	//LOG("%s", __func__);
-	uint8_t data[DATA_BUFFER_LENGTH];
-	uint8_t scrambled_data[DATA_BUFFER_LENGTH];
+	uint8_t data[IMAGE_BUFFER_LENGTH];
+	uint8_t scrambled_data[IMAGE_BUFFER_LENGTH];
 	uint16_t line_length = 0;
 	log_area((struct pl_area*) area, __func__);
 	size_t line;
