@@ -889,26 +889,29 @@ static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 //
 //		for(j=857; j<=1023; j++)
 //			data_2[j] = 0x00;
-
+//
 		for(j=0; j<=1023; j++)
 			data_2[j] = 0xFF;
 
 		data_2[167] = 0x00;
+		data_2[169] = 0x00;
+		data_2[171] = 0x00;
+		data_2[173] = 0x00;
 
-		sl = 1024;
-		scramble_array(data_2, data_1, &gl, &sl, 32);
+		sl = 1024 * 2;
+		scramble_array(data_2, data_1, &gl, &sl, 36);
 
 		if(firstTime)
 		{
 			firstTime--;
-			printf("0 --> %x\n", data_1[0]);
-			printf("83 --> %x\n", data_1[83]);
-			printf("428 --> %x\n", data_1[428]);
-			printf("511 --> %x\n", data_1[511]);
-			printf("512 --> %x\n", data_1[512]);
-			printf("595 --> %x\n", data_1[595]);
-			printf("940 --> %x\n", data_1[940]);
-			printf("1023 --> %x\n", data_1[1023]);
+			printf("0 --> %#2x\n", data_1[0]);
+			printf("83 --> %#2x\n", data_1[83]);
+			printf("428 --> %#2x\n", data_1[428]);
+			printf("511 --> %#2x\n", data_1[511]);
+			printf("512 --> %#2x\n", data_1[512]);
+			printf("595 --> %#2x\n", data_1[595]);
+			printf("940 --> %#2x\n", data_1[940]);
+			printf("1023 --> %#2x\n", data_1[1023]);
 		}
 
 		transfer_data(p, data_1, DATA_BUFFER_LENGTH);
