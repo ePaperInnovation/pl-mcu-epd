@@ -646,6 +646,13 @@ int s1d135xx_load_register_overrides(struct s1d135xx *p)
 
 	f_close(&file);
 
+	printf("------ after load register overrides ------\n");
+	printf("0x0300: %x\n", s1d135xx_read_reg(p, 0x0300));
+	s1d135xx_write_reg(p, 0x0306, 0x1000);
+	printf("0x0306: %x\n", s1d135xx_read_reg(p, 0x0306));
+	printf("0x0378: %x\n", s1d135xx_read_reg(p, 0x0378));
+	printf("0x030A: %x\n", s1d135xx_read_reg(p, 0x030A));
+
 	return stat;
 }
 
@@ -835,8 +842,8 @@ static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 {
 	//LOG("%s", __func__);
 	// we need to scramble the image so we need to read the file line by line
-	uint8_t data_1[IMAGE_BUFFER_LENGTH];
-	uint8_t data_2[IMAGE_BUFFER_LENGTH];
+	uint8_t* data_1 = calloc(IMAGE_BUFFER_LENGTH, sizeof(uint8_t));
+	uint8_t* data_2 = calloc(IMAGE_BUFFER_LENGTH, sizeof(uint8_t));
 	uint16_t xpad = 0; //p->source_offset;
 	uint16_t i = 0;
 	uint16_t byteIdx;
@@ -854,7 +861,7 @@ static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 		{
 			// read one line of the image in two parts
 			if (f_read(file, data_1, half_xres, &count) != FR_OK)
-				return -1;
+				goto return_err;
 
 			if (!count)
 				break;
@@ -871,6 +878,15 @@ static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 				data_2[byteOffset+byteIdx] = (data_1[byteIdx*2+1] & 0xF0) | ((data_1[byteIdx*2] >> 4) & 0x0F);
 			}
 		}
+
+		for(i=0; i<1024; i++)
+			data_2[1024+i] = data_2[i];
+
+		for(i=0; i<1024; i++)
+			data_2[2048+i] = data_2[i];
+
+		for(i=0; i<1024; i++)
+			data_2[3072+i] = data_2[i];
 
 		if (!count)
 			break;
@@ -892,7 +908,7 @@ static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 //		data_2[171] = 0x00;
 //		data_2[173] = 0x00;
 
-		sl = xres;
+		sl = xres * 4;
 		scramble_array(data_2, data_1, &gl, &sl, 36);
 
 		if(firstTime)
@@ -925,7 +941,17 @@ static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 
 	}
 
+	free(data_1);
+	free(data_2);
+
 	return 0;
+
+return_err:
+
+	free(data_1);
+	free(data_2);
+
+	return -1;
 }
 
 static int transfer_image(struct s1d135xx *p, FIL *f, const struct pl_area *area, int left,
