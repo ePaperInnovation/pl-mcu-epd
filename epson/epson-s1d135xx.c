@@ -838,7 +838,6 @@ static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 	uint8_t data_2[DATA_BUFFER_LENGTH];
 	uint16_t xpad = 0; //p->source_offset;
 	uint16_t i = 0;
-	uint16_t j = 0;
 	uint16_t byteIdx;
 	uint16_t byteCnt;
 	uint16_t byteOffset;
@@ -864,19 +863,13 @@ static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 			//byte Offset has to be 1st:0, 2nd:
 			byteOffset = byteCnt*i;
 
-			for(j=0; j<half_xres;j++)
-				data_1[j] = 0xff;
-
 			//the odd pixels are stored in the lower part --> (0x00ff)
 			//the even pixels are stored in the higher part --> (0xff00)
 			for(byteIdx = 0; byteIdx < byteCnt; byteIdx++)
 			{
-				data_2[byteOffset+byteIdx] = 0xff;
-				//data_2[byteOffset+byteIdx] = (data_1[byteIdx*2+1] & 0xF0) | ((data_1[byteIdx*2] >> 4) & 0x0F);
+				data_2[byteOffset+byteIdx] = (data_1[byteIdx*2+1] & 0xF0) | ((data_1[byteIdx*2] >> 4) & 0x0F);
 			}
 		}
-
-		// --> get byte filled from 0 to 689
 
 		if (!count)
 			break;
@@ -890,13 +883,13 @@ static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 //		for(j=857; j<=1023; j++)
 //			data_2[j] = 0x00;
 //
-		for(j=0; j<=1023; j++)
-			data_2[j] = 0xFF;
-
-		data_2[167] = 0x00;
-		data_2[169] = 0x00;
-		data_2[171] = 0x00;
-		data_2[173] = 0x00;
+//		for(j=0; j<=1023; j++)
+//			data_2[j] = 0xFF;
+//
+//		data_2[167] = 0x00;
+//		data_2[169] = 0x00;
+//		data_2[171] = 0x00;
+//		data_2[173] = 0x00;
 
 		sl = 1024 * 2;
 		scramble_array(data_2, data_1, &gl, &sl, 36);
