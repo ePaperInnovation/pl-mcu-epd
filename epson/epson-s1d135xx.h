@@ -102,8 +102,7 @@ extern int s1d135xx_fill(struct s1d135xx *p, uint16_t mode, unsigned bpp,
 extern int s1d135xx_pattern_check(struct s1d135xx *p, uint16_t height,
 			uint16_t width, uint16_t checker_size, uint16_t mode);
 extern int s1d135xx_load_image(struct s1d135xx *p, const char *path,
-			       uint16_t mode, unsigned bpp,
-			       struct pl_area *area, int left, int top);
+			       uint16_t mode, struct pl_area *area, int left, int top);
 extern int s1d135xx_update(struct s1d135xx *p, int wfid,
 				enum pl_update_mode mode,
 				const struct pl_area *area);

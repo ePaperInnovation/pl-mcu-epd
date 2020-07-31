@@ -220,7 +220,7 @@ static int s1d13524_load_image(struct pl_epdc *epdc, const char *path,
 {
 	struct s1d135xx *p = epdc->data;
 
-	return s1d135xx_load_image(p, path, S1D13524_LD_IMG_4BPP, 8, area,
+	return s1d135xx_load_image(p, path, S1D13524_LD_IMG_4BPP, area,
 				   left, top);
 }
 

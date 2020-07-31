@@ -313,8 +313,7 @@ int s1d135xx_pattern_check(struct s1d135xx *p, uint16_t height, uint16_t width, 
 }
 
 int s1d135xx_load_image(struct s1d135xx *p, const char *path, uint16_t mode,
-			unsigned bpp, struct pl_area *area, int left,
-			int top)
+			struct pl_area *area, int left, int top)
 {
 	struct pnm_header hdr;
 	FIL img_file;
@@ -852,6 +851,8 @@ static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 	int half_xres = xres/2;
 	int firstTime = 1;
 
+	printf("Transfer file starts ...\n");
+
 	for (;;) {
 		size_t count;
 		uint16_t gl = 1;
@@ -879,74 +880,41 @@ static int transfer_file_scrambled(struct s1d135xx *p, FIL *file, int xres)
 			}
 		}
 
-		for(i=0; i<1024; i++)
-			data_2[1024+i] = data_2[i];
-
-		for(i=0; i<1024; i++)
-			data_2[2048+i] = data_2[i];
-
-		for(i=0; i<1024; i++)
-			data_2[3072+i] = data_2[i];
-
 		if (!count)
 			break;
 
-//		for(j=0; j<=166; j++)
-//			data_2[j] = 0x00;
-//
-//		for(j=167; j<=856; j++)
-//			data_2[j] = 0xFF;
-//
-//		for(j=857; j<=1023; j++)
-//			data_2[j] = 0x00;
-//
-//		for(j=0; j<=1023; j++)
-//			data_2[j] = 0xFF;
-//
-//		data_2[167] = 0x00;
-//		data_2[169] = 0x00;
-//		data_2[171] = 0x00;
-//		data_2[173] = 0x00;
+		sl = xres;
 
-		sl = xres * 4;
-		scramble_array(data_2, data_1, &gl, &sl, 36);
-
-		if(firstTime)
-		{
-			firstTime--;
-			printf("0 --> %#2x\n", data_1[0]);
-			printf("83 --> %#2x\n", data_1[83]);
-			printf("428 --> %#2x\n", data_1[428]);
-			printf("511 --> %#2x\n", data_1[511]);
-			printf("512 --> %#2x\n", data_1[512]);
-			printf("595 --> %#2x\n", data_1[595]);
-			printf("940 --> %#2x\n", data_1[940]);
-			printf("1023 --> %#2x\n", data_1[1023]);
-		}
-
-		transfer_data(p, data_1, p->xres);
-
-		continue;
-
-		// scramble that line to up to 2 lines
-		if(scramble_array(data_2, data_1, &gl, &sl ,p->scrambling))
-		{
-			memory_padding_4BitPerPixel(data_1, data_2, gl, sl, gl, p->xres, 0, xpad);
-			transfer_data(p, data_2, p->xres*gl);
-		}
+		if(scramble_array(data_2, data_1, &gl, &sl, p->scrambling, 4))
+			transfer_data(p, data_1, p->xres);
 		else
-		{
-			transfer_data(p, data_1, xres);
-		}
+			transfer_data(p, data_2, p->xres);
+
+		// memory padding currently not supported!!!
+
+//		// scramble that line to up to 2 lines
+//		if(scramble_array(data_2, data_1, &gl, &sl ,p->scrambling, 4))
+//		{
+//			memory_padding_4BitPerPixel(data_1, data_2, gl, sl, gl, p->xres, 0, xpad);
+//			transfer_data(p, data_2, p->xres*gl);
+//		}
+//		else
+//		{
+//			transfer_data(p, data_1, xres);
+//		}
 
 	}
 
 	free(data_1);
 	free(data_2);
 
+	printf("... transfer file ends.\n");
+
 	return 0;
 
 return_err:
+
+	printf("... transfer file ends with error!\n");
 
 	free(data_1);
 	free(data_2);
@@ -954,12 +922,14 @@ return_err:
 	return -1;
 }
 
+/*
+ * Until now transfer_image does not support scrambling.
+ */
 static int transfer_image(struct s1d135xx *p, FIL *f, const struct pl_area *area, int left,
 			  int top, int width, int xres, uint16_t scramble, uint16_t source_offset)
 {
 	//LOG("%s", __func__);
-	uint8_t data[IMAGE_BUFFER_LENGTH];
-	uint8_t scrambled_data[IMAGE_BUFFER_LENGTH];
+	uint8_t* data = calloc(IMAGE_BUFFER_LENGTH, sizeof(uint8_t));
 	uint16_t line_length = 0;
 	log_area((struct pl_area*) area, __func__);
 	size_t line;
@@ -975,11 +945,11 @@ static int transfer_image(struct s1d135xx *p, FIL *f, const struct pl_area *area
 	/* Simple bounds check */
 	if (xres < area->width || xres < (left + area->width)) {
 		LOG("Invalid combination of width/left/area");
-		return -1;
+		goto return_err;
 	}
 
 	if (f_lseek(f, f->fptr + ((long)top * (unsigned long)width)) != FR_OK)
-		return -1;
+		goto return_err;
 
 	for (line = area->height; line; --line) {
 		size_t count;
@@ -987,7 +957,7 @@ static int transfer_image(struct s1d135xx *p, FIL *f, const struct pl_area *area
 
 		/* Find the first relevant pixel (byte) on this line */
 		if (f_lseek(f, f->fptr + (unsigned long)left) != FR_OK)
-			return -1;
+			goto return_err;
 
 		/* Transfer data of interest in chunks */
 		while (remaining) {
@@ -995,22 +965,25 @@ static int transfer_image(struct s1d135xx *p, FIL *f, const struct pl_area *area
 					remaining : buffer_length;
 
 			if (f_read(f, data, btr, &count) != FR_OK)
-				return -1;
+				goto return_err;
 
-			if(scramble_array(data, scrambled_data, &gl, &sl ,scramble)){
-				transfer_data(p, scrambled_data, btr);
-			}else{
-				transfer_data(p, data, btr);
-			}
+			transfer_data(p, data, btr);
+
 			remaining -= btr;
 		}
 
 		/* Move file pointer to end of line */
 		if (f_lseek(f, f->fptr + (width - (left + area->width))) != FR_OK)
-			return -1;
+			goto return_err;
 	}
 
+	free(data);
 	return 0;
+
+return_err:
+
+	free(data);
+	return -1;
 }
 
 static void transfer_data(struct s1d135xx *p, const uint8_t *data, size_t n)
