@@ -450,14 +450,14 @@ int s1d13541_extract_prom_blob(uint8_t *data)
        sn |= ((uint32_t) data[4]) << 8;
        sn |= data[5];
 
-       ltoa(bp, c_bp);
-       ltoa(sn, c_sn);
+       ltoa(bp, c_bp, 10);
+       ltoa(sn, c_sn, 10);
        printf("bp = %s\n", c_bp);
        printf("sn = %s\n", c_sn);
 
        // waveform version
        wf = data[6] >> 2 & 0x3f;
-       ltoa(wf, c_wf);
+       ltoa(wf, c_wf, 10);
        printf("wf = %s\n", c_wf);
 
        // vcom
