@@ -31,6 +31,7 @@
 #include <pl/interface.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <intrinsics.h>
 
 struct pl_gpio;
 struct pl_wflib;

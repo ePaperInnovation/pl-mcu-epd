@@ -142,7 +142,7 @@ int read_config(char* configfile, struct config *config){
 			if(strncmp(display_type, "D107", 4) == 0 || strncmp(display_type, "S047", 4) == 0){
 				// D107 and D107C
 				config->i2c_mode = I2C_MODE_HOST;
-				config->board = CONFIG_PLAT_RAVEN;
+				config->board = CONFIG_PLAT_FALCON;
 				config->data_source = CONFIG_DISP_DATA_SD_ONLY;
 				config->endianess = CONFIG_LITTLE_ENDIAN;
 				config->interface_type = SPI;

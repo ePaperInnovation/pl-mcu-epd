@@ -26,6 +26,7 @@
  */
 
 #include <epson/epson-s1d135xx.h>
+#include <ite/ite-it8951.h>
 #include <pl/platform.h>
 #include <pl/gpio.h>
 #include <pl/interface.h>
@@ -45,6 +46,7 @@
 #include "msp430-sdcard.h"
 #include "msp430-uart.h"
 #include "msp430-spi.h"
+#include <msp430.h>
 
 #define LOG_TAG "main"
 #include "utils.h"
@@ -148,9 +150,9 @@ static struct pl_epdpsu_i2c g_epdpsu_i2c = {
 
 /* Optional pins used in Epson SPI interface */
 /* HRDY indicates controller is ready */
-#define SPI_HRDY_USED     0 /* HRDY pin is used */
+#define SPI_HRDY_USED     1 /* HRDY pin is used */
 /* HDC required by the 524 controller, optional on others */
-#define SPI_HDC_USED      1 /* HDC pin is used */
+#define SPI_HDC_USED      0 /* HDC pin is used */
 
 /* Basic signals to enable Epson clock and PSU */
 #define EPSON_VCC_EN      MSP430_GPIO(1,7)
@@ -213,6 +215,17 @@ static struct s1d135xx_data init_g_s1d135xx_data(void){
 		g_s1d135xx_data.hdc = EPSON_HDC;
 	return g_s1d135xx_data;
 }
+
+static struct it8951_data init_g_it8951_data(void){
+    struct it8951_data g_it8951_data = {
+        EPSON_CS_0, EPSON_HRDY};
+    if (SPI_HRDY_USED)
+        g_it8951_data.hrdy = EPSON_HRDY;
+       return g_it8951_data;
+}
+
+
+
 /* --- SPI bus configuration --- */
 
 #define SPI_CHANNEL 0
@@ -283,7 +296,9 @@ int main_init(void)
 	struct pl_i2c host_i2c;
 	struct pl_i2c disp_i2c;
 
-	struct s1d135xx_data g_s1d135xx_data = init_g_s1d135xx_data();
+	//struct s1d135xx_data g_s1d135xx_data = init_g_s1d135xx_data();
+
+	struct it8951_data g_it8951_data = init_g_it8951_data();
 	//if(CONFIG_HWINFO_EEPROM){
 	const struct i2c_eeprom hw_eeprom = {
 		&host_i2c, I2C_HWINFO_EEPROM_ADDR, EEPROM_24LC014,
@@ -299,7 +314,8 @@ int main_init(void)
 	struct pl_dispinfo dispinfo;
 	struct vcom_cal vcom_cal;
 	struct tps65185_info pmic_info;
-	struct s1d135xx s1d135xx = { &g_s1d135xx_data, &g_plat.gpio };
+	//struct s1d135xx s1d135xx = { &g_s1d135xx_data, &g_plat.gpio };
+	struct it8951 it8951 = {&g_it8951_data, &g_plat.gpio};
 	FATFS sdcard;
 	unsigned i;
 
@@ -331,7 +347,7 @@ int main_init(void)
 		abort_msg("Epson GPIO init failed", ABORT_MSP430_GPIO_INIT);
 
 	/* hard-reset Epson controller to avoid errors during soft reset */
-	s1d135xx_hard_reset(&g_plat.gpio, &g_s1d135xx_data);
+	//s1d135xx_hard_reset(&g_plat.gpio, &g_s1d135xx_data);
 
 	/* initialise Epson parallel interface GPIOs */
 	for (i = 0; i < ARRAY_SIZE(g_epson_parallel); ++i) {
@@ -341,6 +357,14 @@ int main_init(void)
 		}
 	}
 
+//	/* initialise ITE SPI Interface GPIOs */
+//	for (i = 0; i < ARRAY_SIZE(g_epson_spi); ++i) {
+//	        if (g_plat.gpio.config(g_epson_spi[i],
+//	                       PL_GPIO_OUTPUT | PL_GPIO_INIT_L)) {
+//	            abort_msg("Epson SPI GPIO init failed", ABORT_MSP430_GPIO_INIT);
+//	        }
+//	    }
+
 	/* initialise MSP430 I2C master 0 */
 	if (msp430_i2c_init(&g_plat.gpio, 0, &host_i2c))
 		abort_msg("I2C init failed", ABORT_MSP430_COMMS_INIT);
@@ -349,12 +373,27 @@ int main_init(void)
 	if(global_config.interface_type == PARALLEL){
 		if (parallel_init(&g_plat.gpio, &epson_parallel))
 			abort_msg("Parallel Interface init failed", ABORT_MSP430_COMMS_INIT);
-		s1d135xx.interface = &epson_parallel;
+		//s1d135xx.interface = &epson_parallel;
 	}else{
-		if (spi_init(&g_plat.gpio, SPI_CHANNEL, SPI_DIVISOR, &epson_spi))
+
+		if (spi_init(&g_plat.gpio, SPI_CHANNEL, 2, &epson_spi))
 			abort_msg("SPI init failed", ABORT_MSP430_COMMS_INIT);
-		s1d135xx.interface = &epson_spi;
-	}
+		it8951.interface = &epson_spi;
+
+		//Initialise HRDY_Pin as Input
+		P2DIR &= ~BIT7;
+		P2OUT &= ~BIT7;
+		P2REN |= BIT7;
+
+//		  if(P2IN & BIT7)
+//		    {
+//		        LOG("High");
+//		    }
+//		    else
+//		    {
+//		        LOG("LOW");
+//		    }
+		}
 
 	/* initialise SD-card */
 	SDCard_plat = &g_plat;
@@ -365,8 +404,8 @@ int main_init(void)
 	/* read configuration */
 	if(read_config("config.txt", &global_config))
 		abort_msg("Read config file failed!",ABORT_CONFIG);
-	s1d135xx.scrambling = global_config.scrambling;
-	s1d135xx.source_offset = global_config.source_offset;
+	it8951.scrambling = global_config.scrambling;
+	it8951.source_offset = global_config.source_offset;
 
 	struct pl_hwinfo g_hwinfo_default = init_hw_info_default();
 
@@ -384,7 +423,7 @@ int main_init(void)
 	pl_hwinfo_log(g_plat.hwinfo);
 
 	/* initialise platform I2C bus */
-	if (probe_i2c(&g_plat, &s1d135xx, &host_i2c, &disp_i2c))
+	if (probe_i2c(&g_plat, &it8951, &host_i2c, &disp_i2c))
 		abort_msg("Platform I2C init failed", ABORT_I2C_INIT);
 
 	/* load display information */
@@ -397,18 +436,18 @@ int main_init(void)
 	pl_dispinfo_log(&dispinfo);
 
 	/* initialise EPD HV-PSU and HV-PMIC */
-	g_epdpsu_i2c.i2c = g_plat.i2c;
-	if (probe_hvpmic(&g_plat, &vcom_cal, &g_epdpsu_gpio, &g_epdpsu_i2c, &pmic_info))
-		abort_msg("HV-PMIC and EPD PSU init failed", ABORT_HVPSU_INIT);
+	//g_epdpsu_i2c.i2c = g_plat.i2c;
+	//if (probe_hvpmic(&g_plat, &vcom_cal, &g_epdpsu_gpio, &g_epdpsu_i2c, &pmic_info))
+		//abort_msg("HV-PMIC and EPD PSU init failed", ABORT_HVPSU_INIT);
 
 	/* initialise EPDC */
-	if (probe_epdc(&g_plat, &s1d135xx))
+	if (probe_epdc(&g_plat, &it8951))
 		abort_msg("EPDC init failed", ABORT_EPDC_INIT);
 
 	// debug -> read and print PROM content (MaterialID, WF-ID, VCOM)
 	uint8_t blob[16];
-	s1d13541_read_prom(&s1d135xx, blob);
-	s1d13541_extract_prom_blob(blob);
+	//s1d13541_read_prom(&s1d135xx, blob);
+	//s1d13541_extract_prom_blob(blob);
 
 	/* run the application */
 	if (app_demo(&g_plat))
