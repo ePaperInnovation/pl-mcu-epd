@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <intrinsics.h>
+#include <ite/ite-epdc.h>
 
 
 //Built in I80 Command Code
@@ -104,15 +105,12 @@ struct it8951 {
     int measured_temp;
     unsigned xres;
     unsigned yres;
+    TDWord imgBufBaseAdrr;
     struct {
         uint8_t needs_update:1;
     } flags;
 };
 
-//typedef for variables
-typedef unsigned char TByte; //1 byte
-typedef unsigned short TWord; //2 bytes
-typedef unsigned long TDWord; //4 bytes
 
 typedef struct IT8951LdImgInfo
 {
@@ -144,7 +142,7 @@ typedef struct
 
 }I80IT8951DevInfo;
 
-void it8951_load_init_code(struct it8951 *p, void *pBuf);
+void it8951_load_init_code(struct it8951 *p, I80IT8951DevInfo *pBuf);
 extern int it8951_clear_init(struct it8951 *p);
 extern int it8951_update(struct it8951 *p, int wfid, enum pl_update_mode mode, const struct pl_area *area);
 extern int it8951_set_power_state(struct it8951 *p, enum pl_epdc_power_state state);
@@ -155,6 +153,7 @@ extern int it8951_wait_update_end(struct it8951 *p);
 extern void it8951_cmd(struct it8951 *p, uint16_t cmd, const TWord *params, size_t n);
 extern uint16_t it8951_read_reg(struct it8951 *p, uint16_t reg);
 extern void it8951_write_reg(struct it8951 *p, uint16_t reg, uint16_t val, int size);
+extern void it8951_update_Temp(struct it8951 *p, int tempMode, int temp);
 extern void waitForHRDY(struct it8951 *p);
 
 

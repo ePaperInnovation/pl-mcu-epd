@@ -18,6 +18,11 @@ extern int ite_epdc_init(struct pl_epdc *epdc,
                const struct pl_dispinfo *dispinfo,
                struct it8951 *it8951);
 
+//typedef for variables
+typedef unsigned char TByte; //1 byte
+typedef unsigned short TWord; //2 bytes
+typedef unsigned long TDWord; //4 bytes
+
 //extern int epson_epdc_init_s1d13541(struct pl_epdc *epdc);
 
 #endif /* ITE_ITE_EPDC_H_ */

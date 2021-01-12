@@ -16,7 +16,7 @@
 #define LOG_TAG "ite-epdc"
 #include "utils.h"
 
-I80IT8951DevInfo pBuf;
+I80IT8951DevInfo *pBuf;
 
 static int ite_epdc_clear_init(struct pl_epdc *epdc)
 {
@@ -64,6 +64,8 @@ int ite_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo,
                   struct it8951 *it8951)
 {
 
+    pBuf = (I80IT8951DevInfo*) malloc(sizeof(I80IT8951DevInfo));
+
     int stat;
     stat = 0;
 
@@ -88,13 +90,16 @@ int ite_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo,
     if (stat)
         return -1;
 
-    it8951_load_init_code(it8951, &pBuf);
+    it8951_load_init_code(it8951, pBuf);
 
-    it8951->xres = epdc->xres;
-    it8951->yres = epdc->yres;
+    it8951_update_Temp(it8951, epdc->temp_mode, 23);
+
+    epdc->xres = it8951->xres;
+    epdc->yres = it8951->yres;
 
     LOG("Ready %dx%d", epdc->xres, epdc->yres);
 
-    return 0;
+    it8951_clear_init(it8951);
+
     return 0;
 }

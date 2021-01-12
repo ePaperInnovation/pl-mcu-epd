@@ -50,51 +50,65 @@ static void gpio_i80_16_cmd_out(struct it8951 *p, TWord usCmd);
 static void gpio_i80_16_data_out(struct it8951 *p, TWord usCmd, int size);
 static TWord* gpio_i80_16b_data_in(struct it8951 *p, int size);
 TWord swap_endianess(TWord in);
+static void set_image_buffer_base_adress(TDWord ulImgBufAddr);
 
-void it8951_load_init_code(struct it8951 *p, void *pBuf)
+void it8951_load_init_code(struct it8951 *p, I80IT8951DevInfo *pBuf)
 {
-    I80IT8951DevInfo *pstDevInfo;
-    I80IT8951DevInfo *pBuf_ = (I80IT8951DevInfo*) pBuf;
-
     send_cmd(p, USDEF_I80_CMD_GET_DEV_INFO);
 
-    __delay_cycles(25);
-
-    pstDevInfo = (I80IT8951DevInfo*) gpio_i80_16b_data_in(
+    pBuf = (I80IT8951DevInfo*) gpio_i80_16b_data_in(
             p, (sizeof(I80IT8951DevInfo) / 2));
 
+    p->xres = pBuf->usPanelW;
+    p->yres = pBuf->usPanelH;
+
     //Show Device information of IT8951
-    printf("Panel(W,H) = (%d,%d)\n", pstDevInfo->usPanelW,
-           pstDevInfo->usPanelH);
-    uint32_t imageAdress;
-    imageAdress = (uint32_t) pstDevInfo->usImgBufAddrL
-            | ((uint32_t) pstDevInfo->usImgBufAddrH << 16);
-    printf("Image Buffer Address = %X\r\n", imageAdress);
+    LOG("Panel(W,H) = (%d,%d)\r\n", pBuf->usPanelW, pBuf->usPanelH);
+    TDWord imageAdress = 0xffffffff;
+    //printf("Image Address %x\r\n", imageAdress);
+    imageAdress = 0x0;
+    imageAdress = (TDWord) pBuf->usImgBufAddrL;
+    imageAdress = imageAdress | ((TDWord) (pBuf->usImgBufAddrH) << 16);
+
+    p->imgBufBaseAdrr = imageAdress;
+
+    LOG("Image Buffer Address = %X%X\r\n", pBuf->usImgBufAddrH, imageAdress);
 
     //Show Firmware and LUT Version
-    printf("FW Version = %s\r\n", swap_endianess(*pstDevInfo->usFWVersion));
-    printf("LUT Version = %s\r\n", swap_endianess(*pstDevInfo->usLUTVersion));
+    //printf("FW Version = %s\r\n", *pstDevInfo->usFWVersion);
+    //printf("LUT Version = %s\r\n",*pstDevInfo->usLUTVersion);
 
     it8951_write_reg(p, I80CPCR, 0x0001, 1);
 //    gpio_i80_16_cmd_out(p, USDEF_I80_CMD_GET_DEV_INFO);
 //    //Wait for ready ?
 
+}
+
+void it8951_update_Temp(struct it8951 *p, int tempMode, int temp)
+{
     send_cmd(p, USDEF_I80_CMD_FORCE_SET_TEMP);
 
     TWord dataTemp[2];
-    dataTemp[0] = 0x0001;
-    dataTemp[1] = 0x0023;
+    dataTemp[0] = 0x01;
+    dataTemp[1] = temp;
 
-    __delay_cycles(25);
+    mdelay(1);
 
     gpio_i80_16_data_out(p, dataTemp[0], 1);
 
-    __delay_cycles(25);
-
+    mdelay(1);
+    //
     gpio_i80_16_data_out(p, dataTemp[1], 1);
 
-    //it8951_cmd(p, USDEF_I80_CMD_GET_DEV_INFO, NULL, 2);
+}
 
+void set_image_buffer_base_adress(TDWord ulImgBufAddr)
+{
+    TWord usWordH = (TWord) ((ulImgBufAddr >> 16) & 0x0000FFFF);
+    TWord usWordL = (TWord) (ulImgBufAddr & 0x0000FFFF);
+    //Write LISAR Reg
+    it8951_write_reg(NULL, LISAR + 2, usWordH, 2);
+    it8951_write_reg(NULL, LISAR, usWordL, 2);
 }
 
 TWord swap_endianess(TWord in)
@@ -115,30 +129,13 @@ TWord swap_endianess(TWord in)
 
 static int get_hrdy(struct it8951 *p)
 {
-//    if (p->data->hrdy != PL_GPIO_NONE)
-//    {
-//
-//        int i = 0;
-//        int test = 15;
-//
-//        while (i++ < 10000)
-//        {
-//            test = pl_gpio_get(p->gpio, p->data->hrdy);
-//            if (pl_gpio_get(p->gpio, p->data->hrdy) == 1)
-//            {
-//                return 0;
-//            }
-//            uint16_t status;
-//
-//        }
-//    }
     if (p->data->hrdy != PL_GPIO_NONE)
         return pl_gpio_get(p->gpio, p->data->hrdy);
 }
 
 void waitForHRDY(struct it8951 *p)
 {
-    unsigned long timeout = 200000;
+    unsigned long timeout = 100000;
 
     if (P2IN & BIT7)
     {
@@ -163,8 +160,6 @@ void waitForHRDY(struct it8951 *p)
 static void set_cs(struct it8951 *p, int state)
 {
     pl_gpio_set(p->gpio, p->data->cs0, state);
-
-    __delay_cycles(500);
 }
 
 static void send_cmd(struct it8951 *p, uint16_t cmd)
@@ -219,62 +214,124 @@ static void gpio_i80_16_data_out(struct it8951 *p, TWord usCmd, int size)
     waitForHRDY(p);
 
     set_cs(p, 0);
+
+    udelay(10);
+
     stat = p->interface->write((uint8_t*) preamble_, 2);
+
+    udelay(10);
 
     //__delay_cycles(2000);
     waitForHRDY(p);
 
+    udelay(10);
+
     stat = p->interface->write((uint8_t*) data_, size * 2);
+
+    udelay(10);
 
     set_cs(p, 1);
 }
 
 static TWord* gpio_i80_16b_data_in(struct it8951 *p, int size)
 {
-    TWord usData;
+//    TWord usData;
     TWord *iResult = (TWord*) malloc(size * sizeof(TWord));
+//
+//    TByte preamble_[2];
+//    preamble_[0] = (TByte) 0x10;
+//    preamble_[1] = (TByte) 0x00;
+//
+//    int stat = 0;
+//
+//    waitForHRDY(p);
+//
+//    set_cs(p, 0);
+//
+//    udelay(10);
+//
+//    stat = p->interface->write((uint8_t*) preamble_, 2);
+//
+//    udelay(10);
+//
+//    int i = 0;
+//    for (i = 0; i < (size + 1); i++)
+//    {
+//        // throw away first read, as this only contains rubbish (as documented by ITE)
+//        if (i == 0)
+//        {
+//            waitForHRDY(p);
+//            udelay(10);
+//            p->interface->read((uint8_t*) &usData, 2);
+//            udelay(10);
+//            //next read will give the value that you want to receive
+//        }
+//        else
+//        {
+//            waitForHRDY(p);
+//            udelay(10);
+//            p->interface->read((uint8_t*) &usData, 2);
+//            udelay(10);
+//            iResult[i - 1] = swap_endianess(usData);
+//            // waitForHRDY(p);
+//            udelay(10);
+//
+//        }
+//
+//    }
+//    set_cs(p, 1);
+    TWord wPreamble = 0;
+    TWord wDummy;
+    TDWord i;
 
-    TByte preamble_[2];
-    preamble_[0] = (TByte) 0x10;
-    preamble_[1] = (TByte) 0x00;
+    //set type and direction
+    wPreamble = 0x1000;
 
-    int stat = 0;
-
+    //Send Preamble before reading data
+    wPreamble = MY_WORD_SWAP(wPreamble);
     waitForHRDY(p);
-
     set_cs(p, 0);
+    p->interface->write((uint8_t*) &wPreamble, 2);
 
-    stat = p->interface->write((uint8_t*) preamble_, 2);
+    udelay(20);
 
-    int i = 0;
-    for (i = 0; i < (size + 1); i++)
-    {
-        // throw away first read, as this only contains rubbish (as documented by ITE)
-        if (i == 0)
-        {
-            waitForHRDY(p);
-            p->interface->read(&usData, 2);
-            //set_cs(p, 1);
-            waitForHRDY(p);
-        }
-        //next read will give the value that you want to receive
-        else
-        {
-//            __delay_cycles(25);
-            p->interface->read(&usData, 2);
-            iResult[i - 1] = swap_endianess(usData);
-            waitForHRDY(p);
-            // __delay_cycles(1);
+    //Read Dummy (under IT8951 SPI to I80 spec)
+    waitForHRDY(p);
+    set_cs(p, 0);
+    p->interface->read((uint8_t*) &wDummy, 2);
 
-        }
-
-    }
+    //Read Data
+    waitForHRDY(p);
+    p->interface->read((uint8_t*) iResult, size * 2);
     set_cs(p, 1);
+
+    //Convert Endian (depends on your host)
+    for (i = 0; i < size; i++)
+    {
+        iResult[i] = MY_WORD_SWAP(iResult[i]);
+    }
+    mdelay(5);
     return iResult;
 }
 
 extern int it8951_clear_init(struct it8951 *p)
 {
+    //Set VCom Value
+    send_cmd(p, USDEF_I80_CMD_VCOM_CTR);
+    gpio_i80_16_data_out(p, 0x01, 1);
+    gpio_i80_16_data_out(p, 1500, 1);
+
+    TWord data2;
+    data2 = it8951_read_reg(p, 0x1e16);
+
+    //FLIP Bit 12 which corresponds to GPIO12/Pin 66 on ITE
+    data2 &= ~(1 << 12); // switches GPIO5 of ITE (Power Up Pin) low
+
+    send_cmd(p, USDEF_I80_CMD_POWER_CTR);
+    gpio_i80_16_data_out(p, 0x00, 1);
+
+    it8951_write_reg(p, 0x1e16, data2, 1);
+
 }
 
 extern int it8951_update(struct it8951 *p, int wfid, enum pl_update_mode mode,
@@ -316,6 +373,11 @@ extern int it8951_wait_update_end(struct it8951 *p)
 
 extern uint16_t it8951_read_reg(struct it8951 *p, uint16_t reg)
 {
+    TWord *usData;
+    gpio_i80_16_cmd_out(p, IT8951_TCON_REG_RD);
+    gpio_i80_16_data_out(p, reg, 1);
+    usData = gpio_i80_16b_data_in(p, 1);
+    return *usData;
 
 }
 
@@ -323,9 +385,7 @@ extern void it8951_write_reg(struct it8951 *p, uint16_t reg, uint16_t val,
                              int size)
 {
     gpio_i80_16_cmd_out(p, IT8951_TCON_REG_WR);
-    //__delay_cycles(2000);
     gpio_i80_16_data_out(p, reg, 1);
-    //__delay_cycles(2000);
     gpio_i80_16_data_out(p, val, size);
 
 }

@@ -109,7 +109,7 @@ int msp430_spi_read_bytes(uint8_t *buff, uint8_t size)
         *buff++ = UCxnRXBUF;						// store the byte
 //        if (size % 2 == 0)
 //        {
-//            //waitForHRDY(NULL);              // Write byte
+//            waitForHRDY(NULL);              // Write byte
 //
 //        }
     }
@@ -134,11 +134,11 @@ int msp430_spi_write_bytes(uint8_t *buff, uint8_t size)
         while (!(UCxnIFG & UCTXIFG))
             ;              // Wait for transmit buffer empty
         UCxnTXBUF = *buff++;
-        if (size % 2 == 0)
-        {
-            waitForHRDY(NULL);              // Write byte
-
-        }
+//        if (size % 2 == 0)
+//        {
+//            //waitForHRDY(NULL);              // Write byte
+//
+//        }
     }
     while (UCxnSTAT & UCBUSY)
         ;                     // Wait for all TX/RX to finish

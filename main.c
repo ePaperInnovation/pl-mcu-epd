@@ -336,10 +336,10 @@ int main_init(void)
 	LOG("------------------------");
 	LOG("Starting pl-mcu-epd %s", VERSION);
 
-	/* initialize HV-PMIC GPIOs */
-	if (pl_gpio_config_list(&g_plat.gpio, g_hvpmic_gpios,
-				ARRAY_SIZE(g_hvpmic_gpios)))
-		abort_msg("HV-PMIC GPIO init failed", ABORT_MSP430_GPIO_INIT);
+//	/* initialize HV-PMIC GPIOs */
+//	if (pl_gpio_config_list(&g_plat.gpio, g_hvpmic_gpios,
+//				ARRAY_SIZE(g_hvpmic_gpios)))
+//		abort_msg("HV-PMIC GPIO init failed", ABORT_MSP430_GPIO_INIT);
 
 	/* initialise Epson GPIOs */
 	if (pl_gpio_config_list(&g_plat.gpio, g_epson_gpios,
@@ -349,13 +349,13 @@ int main_init(void)
 	/* hard-reset Epson controller to avoid errors during soft reset */
 	//s1d135xx_hard_reset(&g_plat.gpio, &g_s1d135xx_data);
 
-	/* initialise Epson parallel interface GPIOs */
-	for (i = 0; i < ARRAY_SIZE(g_epson_parallel); ++i) {
-		if (g_plat.gpio.config(g_epson_parallel[i],
-				       PL_GPIO_OUTPUT | PL_GPIO_INIT_L)) {
-			abort_msg("Epson parallel GPIO init failed", ABORT_MSP430_GPIO_INIT);
-		}
-	}
+//	/* initialise Epson parallel interface GPIOs */
+//	for (i = 0; i < ARRAY_SIZE(g_epson_parallel); ++i) {
+//		if (g_plat.gpio.config(g_epson_parallel[i],
+//				       PL_GPIO_OUTPUT | PL_GPIO_INIT_L)) {
+//			abort_msg("Epson parallel GPIO init failed", ABORT_MSP430_GPIO_INIT);
+//		}
+//	}
 
 //	/* initialise ITE SPI Interface GPIOs */
 //	for (i = 0; i < ARRAY_SIZE(g_epson_spi); ++i) {
