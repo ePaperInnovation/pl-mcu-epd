@@ -45,8 +45,8 @@
 
 #endif
 
-int msp430_spi_read_bytes(uint8_t *buff, uint8_t size);
-int msp430_spi_write_bytes(uint8_t *buff, uint8_t size);
+int msp430_spi_read_bytes(uint8_t *buff, uint16_t size);
+int msp430_spi_write_bytes(uint8_t *buff, uint16_t size);
 /* We only support a single SPI bus and that bus is defined at compile
  * time.
  */
@@ -69,12 +69,12 @@ int msp430_spi_init(struct pl_gpio *gpio, uint8_t spi_channel, uint16_t divisor,
     // SPI setting, MSb first, 8bit, Master Mode, 3 pin SPI, Synch Mode
     UCxnCTL0 |= (UCMST | UCSYNC | UCMSB | UCCKPH);
 
-    //UCxnCTL0 |= 0xA9; //B9
+    // UCxnCTL0 |= 0xA9; //B9
 
     UCxnCTL1 |= UCSSEL_2;					// SMCLK is selected
     UCxnBR0 = (divisor & 0x00ff);			// f_UCxCLK = 20MHz/1 = 20MHz
     UCxnBR1 = ((divisor >> 8) & 0x00ff);	//
-    UCxnIE = 0x00;							// All interrupts disabled
+    UCxnIE = 0xFF;							// All interrupts disabled
 
     UCxnCTL1 &= ~UCSWRST;                  	// Release state machine from reset
 
@@ -91,7 +91,7 @@ void msp430_spi_close(void)
     UCxnCTL1 |= UCSWRST;                      // Put state machine in reset
 }
 
-int msp430_spi_read_bytes(uint8_t *buff, uint8_t size)
+int msp430_spi_read_bytes(uint8_t *buff, uint16_t size)
 {
     unsigned int gie = __get_SR_register() & GIE;	// Store current GIE state
 
@@ -106,12 +106,12 @@ int msp430_spi_read_bytes(uint8_t *buff, uint8_t size)
         UCxnTXBUF = 0x00;			// Write dummy byte to generate spi clock
         while (!(UCxnIFG & UCRXIFG))
             ;				// Wait for RX buffer (full)
+        // printf("Test: %x\r\n", *buff);
         *buff++ = UCxnRXBUF;						// store the byte
-//        if (size % 2 == 0)
-//        {
-//            waitForHRDY(NULL);              // Write byte
-//
-//        }
+        if (size % 2 == 0)
+        {
+            waitForHRDY(NULL);              // Write byte
+        }
     }
 
     __bis_SR_register(gie);                        // Restore original GIE state
@@ -119,7 +119,7 @@ int msp430_spi_read_bytes(uint8_t *buff, uint8_t size)
     return 0;
 }
 
-int msp430_spi_write_bytes(uint8_t *buff, uint8_t size)
+int msp430_spi_write_bytes(uint8_t *buff, uint16_t size)
 {
     unsigned int gie = __get_SR_register() & GIE;   // Store current GIE state
 
@@ -134,11 +134,6 @@ int msp430_spi_write_bytes(uint8_t *buff, uint8_t size)
         while (!(UCxnIFG & UCTXIFG))
             ;              // Wait for transmit buffer empty
         UCxnTXBUF = *buff++;
-//        if (size % 2 == 0)
-//        {
-//            //waitForHRDY(NULL);              // Write byte
-//
-//        }
     }
     while (UCxnSTAT & UCBUSY)
         ;                     // Wait for all TX/RX to finish

@@ -40,8 +40,8 @@ struct spi_metadata {
 struct pl_interface
 {
   int cs_gpio; 		// chip select gpio
-  int (*read)(uint8_t *buff, uint8_t size);
-  int (*write)(uint8_t *buff, uint8_t size);
+  int (*read)(uint8_t *buff, uint16_t size);
+  int (*write)(uint8_t *buff, uint16_t size);
   int (*set_cs)(uint8_t cs);
 
   struct spi_metadata *mSpi;

@@ -55,6 +55,10 @@
 #define IT8951_4BPP   2
 #define IT8951_8BPP   3
 
+//Endian Type
+#define IT8951_LDIMG_L_ENDIAN   0
+#define IT8951_LDIMG_B_ENDIAN   1
+
 //-----------------------------------------------------------------------
 // IT8951 TCon Registers defines
 //-----------------------------------------------------------------------
@@ -105,7 +109,7 @@ struct it8951 {
     int measured_temp;
     unsigned xres;
     unsigned yres;
-    TDWord imgBufBaseAdrr;
+    uint32_t imgBufBaseAdrr;
     struct {
         uint8_t needs_update:1;
     } flags;
@@ -114,31 +118,31 @@ struct it8951 {
 
 typedef struct IT8951LdImgInfo
 {
-    TWord usEndianType; //little or Big Endian
-    TWord usPixelFormat; //bpp
-    TWord usRotate; //Rotate mode
-    TDWord ulStartFBAddr; //Start address of source Frame buffer
-    TDWord ulImgBufBaseAddr;//Base address of target image buffer
+    uint16_t usEndianType; //little or Big Endian
+    uint16_t usPixelFormat; //bpp
+    uint16_t usRotate; //Rotate mode
+    uint32_t ulStartFBAddr; //Start address of source Frame buffer
+    uint32_t ulImgBufBaseAddr;//Base address of target image buffer
 
 }IT8951LdImgInfo;
 
 typedef struct IT8951AreaImgInfo
 {
-    TWord usX;
-    TWord usY;
-    TWord usWidth;
-    TWord usHeight;
+    uint16_t usX;
+    uint16_t usY;
+    uint16_t usWidth;
+    uint16_t usHeight;
 
 }IT8951AreaImgInfo;
 
 typedef struct
 {
-    TWord usPanelW;
-    TWord usPanelH;
-    TWord usImgBufAddrL;
-    TWord usImgBufAddrH;
-    TWord usFWVersion[8]; //16 Bytes String
-    TWord usLUTVersion[8]; //16 Bytes String
+    uint16_t usPanelW;
+    uint16_t usPanelH;
+    uint16_t usImgBufAddrL;
+    uint16_t usImgBufAddrH;
+    uint16_t usFWVersion[8]; //16 Bytes String
+    uint16_t usLUTVersion[8]; //16 Bytes String
 
 }I80IT8951DevInfo;
 
@@ -150,11 +154,16 @@ extern int it8951_set_epd_power(struct it8951 *p, int on);
 extern int it8951_load_image(struct it8951 *p, const char *path, uint16_t mode, unsigned bpp, struct pl_area *area, int left, int top);
 extern int it8951_wait_idle(struct it8951 *p);
 extern int it8951_wait_update_end(struct it8951 *p);
-extern void it8951_cmd(struct it8951 *p, uint16_t cmd, const TWord *params, size_t n);
+extern void it8951_cmd(struct it8951 *p, uint16_t cmd, const uint16_t *params, size_t n);
 extern uint16_t it8951_read_reg(struct it8951 *p, uint16_t reg);
 extern void it8951_write_reg(struct it8951 *p, uint16_t reg, uint16_t val, int size);
 extern void it8951_update_Temp(struct it8951 *p, int tempMode, int temp);
-extern void waitForHRDY(struct it8951 *p);
+extern int waitForHRDY(struct it8951 *p);
+extern int it8951_waitForDisplayReady(struct it8951 *p);
+extern void it8951_setVcom(struct it8951 *p, int vcom);
+extern int it8951_fill(struct it8951 *p, const struct pl_area *area, uint8_t g);
+
+//extern void it8951_hostAreaPackedPixelWrite(struct it8951 *p, );
 
 
 
