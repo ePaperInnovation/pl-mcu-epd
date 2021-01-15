@@ -48,39 +48,39 @@ static void set_cs(struct it8951 *p, int state);
 static void send_cmd(struct it8951 *p, uint16_t cmd);
 static void gpio_i80_16_cmd_out(struct it8951 *p, uint16_t usCmd);
 static void gpio_i80_16_data_out(struct it8951 *p, uint16_t usCmd, int size);
-static uint16_t* gpio_i80_16b_data_in(struct it8951 *p, int size);
+static uint16_t* gpio_i80_16b_data_in(struct it8951 *p, int size,
+                                      uint16_t *resultBuffer);
 static int it8951_writeDataBurst(struct it8951 *p, uint16_t *usData,
                                  uint16_t size);
 uint16_t swap_endianess(uint16_t in);
 static void set_image_buffer_base_adress(struct it8951 *p,
                                          uint32_t ulImgBufAddr);
-static int do_fill(struct it8951 *p, const struct pl_area *area, unsigned bpp,
-                   uint8_t g);
+static void do_fill(struct it8951 *p, const struct pl_area *area, unsigned bpp,
+                    uint8_t g);
 
 uint8_t *fillBuffer;
 I80IT8951DevInfo devInfo;
-struct pl_area *areaInfo;
+struct pl_area areaInfo[1];
 
-void it8951_load_init_code(struct it8951 *p, I80IT8951DevInfo *pBuf)
+void it8951_load_init_code(struct it8951 *p)
 {
-    //it8951_set_epd_power(p, 1);
-//    send_cmd(p, IT8951_TCON_BYPASS_I2C);
-//    gpio_i80_16_data_out(p, 0x01, 1);
-//    gpio_i80_16_data_out(p, 0x68, 1);
-//    gpio_i80_16_data_out(p, 0x01, 1);
-//    gpio_i80_16_data_out(p, 0x01, 1);
-//    gpio_i80_16_data_out(p, 0x20, 1);
 
-// it8951_update_Temp(p, 0, 23);
-//it8951_set_epd_power(p, 1);
+    I80IT8951DevInfo *pBuf = (I80IT8951DevInfo*) malloc(
+            sizeof(I80IT8951DevInfo));
 
     send_cmd(p, USDEF_I80_CMD_GET_DEV_INFO);
 
     pBuf = (I80IT8951DevInfo*) gpio_i80_16b_data_in(
-            p, (sizeof(I80IT8951DevInfo) / 2));
+            p, (sizeof(I80IT8951DevInfo) / 2), pBuf);
 
-    p->xres = pBuf->usPanelW;
-    p->yres = pBuf->usPanelH;
+//    int i = 0;
+//    for (i = 0; i < (sizeof(I80IT8951DevInfo) / 2); i++)
+//    {
+//        pBuf[i] = (I80IT8951DevInfo) gpio_i80_16b_data_in(p, 1);
+//    }
+
+    p->xres = 1280; //pBuf->usPanelW;
+    p->yres = 960; //pBuf->usPanelH;
 
     devInfo = *pBuf;
 
@@ -97,6 +97,7 @@ void it8951_load_init_code(struct it8951 *p, I80IT8951DevInfo *pBuf)
     LOG("Image Buffer Address = %X%X\r\n", pBuf->usImgBufAddrH, imageAdress);
 
     //it8951_set_epd_power(p, 0);
+    free(pBuf);
 
     it8951_write_reg(p, I80CPCR, 0x0001, 1);
 }
@@ -247,10 +248,11 @@ static void gpio_i80_16_data_out(struct it8951 *p, uint16_t usCmd, int size)
     set_cs(p, 1);
 }
 
-static uint16_t* gpio_i80_16b_data_in(struct it8951 *p, int size)
+static uint16_t* gpio_i80_16b_data_in(struct it8951 *p, int size,
+                                      uint16_t *iResult)
 {
 //    uint16_t usData;
-    uint16_t *iResult = (uint16_t*) malloc(size * sizeof(uint16_t));
+    //uint16_t *iResult = (uint16_t*) malloc(size * sizeof(uint16_t));
 
     uint16_t wPreamble = 0;
     uint16_t wDummy;
@@ -293,8 +295,24 @@ extern int it8951_clear_init(struct it8951 *p)
 }
 
 extern int it8951_update(struct it8951 *p, int wfid, enum pl_update_mode mode,
-                         const struct pl_area *area)
+                         struct pl_area *area)
 {
+    uint16_t height, width, top, left;
+
+    if (mode == 0)
+    {
+        height = p->yres;
+        width = p->xres;
+        top = 0;
+        left = 0;
+    }
+    else
+    {
+        height = area->height;
+        width = area->width;
+        top = area->top;
+        left = area->left;
+    }
 
     send_cmd(p, IT8951_TCON_BYPASS_I2C);
     gpio_i80_16_data_out(p, 0x01, 1);
@@ -318,36 +336,39 @@ extern int it8951_update(struct it8951 *p, int wfid, enum pl_update_mode mode,
     gpio_i80_16_data_out(p, 0x00, 1);
 
     send_cmd(p, USDEF_I80_CMD_DPY_AREA);
-    gpio_i80_16_data_out(p, 0, 1);
-    gpio_i80_16_data_out(p, 0, 1);
-    gpio_i80_16_data_out(p, 1280, 1);
-    gpio_i80_16_data_out(p, 960, 1);
+    gpio_i80_16_data_out(p, top, 1);
+    gpio_i80_16_data_out(p, left, 1);
+    gpio_i80_16_data_out(p, width, 1);
+    gpio_i80_16_data_out(p, height, 1);
     gpio_i80_16_data_out(p, wfid, 1);
 
     it8951_waitForDisplayReady(p);
     waitForHRDY(p);
 
-    uint16_t reg7;
+    uint16_t *reg7 = malloc(sizeof(uint16_t));
     send_cmd(p, IT8951_TCON_BYPASS_I2C);
     gpio_i80_16_data_out(p, 0x00, 1);
     gpio_i80_16_data_out(p, 0x68, 1);
     gpio_i80_16_data_out(p, 0x07, 1);
     gpio_i80_16_data_out(p, 0x01, 1);
-    reg7 = swap_endianess(*gpio_i80_16b_data_in(p, 1));
+    reg7 = swap_endianess(*gpio_i80_16b_data_in(p, 1, reg7));
 
     LOG("PMIC Register 7 after update: 0x%x\r\n", reg7);
 
     waitForHRDY(p);
 
-    uint16_t reg8;
+    uint16_t reg8 = malloc(sizeof(uint16_t));
     send_cmd(p, IT8951_TCON_BYPASS_I2C);
     gpio_i80_16_data_out(p, 0x00, 1);
     gpio_i80_16_data_out(p, 0x68, 1);
     gpio_i80_16_data_out(p, 0x08, 1);
     gpio_i80_16_data_out(p, 0x01, 1);
-    reg8 = swap_endianess(*gpio_i80_16b_data_in(p, 1));
+    reg8 = swap_endianess(*gpio_i80_16b_data_in(p, 1, reg8));
 
     LOG("PMIC Register 8 after update: 0x%x\r\n", reg8);
+
+    free(reg7);
+    free(reg8);
 
     it8951_set_epd_power(p, 0);
 
@@ -365,8 +386,8 @@ extern int it8951_set_epd_power(struct it8951 *p, int on)
 
     if (on == 1)
     {
-        uint16_t data;
-        data = it8951_read_reg(p, 0x1e16);
+        uint16_t data = malloc(sizeof(uint16_t));
+        data = it8951_read_reg(p, 0x1e16, data);
 
         send_cmd(p, USDEF_I80_CMD_POWER_CTR);
         gpio_i80_16_data_out(p, 0x01, 1);
@@ -376,13 +397,15 @@ extern int it8951_set_epd_power(struct it8951 *p, int on)
         //FLIP Bit 12 which corresponds to GPIO12/Pin 66 on ITE
         data |= (1 << 12); // switches GPIO5 of ITE (Power Up Pin) low
         //it8951_write_reg(p, 0x1e16, data, 1);
+        free(data);
 
     }
     else if (on == 0)
     {
 
-        uint16_t data2;
-        data2 = it8951_read_reg(p, 0x1e16);
+        uint16_t data2 = malloc(sizeof(uint16_t));
+
+        data2 = it8951_read_reg(p, 0x1e16, data2);
 
         send_cmd(p, USDEF_I80_CMD_POWER_CTR);
         gpio_i80_16_data_out(p, 0x00, 1);
@@ -392,6 +415,7 @@ extern int it8951_set_epd_power(struct it8951 *p, int on)
         //FLIP Bit 11 which corresponds to GPIO11/Pin 65 on ITE to enable VCom_Switch
         //data2 &= ~(1 << 11); // switches GPIO5 of ITE (Power COM Pin) low
         it8951_write_reg(p, 0x1e16, data2, 1);
+        free(data2);
     }
 
     //mdelay(250);
@@ -403,6 +427,113 @@ extern int it8951_load_image(struct it8951 *p, const char *path, uint16_t mode,
                              unsigned bpp, struct pl_area *area, int left,
                              int top)
 {
+//    struct pnm_header hdr;
+//    FIL img_file;
+//    int stat;
+//
+//    if (f_open(&img_file, path, FA_READ) != FR_OK)
+//        return -1;
+//
+//    if (pnm_read_header(&img_file, &hdr))
+//        return -1;
+//
+//    set_image_buffer_base_adress(p, 0x00122A70);
+//
+//#if 0 // Area display bug at 4.7" display
+//    if (area != NULL)
+//    {
+//        uint16_t usArg[5];
+//        gpio_i80_16_cmd_out(p, IT8951_TCON_LD_IMG_AREA);
+//        usArg[0] = (IT8951_LDIMG_L_ENDIAN << 8) | (bpp << 4)
+//                | (IT8951_ROTATE_0);
+//        usArg[1] = area->top;
+//        usArg[2] = area->left;
+//        usArg[3] = area->width;
+//        usArg[4] = area->height;
+//        gpio_i80_16_data_out(p, *usArg, 5);
+//    }
+//    else
+//    {
+//        uint16_t usArg;
+//        //Setting Argument for Load image start
+//        usArg = (IT8951_LDIMG_L_ENDIAN << 8) | (IT8951_8BPP << 4)
+//                | (IT8951_ROTATE_0);
+//        gpio_i80_16_cmd_out(p, IT8951_TCON_LD_IMG);
+//        gpio_i80_16_data_out(p, usArg, 1);
+//    }
+//#else
+//    if (area == NULL)
+//    {
+//        if (p->scrambling)
+//        {
+//            uint16_t usArg;
+//            //Setting Argument for Load image start
+//            usArg = (IT8951_LDIMG_L_ENDIAN << 8) | (IT8951_8BPP << 4)
+//                    | (IT8951_ROTATE_0);
+//            gpio_i80_16_cmd_out(p, IT8951_TCON_LD_IMG);
+//            gpio_i80_16_data_out(p, usArg, 1);
+//        }
+//        else
+//        {
+//            area = (struct pl_area*) malloc(sizeof(struct pl_area));
+//            area->top = 0;
+//            area->left = 0;
+//            area->width = p->xres;
+//            area->height = p->yres;
+//            uint16_t usArg[5];
+//            gpio_i80_16_cmd_out(p, IT8951_TCON_LD_IMG_AREA);
+//            usArg[0] = (IT8951_LDIMG_L_ENDIAN << 8) | (bpp << 4)
+//                    | (IT8951_ROTATE_0);
+//            usArg[1] = area->top;
+//            usArg[2] = area->left;
+//            usArg[3] = area->width;
+//            usArg[4] = area->height;
+//            gpio_i80_16_data_out(p, *usArg, 5);
+//        }
+//    }
+//    else
+//    {
+//        send_cmd_area(p, S1D135XX_CMD_LD_IMG_AREA, mode,
+//                      area /* area_scrambled */);
+//    }
+//
+//#endif
+//    set_cs(p, 1);
+//
+//    if (s1d135xx_wait_idle(p))
+//        return -1;
+//
+//    set_cs(p, 0);
+//    send_cmd(p, S1D135XX_CMD_WRITE_REG);
+//    send_param(p, S1D135XX_REG_HOST_MEM_PORT);
+//
+//    if (area == NULL || p->source_offset)
+//    {
+//        stat = transfer_file_scrambled(p, &img_file, hdr.width);
+//    }
+//    else
+//    {
+//        stat = transfer_image(p, &img_file, area, left, top, hdr.width, p->xres,
+//                              p->scrambling, p->source_offset);
+//    }
+//    if (area)
+//    {
+//        free(area);
+//    }
+//
+//    set_cs(p, 1);
+//    f_close(&img_file);
+//
+//    if (stat)
+//        return -1;
+//
+//    if (s1d135xx_wait_idle(p))
+//        return -1;
+//
+//    send_cmd_cs(p, S1D135XX_CMD_LD_IMG_END);
+//
+//    return s1d135xx_wait_idle(p);
+
     return waitForHRDY(p);
 }
 
@@ -422,17 +553,19 @@ extern void it8951_cmd(struct it8951 *p, uint16_t cmd, const uint16_t *params,
 extern int it8951_wait_update_end(struct it8951 *p)
 {
     //Check IT8951 Register LUTAFSR => NonZero ¡V Busy, 0 - Free
-    while (it8951_read_reg(p, LUTAFSR))
+    uint16_t *usData = malloc(sizeof(uint16_t));
+    while (it8951_read_reg(p, LUTAFSR, usData))
         ;
+    free(usData);
     return 0;
 }
 
-extern uint16_t it8951_read_reg(struct it8951 *p, uint16_t reg)
+extern uint16_t it8951_read_reg(struct it8951 *p, uint16_t reg,
+                                uint16_t *usData)
 {
-    uint16_t *usData;
     gpio_i80_16_cmd_out(p, IT8951_TCON_REG_RD);
     gpio_i80_16_data_out(p, reg, 1);
-    usData = gpio_i80_16b_data_in(p, 1);
+    usData = gpio_i80_16b_data_in(p, 1, usData);
     return *usData;
 
 }
@@ -448,9 +581,11 @@ extern void it8951_write_reg(struct it8951 *p, uint16_t reg, uint16_t val,
 
 int it8951_waitForDisplayReady(struct it8951 *p)
 {
+    uint16_t *usData = malloc(sizeof(uint16_t));
     //Check IT8951 Register LUTAFSR => NonZero ¡V Busy, 0 - Free
-    while (it8951_read_reg(p, LUTAFSR))
+    while (it8951_read_reg(p, LUTAFSR, usData))
         ;
+    free(usData);
     return 0;
 }
 
@@ -467,12 +602,12 @@ void it8951_setVcom(struct it8951 *p, int vcom)
 int it8951_fill(struct it8951 *p, const struct pl_area *area, uint8_t g)
 {
 
+    //areaInfo = malloc(sizeof(struct pl_area));
     areaInfo->height = p->yres;
     areaInfo->width = p->xres;
     areaInfo->top = 0;
     areaInfo->left = 0;
 
-    //fillBuffer = malloc(devInfo.usPanelW * devInfo.usPanelH);
     LOG("Filling Area: (%dx%d)\r\n", devInfo.usPanelW, devInfo.usPanelH);
 
 //    uint32_t imageAdress = 0xffffffff;
@@ -491,62 +626,76 @@ int it8951_fill(struct it8951 *p, const struct pl_area *area, uint8_t g)
     gpio_i80_16_cmd_out(p, IT8951_TCON_LD_IMG);
     gpio_i80_16_data_out(p, usArg, 1);
 
-    return do_fill(p, areaInfo, 8, g);
+    do_fill(p, areaInfo, 8, g);
 
-    //memset(fillBuffer, g, devInfo.usPanelW * devInfo.usPanelH);
+    free(areaInfo);
+
+    waitForHRDY(p);
 
 }
 
-int do_fill(struct it8951 *p, const struct pl_area *area, unsigned bpp,
-            uint8_t g)
+void do_fill(struct it8951 *p, const struct pl_area *area, unsigned bpp,
+             uint8_t g)
 {
-    uint16_t val16;
-    uint16_t lines;
-    uint16_t pixels;
+//    uint16_t val16;
+//    uint16_t lines;
+//    uint16_t pixels;
 
     /* Only 16-bit transfers for now... */
     assert(!(area->width % 2));
 
-    switch (bpp)
-    {
-    case 1:
-    case 2:
-        LOG("Unsupported bpp");
-        return -1;
-    case 4:
-        val16 = g & 0xF0;
-        val16 |= val16 >> 4;
-        val16 |= val16 << 8;
-        pixels = area->width / 4;
-        break;
-    case 8:
-        val16 = g | (g << 8);
-        pixels = area->width / 2;
-        break;
-    default:
-        assert_fail("Invalid bpp");
-    }
+//    switch (bpp)
+//    {
+//    case 1:
+//    case 2:
+//        LOG("Unsupported bpp");
+//        return -1;
+//    case 4:
+//        val16 = g & 0xF0;
+//        val16 |= val16 >> 4;
+//        val16 |= val16 << 8;
+//        pixels = area->width / 4;
+//        break;
+//    case 8:
+//        val16 = g | (g << 8);
+//        pixels = area->width / 2;
+//        break;
+//    default:
+//        assert_fail("Invalid bpp");
+//    }
 
-    lines = area->height;
+    //lines = area->height;
 
-    waitForHRDY(p);
-
-    uint16_t greyValue = val16;
-    // Split uint16_t Data (2byte) into its uint8 (1byte) subunits
-    uint8_t data_[1280];
+    uint8_t data_[640];
 
     memset(data_, g, sizeof(data_));
 
-    int b, j = 0;
-    for (b = 0; b < 960; b++)
+    // int t = 0;
+//    for (t = 0; t < sizeof(data_); t++)
+//    {
+//        data_[t] = g;
+//    }
+
+    int b = 0;
+    for (b = 0; b < area->height; b++)
     {
-        it8951_writeDataBurst(p, data_, 640);
-//        for (j = 0; j < 1280; j++)
+        int temp = 0;
+        for (temp = 0; temp < 2; ++temp)
+        {
+            it8951_writeDataBurst(p, data_, 320);
+        }
+
+//    for (b = 0; b < area->height; b++)
 //        {
-//            gpio_i80_16_data_out(p, 0xffff, 1);
-//        }
+//            int temp = 0;
+//            for (temp = 0; temp < 640; ++temp)
+//            {
+//                gpio_i80_16_data_out(p, 0xFFFF, 1);
+//            }
 
     }
+
+    //free(data_);
 
     LOG("Screen filled: %d\r\n", area->height);
 

@@ -79,7 +79,6 @@ int ite_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo,
                   struct it8951 *it8951)
 {
 
-    pBuf = (I80IT8951DevInfo*) malloc(sizeof(I80IT8951DevInfo));
 
     int stat;
     stat = 0;
@@ -109,7 +108,8 @@ int ite_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo,
 
     //it8951_update_Temp(it8951, epdc->temp_mode, 23);
 
-    it8951_load_init_code(it8951, pBuf);
+    it8951_load_init_code(it8951);
+
 
     it8951_update_Temp(it8951, epdc->temp_mode, 23);
 

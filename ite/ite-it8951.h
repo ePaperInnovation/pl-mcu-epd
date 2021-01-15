@@ -15,7 +15,6 @@
 #include <intrinsics.h>
 #include <ite/ite-epdc.h>
 
-
 //Built in I80 Command Code
 #define IT8951_TCON_SYS_RUN      0x0001
 #define IT8951_TCON_STANDBY      0x0002
@@ -37,7 +36,6 @@
 #define USDEF_I80_CMD_POWER_CTR         0x0038
 #define USDEF_I80_CMD_VCOM_CTR          0x0039
 #define USDEF_I80_CMD_FORCE_SET_TEMP    0x0040
-
 
 //Panel
 #define IT8951_PANEL_WIDTH   1024 //it Get Device information
@@ -93,12 +91,14 @@
 struct pl_gpio;
 struct pl_wflib;
 
-struct it8951_data {
+struct it8951_data
+{
     unsigned cs0;
     unsigned hrdy;
 };
 
-struct it8951 {
+struct it8951
+{
     const struct it8951_data *data;
     struct pl_gpio *gpio;
     struct pl_interface *interface;
@@ -110,11 +110,11 @@ struct it8951 {
     unsigned xres;
     unsigned yres;
     uint32_t imgBufBaseAdrr;
-    struct {
-        uint8_t needs_update:1;
+    struct
+    {
+        uint8_t needs_update :1;
     } flags;
 };
-
 
 typedef struct IT8951LdImgInfo
 {
@@ -122,9 +122,9 @@ typedef struct IT8951LdImgInfo
     uint16_t usPixelFormat; //bpp
     uint16_t usRotate; //Rotate mode
     uint32_t ulStartFBAddr; //Start address of source Frame buffer
-    uint32_t ulImgBufBaseAddr;//Base address of target image buffer
+    uint32_t ulImgBufBaseAddr; //Base address of target image buffer
 
-}IT8951LdImgInfo;
+} IT8951LdImgInfo;
 
 typedef struct IT8951AreaImgInfo
 {
@@ -133,7 +133,7 @@ typedef struct IT8951AreaImgInfo
     uint16_t usWidth;
     uint16_t usHeight;
 
-}IT8951AreaImgInfo;
+} IT8951AreaImgInfo;
 
 typedef struct
 {
@@ -144,19 +144,25 @@ typedef struct
     uint16_t usFWVersion[8]; //16 Bytes String
     uint16_t usLUTVersion[8]; //16 Bytes String
 
-}I80IT8951DevInfo;
+} I80IT8951DevInfo;
 
-void it8951_load_init_code(struct it8951 *p, I80IT8951DevInfo *pBuf);
+void it8951_load_init_code(struct it8951 *p);
 extern int it8951_clear_init(struct it8951 *p);
-extern int it8951_update(struct it8951 *p, int wfid, enum pl_update_mode mode, const struct pl_area *area);
-extern int it8951_set_power_state(struct it8951 *p, enum pl_epdc_power_state state);
+extern int it8951_update(struct it8951 *p, int wfid, enum pl_update_mode mode,
+                         struct pl_area *area);
+extern int it8951_set_power_state(struct it8951 *p,
+                                  enum pl_epdc_power_state state);
 extern int it8951_set_epd_power(struct it8951 *p, int on);
-extern int it8951_load_image(struct it8951 *p, const char *path, uint16_t mode, unsigned bpp, struct pl_area *area, int left, int top);
+extern int it8951_load_image(struct it8951 *p, const char *path, uint16_t mode,
+                             unsigned bpp, struct pl_area *area, int left,
+                             int top);
 extern int it8951_wait_idle(struct it8951 *p);
 extern int it8951_wait_update_end(struct it8951 *p);
-extern void it8951_cmd(struct it8951 *p, uint16_t cmd, const uint16_t *params, size_t n);
-extern uint16_t it8951_read_reg(struct it8951 *p, uint16_t reg);
-extern void it8951_write_reg(struct it8951 *p, uint16_t reg, uint16_t val, int size);
+extern void it8951_cmd(struct it8951 *p, uint16_t cmd, const uint16_t *params,
+                       size_t n);
+extern uint16_t it8951_read_reg(struct it8951 *p, uint16_t reg, uint16_t *usData);
+extern void it8951_write_reg(struct it8951 *p, uint16_t reg, uint16_t val,
+                             int size);
 extern void it8951_update_Temp(struct it8951 *p, int tempMode, int temp);
 extern int waitForHRDY(struct it8951 *p);
 extern int it8951_waitForDisplayReady(struct it8951 *p);
@@ -164,7 +170,5 @@ extern void it8951_setVcom(struct it8951 *p, int vcom);
 extern int it8951_fill(struct it8951 *p, const struct pl_area *area, uint8_t g);
 
 //extern void it8951_hostAreaPackedPixelWrite(struct it8951 *p, );
-
-
 
 #endif /* ITE_ITE_IT8951_H_ */

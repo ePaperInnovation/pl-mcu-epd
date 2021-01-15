@@ -76,8 +76,8 @@ int app_clear(struct pl_platform *plat)
    test = epdc->update(epdc, 0, UPDATE_FULL, NULL);
         //return -1;
 
-    if (epdc->wait_update_end(epdc))
-        return -1;
+//    if (epdc->wait_update_end(epdc))
+//        return -1;
 
-    return psu->off(psu);
+    return 0;
 }

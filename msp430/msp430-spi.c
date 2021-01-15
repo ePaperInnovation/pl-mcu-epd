@@ -108,10 +108,10 @@ int msp430_spi_read_bytes(uint8_t *buff, uint16_t size)
             ;				// Wait for RX buffer (full)
         // printf("Test: %x\r\n", *buff);
         *buff++ = UCxnRXBUF;						// store the byte
-        if (size % 2 == 0)
-        {
-            waitForHRDY(NULL);              // Write byte
-        }
+//        if (size % 2 == 0)
+//        {
+//            waitForHRDY(NULL);              // Write byte
+//        }
     }
 
     __bis_SR_register(gie);                        // Restore original GIE state

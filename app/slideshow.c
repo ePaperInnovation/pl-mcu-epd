@@ -116,17 +116,17 @@ static int show_image(struct pl_platform *plat, const char *dir,
 	if (epdc->update_temp(epdc))
 		return -1;
 
-	if (psu->on(psu))
-		return -1;
+//	if (psu->on(psu))
+//		return -1;
 
-	if (epdc->update(epdc, wfid, UPDATE_FULL, NULL))
+	if (epdc->update(epdc, 2, UPDATE_FULL, NULL))
 		return -1;
 
 	if (epdc->wait_update_end(epdc))
 		return -1;
 
-	if (psu->off(psu))
-		return -1;
+//	if (psu->off(psu))
+//		return -1;
 
 	return 0;
 }
