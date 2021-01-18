@@ -43,6 +43,8 @@
 
 #include <app/parser.h>
 
+#define DATA_BUFFER_LENGTH              2048 // must be above maximum xres value for any supported display
+
 static int get_hrdy(struct it8951 *p);
 static void set_cs(struct it8951 *p, int state);
 static void send_cmd(struct it8951 *p, uint16_t cmd);
@@ -57,6 +59,10 @@ static void set_image_buffer_base_adress(struct it8951 *p,
                                          uint32_t ulImgBufAddr);
 static void do_fill(struct it8951 *p, const struct pl_area *area, unsigned bpp,
                     uint8_t g);
+static int transfer_image(struct it8951 *p, FIL *f, const struct pl_area *area,
+                          int left, int top, int width, int xres,
+                          uint16_t scramble, uint16_t source_offset);
+static void transfer_data(struct it8951 *p, const uint8_t *data, size_t n);
 
 uint8_t *fillBuffer;
 I80IT8951DevInfo devInfo;
@@ -155,7 +161,7 @@ static int get_hrdy(struct it8951 *p)
 
 int waitForHRDY(struct it8951 *p)
 {
-    unsigned long timeout = 2000000;
+    unsigned long timeout = 6000000;
 
 //    if (P2IN & BIT7)
 //    {
@@ -166,7 +172,7 @@ int waitForHRDY(struct it8951 *p)
 //        //LOG("LOW");
 //    }
 
-    while (!(P2IN & BIT7) && --timeout)
+    while (!(P2IN & BIT7) && timeout--)
         ;
 
     if (timeout == 0)
@@ -271,7 +277,7 @@ static uint16_t* gpio_i80_16b_data_in(struct it8951 *p, int size,
 
     //Read Dummy (under IT8951 SPI to I80 spec)
     waitForHRDY(p);
-    set_cs(p, 0);
+    //set_cs(p, 0);
     p->interface->read((uint8_t*) &wDummy, 2);
 
     //Read Data
@@ -343,7 +349,7 @@ extern int it8951_update(struct it8951 *p, int wfid, enum pl_update_mode mode,
     gpio_i80_16_data_out(p, wfid, 1);
 
     it8951_waitForDisplayReady(p);
-    waitForHRDY(p);
+    //waitForHRDY(p);
 
     uint16_t *reg7 = malloc(sizeof(uint16_t));
     send_cmd(p, IT8951_TCON_BYPASS_I2C);
@@ -355,9 +361,9 @@ extern int it8951_update(struct it8951 *p, int wfid, enum pl_update_mode mode,
 
     LOG("PMIC Register 7 after update: 0x%x\r\n", reg7);
 
-    waitForHRDY(p);
+    //waitForHRDY(p);
 
-    uint16_t reg8 = malloc(sizeof(uint16_t));
+    uint16_t *reg8 = malloc(sizeof(uint16_t));
     send_cmd(p, IT8951_TCON_BYPASS_I2C);
     gpio_i80_16_data_out(p, 0x00, 1);
     gpio_i80_16_data_out(p, 0x68, 1);
@@ -369,6 +375,8 @@ extern int it8951_update(struct it8951 *p, int wfid, enum pl_update_mode mode,
 
     free(reg7);
     free(reg8);
+
+    it8951_waitForDisplayReady(p);
 
     it8951_set_epd_power(p, 0);
 
@@ -386,17 +394,18 @@ extern int it8951_set_epd_power(struct it8951 *p, int on)
 
     if (on == 1)
     {
-        uint16_t data = malloc(sizeof(uint16_t));
+        uint16_t data = (uint16_t) malloc(sizeof(uint16_t));
         data = it8951_read_reg(p, 0x1e16, data);
 
         send_cmd(p, USDEF_I80_CMD_POWER_CTR);
-        gpio_i80_16_data_out(p, 0x01, 1);
+        //gpio_i80_16_data_out(p, 0x01, 1);
         //waitForHRDY(p);
         //mdelay(250);
 
         //FLIP Bit 12 which corresponds to GPIO12/Pin 66 on ITE
+        waitForHRDY(p);
         data |= (1 << 12); // switches GPIO5 of ITE (Power Up Pin) low
-        //it8951_write_reg(p, 0x1e16, data, 1);
+        it8951_write_reg(p, 0x1e16, data, 1);
         free(data);
 
     }
@@ -414,6 +423,7 @@ extern int it8951_set_epd_power(struct it8951 *p, int on)
         data2 &= ~(1 << 12); // switches GPIO5 of ITE (Power Up Pin) low
         //FLIP Bit 11 which corresponds to GPIO11/Pin 65 on ITE to enable VCom_Switch
         //data2 &= ~(1 << 11); // switches GPIO5 of ITE (Power COM Pin) low
+        waitForHRDY(p);
         it8951_write_reg(p, 0x1e16, data2, 1);
         free(data2);
     }
@@ -427,112 +437,41 @@ extern int it8951_load_image(struct it8951 *p, const char *path, uint16_t mode,
                              unsigned bpp, struct pl_area *area, int left,
                              int top)
 {
-//    struct pnm_header hdr;
-//    FIL img_file;
-//    int stat;
-//
-//    if (f_open(&img_file, path, FA_READ) != FR_OK)
-//        return -1;
-//
-//    if (pnm_read_header(&img_file, &hdr))
-//        return -1;
-//
-//    set_image_buffer_base_adress(p, 0x00122A70);
-//
-//#if 0 // Area display bug at 4.7" display
-//    if (area != NULL)
-//    {
-//        uint16_t usArg[5];
-//        gpio_i80_16_cmd_out(p, IT8951_TCON_LD_IMG_AREA);
-//        usArg[0] = (IT8951_LDIMG_L_ENDIAN << 8) | (bpp << 4)
-//                | (IT8951_ROTATE_0);
-//        usArg[1] = area->top;
-//        usArg[2] = area->left;
-//        usArg[3] = area->width;
-//        usArg[4] = area->height;
-//        gpio_i80_16_data_out(p, *usArg, 5);
-//    }
-//    else
-//    {
-//        uint16_t usArg;
-//        //Setting Argument for Load image start
-//        usArg = (IT8951_LDIMG_L_ENDIAN << 8) | (IT8951_8BPP << 4)
-//                | (IT8951_ROTATE_0);
-//        gpio_i80_16_cmd_out(p, IT8951_TCON_LD_IMG);
-//        gpio_i80_16_data_out(p, usArg, 1);
-//    }
-//#else
-//    if (area == NULL)
-//    {
-//        if (p->scrambling)
-//        {
-//            uint16_t usArg;
-//            //Setting Argument for Load image start
-//            usArg = (IT8951_LDIMG_L_ENDIAN << 8) | (IT8951_8BPP << 4)
-//                    | (IT8951_ROTATE_0);
-//            gpio_i80_16_cmd_out(p, IT8951_TCON_LD_IMG);
-//            gpio_i80_16_data_out(p, usArg, 1);
-//        }
-//        else
-//        {
-//            area = (struct pl_area*) malloc(sizeof(struct pl_area));
-//            area->top = 0;
-//            area->left = 0;
-//            area->width = p->xres;
-//            area->height = p->yres;
-//            uint16_t usArg[5];
-//            gpio_i80_16_cmd_out(p, IT8951_TCON_LD_IMG_AREA);
-//            usArg[0] = (IT8951_LDIMG_L_ENDIAN << 8) | (bpp << 4)
-//                    | (IT8951_ROTATE_0);
-//            usArg[1] = area->top;
-//            usArg[2] = area->left;
-//            usArg[3] = area->width;
-//            usArg[4] = area->height;
-//            gpio_i80_16_data_out(p, *usArg, 5);
-//        }
-//    }
-//    else
-//    {
-//        send_cmd_area(p, S1D135XX_CMD_LD_IMG_AREA, mode,
-//                      area /* area_scrambled */);
-//    }
-//
-//#endif
-//    set_cs(p, 1);
-//
-//    if (s1d135xx_wait_idle(p))
-//        return -1;
-//
-//    set_cs(p, 0);
-//    send_cmd(p, S1D135XX_CMD_WRITE_REG);
-//    send_param(p, S1D135XX_REG_HOST_MEM_PORT);
-//
-//    if (area == NULL || p->source_offset)
-//    {
-//        stat = transfer_file_scrambled(p, &img_file, hdr.width);
-//    }
-//    else
-//    {
-//        stat = transfer_image(p, &img_file, area, left, top, hdr.width, p->xres,
-//                              p->scrambling, p->source_offset);
-//    }
-//    if (area)
-//    {
-//        free(area);
-//    }
-//
-//    set_cs(p, 1);
-//    f_close(&img_file);
-//
-//    if (stat)
-//        return -1;
-//
-//    if (s1d135xx_wait_idle(p))
-//        return -1;
-//
-//    send_cmd_cs(p, S1D135XX_CMD_LD_IMG_END);
-//
-//    return s1d135xx_wait_idle(p);
+    struct pnm_header hdr;
+    FIL img_file;
+    int stat;
+
+    struct pl_area a[1];
+    a->left = 0;
+    a->top = 0;
+    a->width = p->xres;
+    a->height = p->yres;
+
+    if (f_open(&img_file, path, FA_READ) != FR_OK)
+        return -1;
+
+    if (pnm_read_header(&img_file, &hdr))
+        return -1;
+
+    set_image_buffer_base_adress(p, 0x00122A70);
+
+    uint16_t usArg;
+    //            //Setting Argument for Load image start
+    usArg = (IT8951_LDIMG_L_ENDIAN << 8) | (IT8951_8BPP << 4)
+            | (IT8951_ROTATE_0);
+    gpio_i80_16_cmd_out(p, IT8951_TCON_LD_IMG);
+    gpio_i80_16_data_out(p, usArg, 1);
+
+    set_cs(p, 0);
+
+    stat = transfer_image(p, &img_file, a, left, top, hdr.width, p->xres,
+                          p->scrambling, p->source_offset);
+    free(a);
+
+    set_cs(p, 1);
+    f_close(&img_file);
+
+    gpio_i80_16_cmd_out(p, IT8951_TCON_LD_IMG_END);
 
     return waitForHRDY(p);
 }
@@ -583,7 +522,7 @@ int it8951_waitForDisplayReady(struct it8951 *p)
 {
     uint16_t *usData = malloc(sizeof(uint16_t));
     //Check IT8951 Register LUTAFSR => NonZero ¡V Busy, 0 - Free
-    while (it8951_read_reg(p, LUTAFSR, usData))
+    while (it8951_read_reg(p, LUTAFSR, usData) != 0)
         ;
     free(usData);
     return 0;
@@ -637,44 +576,12 @@ int it8951_fill(struct it8951 *p, const struct pl_area *area, uint8_t g)
 void do_fill(struct it8951 *p, const struct pl_area *area, unsigned bpp,
              uint8_t g)
 {
-//    uint16_t val16;
-//    uint16_t lines;
-//    uint16_t pixels;
-
     /* Only 16-bit transfers for now... */
     assert(!(area->width % 2));
 
-//    switch (bpp)
-//    {
-//    case 1:
-//    case 2:
-//        LOG("Unsupported bpp");
-//        return -1;
-//    case 4:
-//        val16 = g & 0xF0;
-//        val16 |= val16 >> 4;
-//        val16 |= val16 << 8;
-//        pixels = area->width / 4;
-//        break;
-//    case 8:
-//        val16 = g | (g << 8);
-//        pixels = area->width / 2;
-//        break;
-//    default:
-//        assert_fail("Invalid bpp");
-//    }
-
-    //lines = area->height;
-
-    uint8_t data_[640];
+    uint16_t data_[640];
 
     memset(data_, g, sizeof(data_));
-
-    // int t = 0;
-//    for (t = 0; t < sizeof(data_); t++)
-//    {
-//        data_[t] = g;
-//    }
 
     int b = 0;
     for (b = 0; b < area->height; b++)
@@ -685,17 +592,9 @@ void do_fill(struct it8951 *p, const struct pl_area *area, unsigned bpp,
             it8951_writeDataBurst(p, data_, 320);
         }
 
-//    for (b = 0; b < area->height; b++)
-//        {
-//            int temp = 0;
-//            for (temp = 0; temp < 640; ++temp)
-//            {
-//                gpio_i80_16_data_out(p, 0xFFFF, 1);
-//            }
-
     }
 
-    //free(data_);
+    free(data_);
 
     LOG("Screen filled: %d\r\n", area->height);
 
@@ -730,4 +629,80 @@ int it8951_writeDataBurst(struct it8951 *p, uint16_t *usData, uint16_t size)
     set_cs(p, 1);
 
     return waitForHRDY(p);
+}
+
+static int transfer_image(struct it8951 *p, FIL *f, const struct pl_area *area,
+                          int left, int top, int width, int xres,
+                          uint16_t scramble, uint16_t source_offset)
+{
+    //LOG("%s", __func__);
+    uint8_t data[1280];
+    uint8_t scrambled_data[1280];
+    uint16_t line_length = 0;
+    size_t line;
+    uint16_t gl = 2;
+    uint16_t sl;
+    scramble = 0;
+
+    line_length = align16(xres);
+
+    sl = line_length / 2;
+    uint16_t buffer_length = max(line_length, xres);
+
+    /* Simple bounds check */
+//    if (xres < area->width || xres < (left + area->width))
+//    {
+//        LOG("Invalid combination of width/left/area");
+//        return -1;
+//    }
+    if (f_lseek(f, f->fptr + ((long) top * (unsigned long) width)) != FR_OK)
+        return -1;
+
+    for (line = area->height; line; --line)
+    {
+        size_t count;
+        size_t remaining = area->width;
+
+        /* Find the first relevant pixel (byte) on this line */
+        if (f_lseek(f, f->fptr + (unsigned long) left) != FR_OK)
+            return -1;
+
+        /* Transfer data of interest in chunks */
+        while (remaining)
+        {
+            size_t btr =
+                    (remaining <= buffer_length) ? remaining : buffer_length;
+
+            if (f_read(f, data, btr, &count) != FR_OK)
+                return -1;
+
+            if (scramble_array(data, scrambled_data, &gl, &sl, scramble))
+            {
+                transfer_data(p, scrambled_data, btr);
+            }
+            else
+            {
+                transfer_data(p, data, btr);
+            }
+            remaining -= btr;
+        }
+
+        /* Move file pointer to end of line */
+        if (f_lseek(f, f->fptr + (width - (left + area->width))) != FR_OK)
+            return -1;
+    }
+
+    return 0;
+}
+
+static void transfer_data(struct it8951 *p, const uint8_t *data, size_t n)
+{
+    //uint16_t *data16 = (uint16_t*) data;
+
+    n /= 2;
+
+//    while (n--)
+//        gpio_i80_16_data_out(p, *data16++, 1);
+    it8951_writeDataBurst(p, data, n);
+    waitForHRDY(p);
 }

@@ -102,28 +102,29 @@ static int show_image(struct pl_platform *plat, const char *dir,
 	char path[MAX_PATH_LEN];
 	int wfid;
 
-	wfid = pl_epdc_get_wfid(epdc, 2);
+	wfid = 2;
 
-	if (wfid < 0)
-		return -1;
+//	if (wfid < 0)
+//		return -1;
 
-	if (join_path(path, sizeof(path), dir, file))
-		return -1;
+	join_path(path, sizeof(path), dir, file);
 
-	if (epdc->load_image(epdc, path, NULL, 0, 0))
-		return -1;
+	epdc->wait_update_end(epdc);
 
-	if (epdc->update_temp(epdc))
-		return -1;
+	epdc->load_image(epdc, path, NULL, 0, 0);
+
+
+	epdc->update_temp(epdc);
+
 
 //	if (psu->on(psu))
 //		return -1;
 
-	if (epdc->update(epdc, 2, UPDATE_FULL, NULL))
-		return -1;
+	epdc->update(epdc, 2, UPDATE_FULL, NULL);
 
-	if (epdc->wait_update_end(epdc))
-		return -1;
+
+	epdc->wait_update_end(epdc);
+
 
 //	if (psu->off(psu))
 //		return -1;

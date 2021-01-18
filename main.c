@@ -395,6 +395,7 @@ int main_init(void)
 //		    }
 		}
 
+	mdelay(10);
 	/* initialise SD-card */
 	SDCard_plat = &g_plat;
 	f_chdrive(0);

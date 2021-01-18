@@ -75,10 +75,16 @@ static int ite_epdc_fill(struct pl_epdc *p, const struct pl_area *area,
     return it8951_fill(it8951, area, g);
 }
 
+static int ite_load_image(struct pl_epdc *p, const char *path,
+                          struct pl_area *area, int left, int top)
+{
+    struct it8951 *it8951 = p->data;
+    return it8951_load_image(it8951, path, 0, 8, area, left, top);
+}
+
 int ite_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo,
                   struct it8951 *it8951)
 {
-
 
     int stat;
     stat = 0;
@@ -102,6 +108,7 @@ int ite_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo,
     epdc->dispinfo = dispinfo;
     epdc->update_temp = ite_epdc_update_temp;
     epdc->fill = ite_epdc_fill;
+    epdc->load_image = ite_load_image;
 
     if (stat)
         return -1;
@@ -109,7 +116,6 @@ int ite_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo,
     //it8951_update_Temp(it8951, epdc->temp_mode, 23);
 
     it8951_load_init_code(it8951);
-
 
     it8951_update_Temp(it8951, epdc->temp_mode, 23);
 
