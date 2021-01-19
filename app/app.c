@@ -72,9 +72,10 @@ int app_clear(struct pl_platform *plat)
 
 //    if (epdc->clear_init(epdc))
 //        return -1;
+    test = epdc->set_epd_power(epdc, 1);
 
-   test = epdc->update(epdc, 0, UPDATE_FULL, NULL);
-        //return -1;
+    test = epdc->update(epdc, 0, UPDATE_FULL, NULL);
+    //return -1;
 
 //    if (epdc->wait_update_end(epdc))
 //        return -1;

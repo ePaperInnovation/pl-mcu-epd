@@ -1,4 +1,21 @@
 /*
+ * Plastic Logic EPD project on MSP430
+
+  Copyright (C) 2014 Plastic Logic Limited
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  * ite-it8951.h
  *
  *  Created on: 04.01.2021
@@ -168,7 +185,5 @@ extern int waitForHRDY(struct it8951 *p);
 extern int it8951_waitForDisplayReady(struct it8951 *p);
 extern void it8951_setVcom(struct it8951 *p, int vcom);
 extern int it8951_fill(struct it8951 *p, const struct pl_area *area, uint8_t g);
-
-//extern void it8951_hostAreaPackedPixelWrite(struct it8951 *p, );
 
 #endif /* ITE_ITE_IT8951_H_ */

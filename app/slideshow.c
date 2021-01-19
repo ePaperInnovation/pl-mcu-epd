@@ -54,6 +54,8 @@ int app_slideshow(struct pl_platform *plat, const char *path)
 
 	LOG("Running slideshow");
 
+	int updates = 2;
+
 	while (!app_stop) {
 		if (!dir_open) {
 			/* (re-)open the directory */
@@ -89,6 +91,9 @@ int app_slideshow(struct pl_platform *plat, const char *path)
 			LOG("Failed to show image");
 			return -1;
 		}
+//		updates--;
+//		if (updates == 0)
+//		    app_stop = 1;
 	}
 
 	return 0;

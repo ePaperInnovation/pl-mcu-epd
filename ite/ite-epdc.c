@@ -1,4 +1,21 @@
 /*
+ *  Plastic Logic EPD project on MSP430
+
+  Copyright (C) 2014 Plastic Logic Limited
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  * ite-epdc.c
  *
  *  Created on: 04.01.2021
@@ -113,8 +130,6 @@ int ite_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo,
     if (stat)
         return -1;
 
-    //it8951_update_Temp(it8951, epdc->temp_mode, 23);
-
     it8951_load_init_code(it8951);
 
     it8951_update_Temp(it8951, epdc->temp_mode, 23);
@@ -124,14 +139,10 @@ int ite_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo,
 
     it8951_setVcom(it8951, 1500);
 
-    //mdelay(250);
-
     //Turn off pmic manual, cause set VCom turns HVs on
     it8951_set_epd_power(it8951, 0);
 
     LOG("Ready %dx%d", epdc->xres, epdc->yres);
-
-    //it8951_clear_init(it8951);
 
     return 0;
 }
