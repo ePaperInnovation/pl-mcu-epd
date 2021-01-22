@@ -153,7 +153,8 @@ static const struct pl_gpio_config g_hvpmic_gpios[] = {
         { PMIC_POK, PL_GPIO_INPUT }, { PMIC_FLT, PL_GPIO_INPUT }, };
 
 static struct pl_epdpsu_gpio g_epdpsu_gpio = { &g_plat.gpio, PMIC_EN, HVSW_CTRL,
-                                               PMIC_POK, PMIC_FLT, 300, 5, 100 };
+PMIC_POK,
+                                               PMIC_FLT, 300, 5, 100 };
 
 static struct pl_epdpsu_i2c g_epdpsu_i2c = { &g_plat.gpio, NULL, LED4, 30, 10,
                                              100 };
@@ -175,7 +176,8 @@ static struct pl_epdpsu_i2c g_epdpsu_i2c = { &g_plat.gpio, NULL, LED4, 30, 10,
 #define	EPSON_HDC         MSP430_GPIO(1,3)
 #define	EPSON_HRDY        MSP430_GPIO(2,7)
 #define EPSON_RESET       MSP430_GPIO(5,0)
-#define EPSON_CS_0        MSP430_GPIO(8,1) //(3,6)
+#define EPSON_CS_0        MSP430_GPIO(8,1) //(3,6) (5,5)
+#define DISP_CS           MSP430_GPIO(3,6)
 
 /* Parallel interface */
 #define	EPSON_HDB0        MSP430_GPIO(4,0)
@@ -208,18 +210,23 @@ static const struct pl_gpio_config g_epson_gpios[] = {
         { EPSON_HRDY, PL_GPIO_INPUT }, { EPSON_HDC, PL_GPIO_OUTPUT
                                                  | PL_GPIO_INIT_H },
         { EPSON_RESET, PL_GPIO_OUTPUT | PL_GPIO_INIT_H }, {
-                EPSON_CS_0, PL_GPIO_OUTPUT | PL_GPIO_INIT_H }, };
+                EPSON_CS_0, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+        {
+        DISP_CS, PL_GPIO_OUTPUT | PL_GPIO_INIT_H }, };
 
 static const uint16_t g_epson_parallel[] = {
 EPSON_HDB0,
                                              EPSON_HDB1, EPSON_HDB2, EPSON_HDB3,
-                                             EPSON_HDB4, EPSON_HDB5,
+                                             EPSON_HDB4,
+                                             EPSON_HDB5,
                                              EPSON_HDB6,
                                              EPSON_HDB7, EPSON_HDB8, EPSON_HDB9,
                                              EPSON_HDB10,
                                              EPSON_HDB11,
-                                             EPSON_HDB12, EPSON_HDB13,
-                                             EPSON_HDB14, EPSON_HDB15,
+                                             EPSON_HDB12,
+                                             EPSON_HDB13,
+                                             EPSON_HDB14,
+                                             EPSON_HDB15,
                                              EPSON_TFT_HSYNC,
                                              EPSON_TFT_VSYNC, EPSON_TFT_DE,
                                              EPSON_TFT_CLK, };
@@ -229,8 +236,10 @@ static struct s1d135xx_data init_g_s1d135xx_data(void)
     struct s1d135xx_data g_s1d135xx_data = {
     EPSON_RESET,
                                              EPSON_CS_0, EPSON_HIRQ,
-                                             PL_GPIO_NONE, PL_GPIO_NONE,
-                                             EPSON_CLK_EN, EPSON_VCC_EN };
+                                             PL_GPIO_NONE,
+                                             PL_GPIO_NONE,
+                                             EPSON_CLK_EN,
+                                             EPSON_VCC_EN };
     if (SPI_HRDY_USED)
         g_s1d135xx_data.hrdy = EPSON_HRDY;
     if (SPI_HDC_USED)
@@ -409,14 +418,14 @@ int main_init(void)
     }
 
     //Initialise HRDY_Pin as Input
-      P2DIR &= ~BIT7;
-      P2OUT &= ~BIT7;
-      P2REN |= BIT7;
+    P2DIR &= ~BIT7;
+    P2OUT &= ~BIT7;
+    P2REN |= BIT7;
 
-      P5OUT &= ~BIT0;
-      mdelay(50);
-      P5OUT |= BIT0;
-      mdelay(500);
+    P5OUT &= ~BIT0;
+    mdelay(50);
+    P5OUT |= BIT0;
+    mdelay(500);
 
     mdelay(10);
     /* initialise SD-card */

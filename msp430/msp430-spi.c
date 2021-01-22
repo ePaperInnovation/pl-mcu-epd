@@ -45,6 +45,11 @@
 
 #endif
 
+static const struct pl_gpio_config gpios[] =
+            { { SPI_SIMO, PL_GPIO_SPECIAL | PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+              { SPI_SOMI, PL_GPIO_SPECIAL | PL_GPIO_INPUT | PL_GPIO_INIT_H },
+              { SPI_CLK, PL_GPIO_SPECIAL | PL_GPIO_OUTPUT | PL_GPIO_INIT_L }, };
+
 int msp430_spi_read_bytes(uint8_t *buff, uint16_t size);
 int msp430_spi_write_bytes(uint8_t *buff, uint16_t size);
 /* We only support a single SPI bus and that bus is defined at compile
@@ -53,10 +58,6 @@ int msp430_spi_write_bytes(uint8_t *buff, uint16_t size);
 int msp430_spi_init(struct pl_gpio *gpio, uint8_t spi_channel, uint16_t divisor,
                     struct pl_interface *iface)
 {
-    static const struct pl_gpio_config gpios[] =
-            { { SPI_SIMO, PL_GPIO_SPECIAL | PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
-              { SPI_SOMI, PL_GPIO_SPECIAL | PL_GPIO_INPUT | PL_GPIO_INIT_H },
-              { SPI_CLK, PL_GPIO_SPECIAL | PL_GPIO_OUTPUT | PL_GPIO_INIT_L }, };
 
     if (spi_channel != 0)
         return -1;
@@ -80,8 +81,6 @@ int msp430_spi_init(struct pl_gpio *gpio, uint8_t spi_channel, uint16_t divisor,
 
     iface->read = msp430_spi_read_bytes;
     iface->write = msp430_spi_write_bytes;
-
-    uint8_t *tempBuffer;
 
     return 0;
 }

@@ -95,8 +95,6 @@ int app_slideshow(struct pl_platform *plat, const char *path)
 //		if (updates == 0)
 //		    app_stop = 1;
 	}
-
-	return 0;
 }
 
 static int show_image(struct pl_platform *plat, const char *dir,

@@ -43,7 +43,7 @@
 
 #include <app/parser.h>
 
-#define DATA_BUFFER_LENGTH              2048 // must be above maximum xres value for any supported display
+#define DATA_BUFFER_LENGTH              4096 // must be above maximum xres value for any supported display
 
 static int get_hrdy(struct it8951 *p);
 static void set_cs(struct it8951 *p, int state);
@@ -63,11 +63,19 @@ static int transfer_image(struct it8951 *p, FIL *f, const struct pl_area *area,
                           int left, int top, int width, int xres,
                           uint16_t scramble, uint16_t source_offset);
 static void transfer_data(struct it8951 *p, const uint8_t *data, size_t n);
+static int transfer_file_scrambled(struct it8951 *p, FIL *file, int xres);
+static void memory_padding(uint8_t *source, uint8_t *target, int s_gl, int s_sl,
+                           int t_gl, int t_sl, int o_gl, int o_sl);
+static void reInitSPI(struct it8951 *p, uint8_t divisor);
 
 uint8_t *fillBuffer;
 I80IT8951DevInfo devInfo;
 struct pl_area areaInfo[1];
+struct pl_interface epson_spi;
 uint16_t counter = 0;
+uint8_t reg7[1];
+uint8_t reg8[1];
+uint16_t data[1], data2[1];
 
 void it8951_load_init_code(struct it8951 *p)
 {
@@ -78,6 +86,9 @@ void it8951_load_init_code(struct it8951 *p)
             sizeof(I80IT8951DevInfo));
 
     send_cmd(p, USDEF_I80_CMD_GET_DEV_INFO);
+
+    reInitSPI(p, 20);
+
 
     pBuf = (I80IT8951DevInfo*) gpio_i80_16b_data_in(
             p, (sizeof(I80IT8951DevInfo) / 2), pBuf);
@@ -90,6 +101,9 @@ void it8951_load_init_code(struct it8951 *p)
     //Show Device information of IT8951
     LOG("Panel(W,H) = (%d,%d)\r\n", pBuf->usPanelW, pBuf->usPanelH);
     uint32_t imageAdress = 0xffffffff;
+
+    reInitSPI(p, 2);
+
 
     imageAdress = 0x0;
     imageAdress = (uint32_t) pBuf->usImgBufAddrL;
@@ -315,32 +329,41 @@ extern int it8951_update(struct it8951 *p, int wfid, enum pl_update_mode mode,
     gpio_i80_16_data_out(p, height, 1);
     gpio_i80_16_data_out(p, wfid, 1);
 
+    reInitSPI(p, 20);
+
+
     it8951_waitForDisplayReady(p);
 
-    uint16_t *reg7 = malloc(sizeof(uint16_t));
+    //uint8_t *reg7 = malloc(sizeof(uint8_t));
     send_cmd(p, IT8951_TCON_BYPASS_I2C);
     gpio_i80_16_data_out(p, 0x00, 1);
     gpio_i80_16_data_out(p, 0x68, 1);
     gpio_i80_16_data_out(p, 0x07, 1);
     gpio_i80_16_data_out(p, 0x01, 1);
-    reg7 = gpio_i80_16b_data_in(p, 1, reg7);
+    reg7[0] = swap_endianess(gpio_i80_16b_data_in(p, 1, reg7[0]));
 
-    LOG("PMIC Register 7 after update: 0x%x\r\n", reg7);
+    LOG("PMIC Register 7 after update: 0x%x\r\n", reg7[0]);
 
-    uint16_t *reg8 = malloc(sizeof(uint16_t));
+    //uint8_t *reg8 = malloc(sizeof(uint8_t));
     send_cmd(p, IT8951_TCON_BYPASS_I2C);
     gpio_i80_16_data_out(p, 0x00, 1);
     gpio_i80_16_data_out(p, 0x68, 1);
     gpio_i80_16_data_out(p, 0x08, 1);
     gpio_i80_16_data_out(p, 0x01, 1);
-    reg8 = gpio_i80_16b_data_in(p, 1, reg8);
+    reg8[0] = swap_endianess(gpio_i80_16b_data_in(p, 1, reg8[0]));
 
-    LOG("PMIC Register 8 after update: 0x%x\r\n", reg8);
+    LOG("PMIC Register 8 after update: 0x%x\r\n", reg8[0]);
 
-    free(reg7);
-    free(reg8);
+   //    free(reg7);
+//    free(reg8);
+
+    reg7[0] = 0;
+    reg8[0] = 0;
 
     it8951_waitForDisplayReady(p);
+
+    reInitSPI(p, 2);
+
 
     it8951_set_epd_power(p, 0);
 
@@ -358,30 +381,35 @@ extern int it8951_set_epd_power(struct it8951 *p, int on)
 
     if (on == 1)
     {
-        uint16_t data = (uint16_t) malloc(sizeof(uint16_t));
+//        send_cmd(p, USDEF_I80_CMD_POWER_CTR);
+//        gpio_i80_16_data_out(p, 0x01, 1);
         waitForHRDY(p);
-        data = it8951_read_reg(p, 0x1e16, data);
+        data[0] = it8951_read_reg(p, 0x1e16, data);
 
         //FLIP Bit 12 which corresponds to GPIO12/Pin 66 on ITE
         waitForHRDY(p);
-        data |= (1 << 12);
+        data[0] |= (1 << 12);
         it8951_write_reg(p, 0x1e16, data, 1);
-        free(data);
 
     }
     else if (on == 0)
     {
-        uint16_t data2 = malloc(sizeof(uint16_t));
+        // uint16_t data2 = malloc(sizeof(uint16_t));
         waitForHRDY(p);
-        data2 = it8951_read_reg(p, 0x1e16, data2);
+        data2[0] = it8951_read_reg(p, 0x1e16, data2);
 
+        send_cmd(p, USDEF_I80_CMD_POWER_CTR);
+        gpio_i80_16_data_out(p, 0x01, 1);
+        waitForHRDY(p);
+        send_cmd(p, USDEF_I80_CMD_POWER_CTR);
+        gpio_i80_16_data_out(p, 0x00, 1);
         //FLIP Bit 12 which corresponds to GPIO12/Pin 66 on ITE
-        data2 &= ~(1 << 12);
+        data2[0] &= ~(1 << 12);
         //FLIP Bit 11 which corresponds to GPIO11/Pin 65 on ITE to enable VCom_Switch
-        data2 &= ~(1 << 11);
+        data2[0] &= ~(1 << 11);
         waitForHRDY(p);
         it8951_write_reg(p, 0x1e16, data2, 1);
-        free(data2);
+
     }
     return 0;
 }
@@ -417,8 +445,16 @@ extern int it8951_load_image(struct it8951 *p, const char *path, uint16_t mode,
 
     set_cs(p, 0);
 
-    stat = transfer_image(p, &img_file, a, left, top, hdr.width, p->xres,
-                          p->scrambling, p->source_offset);
+    if (p->source_offset || a->width < hdr.width)
+    {
+        stat = transfer_file_scrambled(p, &img_file, hdr.width);
+    }
+    else
+    {
+        stat = transfer_image(p, &img_file, a, left, top, hdr.width, p->xres,
+                              p->scrambling, p->source_offset);
+    }
+
     free(a);
 
     set_cs(p, 1);
@@ -445,10 +481,10 @@ extern void it8951_cmd(struct it8951 *p, uint16_t cmd, const uint16_t *params,
 extern int it8951_wait_update_end(struct it8951 *p)
 {
     //Check IT8951 Register LUTAFSR => NonZero ¡V Busy, 0 - Free
-    uint16_t *usData = malloc(sizeof(uint16_t));
-    while (it8951_read_reg(p, LUTAFSR, usData))
+    uint16_t usData[1];
+    while (it8951_read_reg(p, LUTAFSR, &usData[0]))
         ;
-    free(usData);
+
     return 0;
 }
 
@@ -473,11 +509,11 @@ extern void it8951_write_reg(struct it8951 *p, uint16_t reg, uint16_t val,
 
 int it8951_waitForDisplayReady(struct it8951 *p)
 {
-    uint16_t *usData = malloc(sizeof(uint16_t));
+    uint16_t usData[1];
+    uint16_t timeOut = 20000;
     //Check IT8951 Register LUTAFSR => NonZero ¡V Busy, 0 - Free
-    while (it8951_read_reg(p, LUTAFSR, usData) != 0)
+    while (it8951_read_reg(p, LUTAFSR, &usData[0]) != 0 && timeOut--)
         ;
-    free(usData);
     return 0;
 }
 
@@ -523,7 +559,7 @@ void do_fill(struct it8951 *p, const struct pl_area *area, unsigned bpp,
     /* Only 16-bit transfers for now... */
     assert(!(area->width % 2));
 
-    uint16_t data_[640];
+    uint16_t data_[4096];
 
     memset(data_, g, sizeof(data_));
 
@@ -531,10 +567,10 @@ void do_fill(struct it8951 *p, const struct pl_area *area, unsigned bpp,
     for (b = 0; b < area->height; b++)
     {
         int temp = 0;
-        for (temp = 0; temp < 2; ++temp)
-        {
-            it8951_writeDataBurst(p, data_, 320);
-        }
+//        for (temp = 0; temp < 2; ++temp)
+//        {
+        it8951_writeDataBurst(p, data_, area->width / 2);
+        // }
     }
 
     free(data_);
@@ -544,6 +580,14 @@ void do_fill(struct it8951 *p, const struct pl_area *area, unsigned bpp,
     gpio_i80_16_cmd_out(p, IT8951_TCON_LD_IMG_END);
 
     return waitForHRDY(p);
+}
+
+static void reInitSPI(struct it8951 *p, uint8_t divisor)
+{
+    if (spi_init(p->gpio, 0, divisor, &epson_spi))
+        abort_msg("SPI init failed", ABORT_MSP430_COMMS_INIT);
+    p->interface = &epson_spi;
+    mdelay(50);
 }
 
 int it8951_writeDataBurst(struct it8951 *p, uint16_t *usData, uint16_t size)
@@ -641,4 +685,69 @@ static void transfer_data(struct it8951 *p, const uint8_t *data, size_t n)
 
     it8951_writeDataBurst(p, data16, n);
     waitForHRDY(p);
+}
+
+static int transfer_file_scrambled(struct it8951 *p, FIL *file, int xres)
+{
+    //LOG("%s", __func__);
+    // we need to scramble the image so we need to read the file line by line
+    uint8_t data[DATA_BUFFER_LENGTH];
+    uint8_t scrambled_data[DATA_BUFFER_LENGTH];
+    uint16_t xpad = p->source_offset;
+    for (;;)
+    {
+        size_t count;
+        uint16_t gl = 1;
+        uint16_t sl = xres;
+        // read one line of the image
+        if (f_read(file, data, xres, &count) != FR_OK)
+            return -1;
+
+        if (!count)
+            break;
+        // scramble that line to up to 2 lines
+        if (scramble_array(data, scrambled_data, &gl, &sl, p->scrambling))
+        {
+            memory_padding(scrambled_data, data, gl, sl, gl, p->xres, 0, xpad);
+            transfer_data(p, data, p->xres * gl);
+        }
+        else
+        {
+            transfer_data(p, data, xres);
+        }
+
+    }
+
+    return 0;
+}
+
+/**
+ * This function pads the target (memory) with offset source and gate lines if needed.
+ * If no offset is defined (o_gl=-1, o_sl=-1) the source content will be placed in the right lower corner,
+ * while the left upper space is containing the offset lines.
+ */
+static void memory_padding(uint8_t *source, uint8_t *target, int s_gl, int s_sl,
+                           int t_gl, int t_sl, int o_gl, int o_sl)
+{
+    int sl, gl;
+    int _gl_offset = 0;
+    int _sl_offset = 0;
+
+    if (o_gl > 0)
+        _gl_offset = o_gl;
+    else
+        _gl_offset = t_gl - s_gl;
+
+    if (o_sl > 0)
+        _sl_offset = o_sl;
+    else
+        _sl_offset = t_sl - s_sl;
+
+    for (gl = 0; gl < s_gl; gl++)
+        for (sl = 0; sl < s_sl; sl++)
+        {
+            target[(gl + _gl_offset) * t_sl + (sl + _sl_offset)] = source[gl
+                    * s_sl + sl];
+            source[gl * s_sl + sl] = 0xFF;
+        }
 }

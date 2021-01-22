@@ -31,6 +31,8 @@
 #define LOG_TAG "gpio"
 #include "utils.h"
 
+const struct pl_gpio_config *c;
+
 int pl_gpio_config_list(struct pl_gpio *gpio,
                         const struct pl_gpio_config *config, size_t n)
 {
@@ -42,7 +44,7 @@ int pl_gpio_config_list(struct pl_gpio *gpio,
 
     for (i = 0; i < n; ++i)
     {
-        const struct pl_gpio_config *c = &config[i];
+        c = &config[i];
 
         if (gpio->config(c->gpio, c->flags))
             return -1;
