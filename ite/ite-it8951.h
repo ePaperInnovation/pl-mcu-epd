@@ -185,5 +185,6 @@ extern int waitForHRDY(struct it8951 *p);
 extern int it8951_waitForDisplayReady(struct it8951 *p);
 extern void it8951_setVcom(struct it8951 *p, int vcom);
 extern int it8951_fill(struct it8951 *p, const struct pl_area *area, uint8_t g);
+void reInitSPI(struct it8951 *p, uint8_t divisor);
 
 #endif /* ITE_ITE_IT8951_H_ */

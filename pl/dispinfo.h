@@ -36,7 +36,7 @@ struct i2c_eeprom;
 #define PL_DISPINFO_VERSION 1
 
 #define PL_DISPINFO_STR_LEN 63
-#define PL_DISPINFO_STR_SIZE (PL_DISPINFO_STR_LEN + 1)
+#define PL_DISPINFO_STR_SIZE (0x00010)
 
 struct __attribute__((__packed__)) pl_dispinfo_vermagic {
 	uint32_t magic;

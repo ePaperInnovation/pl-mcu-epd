@@ -582,7 +582,7 @@ void do_fill(struct it8951 *p, const struct pl_area *area, unsigned bpp,
     return waitForHRDY(p);
 }
 
-static void reInitSPI(struct it8951 *p, uint8_t divisor)
+void reInitSPI(struct it8951 *p, uint8_t divisor)
 {
     if (spi_init(p->gpio, 0, divisor, &epson_spi))
         abort_msg("SPI init failed", ABORT_MSP430_COMMS_INIT);

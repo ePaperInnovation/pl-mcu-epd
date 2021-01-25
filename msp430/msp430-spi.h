@@ -34,6 +34,8 @@ struct pl_gpio;
 
 // function prototypes
 extern int msp430_spi_init(struct pl_gpio *gpio, uint8_t spi_channel, uint16_t divisor, struct pl_interface *spi);
+extern int msp430_spi_read_bytes(uint8_t *buff, uint16_t size);
+extern int msp430_spi_write_bytes(uint8_t *buff, uint16_t size);
 
 
 #endif /* MSP430_SPI_H_ */

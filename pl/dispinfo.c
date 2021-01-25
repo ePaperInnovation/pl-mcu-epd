@@ -32,7 +32,8 @@
 #include "assert.h"
 #include "pnm-utils.h"
 #include "crc16.h"
-#include "i2c-eeprom.h"
+//#include "i2c-eeprom.h"
+#include <spi-eeprom.h>
 #include "config.h"
 
 #define LOG_TAG "dispinfo"
@@ -57,9 +58,14 @@ int pl_dispinfo_init_eeprom(struct pl_dispinfo *p,
 	assert(p != NULL);
 	assert(eeprom != NULL);
 
-	if (eeprom_read(eeprom, 0, sizeof *p, (uint8_t *)p)) {
-		LOG("Failed to read EEPROM");
-		return -1;
+//	if (eeprom_read(eeprom, 0, sizeof *p, (uint8_t *)p)) {
+//		LOG("Failed to read EEPROM");
+//		return -1;
+//	}
+
+	if(nvm_MX25_spi_read(0, (uint8_t*) p, MX25U4033E_SIZE)){
+	    LOG("Failed to read EEPROM");
+	    return -1;
 	}
 
 	crc = crc16_run(crc16_init, (const uint8_t *)&p->info, sizeof p->info);
