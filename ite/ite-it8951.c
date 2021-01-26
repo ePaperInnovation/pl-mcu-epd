@@ -43,7 +43,7 @@
 
 #include <app/parser.h>
 
-#define DATA_BUFFER_LENGTH              4096 // must be above maximum xres value for any supported display
+#define DATA_BUFFER_LENGTH              2312 // must be above maximum xres value for any supported display
 
 static int get_hrdy(struct it8951 *p);
 static void set_cs(struct it8951 *p, int state);
@@ -559,7 +559,7 @@ void do_fill(struct it8951 *p, const struct pl_area *area, unsigned bpp,
     /* Only 16-bit transfers for now... */
     assert(!(area->width % 2));
 
-    uint16_t data_[4096];
+    uint16_t data_[2048];
 
     memset(data_, g, sizeof(data_));
 

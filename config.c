@@ -157,8 +157,8 @@ int read_config(char* configfile, struct config *config){
 			}else if(strncmp(display_type, "S115", 4) == 0){
 				// D107 and D107C
 				config->i2c_mode = I2C_MODE_HOST;
-				config->board = CONFIG_PLAT_RAVEN;
-				config->data_source = CONFIG_DISP_DATA_SD_ONLY;
+				config->board = CONFIG_PLAT_FALCON;
+				config->data_source = CONFIG_DISP_DATA_EEPROM_SD;
 				config->endianess = CONFIG_LITTLE_ENDIAN;
 				config->interface_type = SPI;
 				config->scrambling = 36;
@@ -182,6 +182,13 @@ int read_config(char* configfile, struct config *config){
 				config->endianess = CONFIG_LITTLE_ENDIAN;
 				config->interface_type = SPI;
 				config->scrambling = 96;
+			}else if(strncmp(display_type, "S117", 4) == 0){
+                config->i2c_mode = I2C_MODE_HOST;
+                config->board = CONFIG_PLAT_FALCON;
+                config->data_source = CONFIG_DISP_DATA_EEPROM_SD;
+                config->endianess = CONFIG_LITTLE_ENDIAN;
+                config->interface_type = SPI;
+                config->scrambling = 36;
 			}
 		}else if(config->i2c_mode == NULL && strcmp(config_name, "i2c_mode")==0){
 			char i2c_mode[32] = {0,};

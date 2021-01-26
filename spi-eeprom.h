@@ -59,7 +59,7 @@
 #define NVM_MAGIC_ID        0x504C //PL
 #define NVM 0xffff;
 
-extern int nvm_MX25_spi_read(unsigned int addr, struct pl_dispinfo *blob,
+extern int nvm_MX25_spi_read(unsigned int addr, struct pl_dispinfo *dispInfo,
                              uint32_t len);
 
 #endif /* SPI_EEPROM_H_ */

@@ -32,8 +32,10 @@
 
 struct i2c_eeprom;
 
-#define PL_DISPINFO_MAGIC 0x46574C50UL
-#define PL_DISPINFO_VERSION 1
+#define PL_DISPINFO_MAGIC 0x504C
+#define PL_DISPINFO_VERSION 2
+
+
 
 #define PL_DISPINFO_STR_LEN 63
 #define PL_DISPINFO_STR_SIZE (0x00010)
@@ -46,7 +48,7 @@ struct __attribute__((__packed__)) pl_dispinfo_vermagic {
 struct __attribute__((__packed__)) pl_dispinfo_info {
 	char panel_id[PL_DISPINFO_STR_SIZE];
 	char panel_type[PL_DISPINFO_STR_SIZE];
-	int32_t vcom;
+	uint32_t vcom;
 	uint8_t waveform_md5[16];
 	uint32_t waveform_full_length;
 	uint32_t waveform_lzss_length;

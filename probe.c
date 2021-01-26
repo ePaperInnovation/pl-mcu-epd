@@ -121,21 +121,21 @@ int probe_i2c(struct pl_platform *plat, struct s1d135xx *s1d135xx,
 int probe_dispinfo(struct pl_dispinfo *dispinfo, struct pl_wflib *wflib,
                    FIL *fatfs_file, const char *fatfs_path,
                    const struct i2c_eeprom *e,
-                   struct pl_wflib_eeprom_ctx *e_ctx)
+                   struct pl_wflib_eeprom_ctx *e_ctx, int dataSource)
 {
     int retval;
 
-    if (CONFIG_DISP_DATA_EEPROM_ONLY) //CONFIG_DISP_DATA_EEPROM_ONLY
+    if (dataSource == 0) //CONFIG_DISP_DATA_EEPROM_ONLY
     {
         return (pl_dispinfo_init_eeprom(dispinfo, e)
                 || pl_wflib_init_eeprom(wflib, e_ctx, e, dispinfo));
     }
-    else if (CONFIG_DISP_DATA_SD_ONLY)
+    else if (dataSource == 1)
     {
         return (pl_dispinfo_init_fatfs(dispinfo)
                 || pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path));
     }
-    else if (CONFIG_DISP_DATA_EEPROM_SD)
+    else if (dataSource == 2)
     {
 
         retval = (pl_dispinfo_init_eeprom(dispinfo, e)
@@ -145,7 +145,7 @@ int probe_dispinfo(struct pl_dispinfo *dispinfo, struct pl_wflib *wflib,
                     || pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path));
         return retval;
     }
-    else if (CONFIG_DISP_DATA_SD_EEPROM)
+    else if (dataSource == 3)
     {
         retval = (pl_dispinfo_init_fatfs(dispinfo)
                 || pl_wflib_init_fatfs(wflib, fatfs_file, fatfs_path));

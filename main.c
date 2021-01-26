@@ -457,7 +457,7 @@ int main_init(void)
 
 //	/* load display information */
     if (probe_dispinfo(&dispinfo, &g_plat.epdc.wflib, &g_wflib_fatfs_file,
-                       g_wflib_fatfs_path(), &disp_eeprom, &wflib_eeprom_ctx))
+                       g_wflib_fatfs_path(), &disp_eeprom, &wflib_eeprom_ctx, global_config.data_source))
         abort_msg("Failed to load dispinfo", ABORT_DISP_INFO);
     g_plat.dispinfo = &dispinfo;
     pl_dispinfo_log(&dispinfo);

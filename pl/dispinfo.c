@@ -53,6 +53,7 @@ static int change_panel_dir(const char *panel_type);
 int pl_dispinfo_init_eeprom(struct pl_dispinfo *p,
 			    const struct i2c_eeprom *eeprom)
 {
+    uint16_t dispInfoMagicWord = 0x504c;
 	uint16_t crc;
 
 	assert(p != NULL);
@@ -75,38 +76,38 @@ int pl_dispinfo_init_eeprom(struct pl_dispinfo *p,
 	STR_TERM(p->info.waveform_id);
 	STR_TERM(p->info.waveform_target);
 
-	if (CONFIG_LITTLE_ENDIAN){
-		{
-			int16_t *data16[] = {
-				(int16_t *)&p->vermagic.version,
-				(int16_t *)&p->info_crc,
-			};
-			int32_t *data32[] = {
-				&p->info.vcom,
-				(int32_t *)&p->info.waveform_full_length,
-				(int32_t *)&p->info.waveform_lzss_length,
-			};
+//	if (CONFIG_LITTLE_ENDIAN){
+//		{
+//			int16_t *data16[] = {
+//				(int16_t *)&p->vermagic.version,
+//				(int16_t *)&p->info_crc,
+//			};
+//			int32_t *data32[] = {
+//				&p->info.vcom,
+//				(int32_t *)&p->info.waveform_full_length,
+//				(int32_t *)&p->info.waveform_lzss_length,
+//			};
+//
+//			swap16_array(data16, ARRAY_SIZE(data16));
+//			swap32_array(data32, ARRAY_SIZE(data32));
+//		}
+//	}
 
-			swap16_array(data16, ARRAY_SIZE(data16));
-			swap32_array(data32, ARRAY_SIZE(data32));
-		}
-	}
+	uint16_t temp = p->vermagic.magic;
+	printf("Magic Word: %d\n", temp);
 
 	if (p->vermagic.magic != PL_DISPINFO_MAGIC) {
-		LOG("Invalid magic number: 0x%08lX instead of 0x%08lX",
-		    p->vermagic.magic, PL_DISPINFO_MAGIC);
+	    printf("%-16s ""Invalid magic number: 0x%08lX instead of 0x%08lX""\n", "dispinfo", p->vermagic.magic, 0x504C);
 		return -1;
 	}
 
 	if (p->vermagic.version != PL_DISPINFO_VERSION) {
-		LOG("Unsupported format version: %d, required: %d",
-		    p->vermagic.version, PL_DISPINFO_VERSION);
+	    printf("%-16s ""Unsupported format version: %d, required: %d""\n", "dispinfo", p->vermagic.version, 2);
 		return -1;
 	}
 
 	if (p->info_crc != crc) {
-		LOG("Info CRC mismatch: %04X instead of %04X",
-		    p->info_crc, crc);
+	    printf("%-16s ""Info CRC mismatch: %04X instead of %04X""\n", "dispinfo", p->info_crc, crc);
 		return -1;
 	}
  //todo: expect old and new panel type in eeprom
