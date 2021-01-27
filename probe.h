@@ -53,6 +53,6 @@ extern int probe_dispinfo(struct pl_dispinfo *dispinfo, struct pl_wflib *wflib,
 extern int probe_hvpmic(struct pl_platform *plat, struct vcom_cal *vcom_cal,
 			struct pl_epdpsu_gpio *epdpsu_gpio, struct pl_epdpsu_i2c *epdpsu_i2c,
 			struct tps65185_info *pmic_info);
-extern int probe_epdc(struct pl_platform *plat, struct it8951 *it8951);
+extern int probe_epdc(struct pl_platform *plat, struct it8951 *it8951, struct vcom_cal *vcom_cal);
 
 #endif /* INCLUDE_PROBE_H */

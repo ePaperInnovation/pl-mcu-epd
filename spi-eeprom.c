@@ -8,6 +8,7 @@
 #include <spi-eeprom.h>
 #include <msp430/msp430-spi.h>
 #include <pl/dispinfo.h>
+#include <string.h>
 #define LOG_TAG "spi-eeprom"
 
 struct eeprom_data
@@ -79,8 +80,8 @@ int nvm_MX25_spi_read(unsigned int addr, struct pl_dispinfo *dispInfo,
 
     dispInfo->vermagic.magic = (uint32_t) test;
 
-    printf("%-16s " "Magic-Word: %x" "\n", "spi-eeprom",
-           dispInfo->vermagic.magic);
+//    printf("%-16s " "Magic-Word: %x" "\n", "spi-eeprom",
+//           dispInfo->vermagic.magic);
 
     uint8_t nvmVer[NVM_NVMVERS_LEN];
 
@@ -100,8 +101,8 @@ int nvm_MX25_spi_read(unsigned int addr, struct pl_dispinfo *dispInfo,
 
     dispInfo->vermagic.version = low_bits;
 
-    printf("%-16s " "NVM-Version: %i" "\n", "spi-eeprom",
-           dispInfo->vermagic.version);
+//    printf("%-16s " "NVM-Version: %i" "\n", "spi-eeprom",
+//           dispInfo->vermagic.version);
 
     uint8_t dispID[NVM_DISPID_LEN];
 
@@ -125,7 +126,7 @@ int nvm_MX25_spi_read(unsigned int addr, struct pl_dispinfo *dispInfo,
         dispInfo->info.panel_id[z] = dispID[z];
     }
 
-    printf("%-16s " "Panel-ID: %s" "\n", "spi-eeprom", dispInfo->info.panel_id);
+//    printf("%-16s " "Panel-ID: %s" "\n", "spi-eeprom", dispInfo->info.panel_id);
 
     uint8_t prodID[NVM_PRODID_LEN];
 
@@ -144,8 +145,8 @@ int nvm_MX25_spi_read(unsigned int addr, struct pl_dispinfo *dispInfo,
         dispInfo->info.panel_type[z] = prodID[z];
     }
 
-    printf("%-16s " "Panel-Type: %s" "\n", "spi-eeprom",
-           dispInfo->info.panel_type);
+//    printf("%-16s " "Panel-Type: %s" "\n", "spi-eeprom",
+//           dispInfo->info.panel_type);
 
     uint8_t vcomRead[NVM_VCOM_LEN];
 
@@ -161,7 +162,7 @@ int nvm_MX25_spi_read(unsigned int addr, struct pl_dispinfo *dispInfo,
 
     dispInfo->info.vcom = get4Bytes(vcomRead, 0x00);
 
-    printf("%-16s " "Read VCom: %i" "\n", "spi-eeprom", dispInfo->info.vcom);
+    //printf("%-16s " "Read VCom: %i" "\n", "spi-eeprom", dispInfo->info.vcom);
 
     memset(dispInfo->info.waveform_md5, 0xFF, sizeof dispInfo->info.waveform_md5);
     dispInfo->info.waveform_full_length = 0;

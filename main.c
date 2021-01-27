@@ -212,7 +212,8 @@ static const struct pl_gpio_config g_epson_gpios[] = {
         { EPSON_RESET, PL_GPIO_OUTPUT | PL_GPIO_INIT_H }, {
                 EPSON_CS_0, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
         {
-        DISP_CS, PL_GPIO_OUTPUT | PL_GPIO_INIT_H }, };
+        DISP_CS,
+          PL_GPIO_OUTPUT | PL_GPIO_INIT_H }, };
 
 static const uint16_t g_epson_parallel[] = {
 EPSON_HDB0,
@@ -322,10 +323,10 @@ static struct pl_hwinfo init_hw_info_default(void)
     }
     else if (global_config.board == CONFIG_PLAT_FALCON)
     {
-        struct pl_hw_vcom_info vcom = { 63, 4586, 189, 9800, 27770, -41520,
+        struct pl_hw_vcom_info vcom = { 242, 1000, 968, 3833, 27770, -41520,
                                         70000 };
         g_hwinfo_default.vcom = vcom;
-        struct pl_hw_board_info board = { "Falcon", 2, 0, 0, HV_PMIC_MAX17135,
+        struct pl_hw_board_info board = { "Falcon", 4, 1, 0, HV_PMIC_MAX17135,
                                           0, 0, 0, global_config.i2c_mode,
                                           TEMP_SENSOR_NONE, 0, EPDC_S1D13524, 1,
                                           1 };
@@ -345,6 +346,8 @@ static struct pl_hwinfo init_hw_info_default(void)
 static const char* g_wflib_fatfs_path(void)
 {
     if (global_config.board == CONFIG_PLAT_RAVEN)
+        return "display/waveform.wbf";
+    else if (global_config.board == CONFIG_PLAT_FALCON)
         return "display/waveform.wbf";
     else
         return "display/waveform.bin";
@@ -443,27 +446,21 @@ int main_init(void)
     struct pl_hwinfo g_hwinfo_default = init_hw_info_default();
 
 //	/* load hardware information */
-//	if(CONFIG_HWINFO_EEPROM){
-//		if (probe_hwinfo(&g_plat, &hw_eeprom, &hwinfo_eeprom, &g_hwinfo_default))
-//			abort_msg("hwinfo probe failed", ABORT_HWINFO);
-//	}else if(CONFIG_HWINFO_DEFAULT){
     LOG("Using default hwinfo");
     g_plat.hwinfo = &g_hwinfo_default;
-//	}else{
-//		LOG( "Invalid hwinfo build configuration, check CONFIG_HWINFO_ options");
-//		exit(-1);
-//	}
+
     pl_hwinfo_log(g_plat.hwinfo);
 
 //	/* load display information */
     if (probe_dispinfo(&dispinfo, &g_plat.epdc.wflib, &g_wflib_fatfs_file,
-                       g_wflib_fatfs_path(), &disp_eeprom, &wflib_eeprom_ctx, global_config.data_source))
+                       g_wflib_fatfs_path(), &disp_eeprom, &wflib_eeprom_ctx,
+                       global_config.data_source))
         abort_msg("Failed to load dispinfo", ABORT_DISP_INFO);
     g_plat.dispinfo = &dispinfo;
     pl_dispinfo_log(&dispinfo);
 
     /* initialise EPDC */
-    if (probe_epdc(&g_plat, &it8951))
+    if (probe_epdc(&g_plat, &it8951, &vcom_cal))
         abort_msg("EPDC init failed", ABORT_EPDC_INIT);
 
     // debug -> read and print PROM content (MaterialID, WF-ID, VCOM)

@@ -227,35 +227,16 @@ int probe_hvpmic(struct pl_platform *plat, struct vcom_cal *vcom_cal,
     return stat;
 }
 
-int probe_epdc(struct pl_platform *plat, struct it8951 *it8951)
+int probe_epdc(struct pl_platform *plat, struct it8951 *it8951, struct vcom_cal *vcom_cal)
 {
     static const char px[] = "EPDC: ";
     const struct pl_hwinfo *hwinfo = plat->hwinfo;
     struct pl_epdc *epdc = &plat->epdc;
     int stat;
 
-    stat = ite_epdc_init(epdc, plat->dispinfo, it8951);
+    vcom_init(vcom_cal, &hwinfo->vcom);
 
-//	switch (hwinfo->board.epdc_ref) {
-//	case EPDC_S1D13524:
-//		LOG("%sS1D13524", px);
-//		stat = epson_epdc_init(epdc, plat->dispinfo,
-//				       EPSON_EPDC_S1D13524, s1d135xx);
-//		break;
-//	case EPDC_S1D13541:
-//		LOG("%sS1D13541", px);
-//		stat = epson_epdc_init(epdc, plat->dispinfo,
-//				       EPSON_EPDC_S1D13541, s1d135xx);
-//		break;
-//	case EPDC_NONE:
-//#if PL_EPDC_STUB
-//		LOG("%sStub");
-//		stat = pl_epdc_stub_init(epdc);
-//		break;
-//#endif /* fall through otherwise */
-//	default:
-//		assert_fail("Invalid EPDC identifier");
-//	}
+    stat = ite_epdc_init(epdc, plat->dispinfo, it8951, vcom_cal);
 
 #if 0 /* enable during development of new EPDC implementations */
 	if (stat)

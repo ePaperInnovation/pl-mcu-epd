@@ -1,20 +1,20 @@
 /*
  *  Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2014 Plastic Logic Limited
+ Copyright (C) 2014 Plastic Logic Limited
 
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * ite-epdc.c
  *
@@ -22,13 +22,7 @@
  *      Author: oliver.lenz
  */
 
-#include "ite/ite-it8951.h"
 #include <ite/ite-epdc.h>
-#include <pl/types.h>
-#include <pl/epdc.h>
-#include <pl/gpio.h>
-#include <stdlib.h>
-#include "assert.h"
 
 #define LOG_TAG "ite-epdc"
 #include "utils.h"
@@ -100,7 +94,7 @@ static int ite_load_image(struct pl_epdc *p, const char *path,
 }
 
 int ite_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo,
-                  struct it8951 *it8951)
+                  struct it8951 *it8951, struct vcom_cal *vcom_cal)
 {
 
     int stat;
@@ -137,7 +131,9 @@ int ite_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo,
     epdc->xres = it8951->xres;
     epdc->yres = it8951->yres;
 
-    it8951_setVcom(it8951, 675);
+    const struct pl_dispinfo_info *info = &(epdc->dispinfo->info);
+
+    it8951_setVcom(it8951, vcom_calculate(vcom_cal, info->vcom));
 
     //Turn off pmic manual, cause set VCom turns HVs on
     it8951_set_epd_power(it8951, 0);

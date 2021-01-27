@@ -232,7 +232,7 @@ static int cmd_update(struct pl_platform *plat, const char *line)
 
 	opt += len;
 	//len = parser_read_str(opt, SEP, update_mode, sizeof(update_mode));
-	len = parser_read_int(opt, SEP, &update_mode);
+	len = parser_read_int(opt, SEP, (int*) &update_mode);
 
 	if (len <= 0)
 		return -1;

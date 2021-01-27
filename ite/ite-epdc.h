@@ -25,16 +25,21 @@
 #ifndef ITE_ITE_EPDC_H_
 #define ITE_ITE_EPDC_H_
 
+#include <pl/dispinfo.h>
+#include <pl/types.h>
+#include <pl/epdc.h>
+#include <pl/gpio.h>
+#include <stdlib.h>
+#include "assert.h"
+#include <vcom.h>
+#include "ite/ite-it8951.h"
+
 struct pl_epdc;
 struct pl_dispinfo;
 struct it8951;
 
 #define  MY_WORD_SWAP(x) ( ((x & 0xff00)>>8) | ((x & 0x00ff)<<8) )
 
-extern int ite_epdc_init(struct pl_epdc *epdc,
-               const struct pl_dispinfo *dispinfo,
-               struct it8951 *it8951);
-
-//extern int epson_epdc_init_s1d13541(struct pl_epdc *epdc);
+extern int ite_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo, struct it8951 *it8951, struct vcom_cal *vcom_cal);
 
 #endif /* ITE_ITE_EPDC_H_ */

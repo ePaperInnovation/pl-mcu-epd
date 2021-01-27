@@ -50,6 +50,6 @@ struct pnm_header {
 		(int)_value; })
 
 extern int pnm_read_header(FIL *pnm_file, struct pnm_header *hdr);
-extern int pnm_read_int32(FIL *pnm_file, int32_t *value);
+extern int pnm_read_int32(FIL *pnm_file, uint32_t *value);
 
 #endif /* PNM_UTILS_H */

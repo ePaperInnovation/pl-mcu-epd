@@ -62,7 +62,7 @@
 #include "FatFs/ff.h"
 #include "pnm-utils.h"
 
-int pnm_read_int32(FIL *pnm_file, int32_t *value)
+int pnm_read_int32(FIL *pnm_file, uint32_t *value)
 {
 	UINT count;
 	char ch;

@@ -166,7 +166,7 @@ typedef struct
 void it8951_load_init_code(struct it8951 *p);
 extern int it8951_clear_init(struct it8951 *p);
 extern int it8951_update(struct it8951 *p, int wfid, enum pl_update_mode mode,
-                         struct pl_area *area);
+                         const struct pl_area *area);
 extern int it8951_set_power_state(struct it8951 *p,
                                   enum pl_epdc_power_state state);
 extern int it8951_set_epd_power(struct it8951 *p, int on);

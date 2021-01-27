@@ -69,32 +69,15 @@ int pl_dispinfo_init_eeprom(struct pl_dispinfo *p,
 	    return -1;
 	}
 
-	crc = crc16_run(crc16_init, (const uint8_t *)&p->info, sizeof p->info);
+	//crc = crc16_run(crc16_init, (const uint8_t *)&p->info, sizeof p->info);
 
 	STR_TERM(p->info.panel_id);
 	STR_TERM(p->info.panel_type);
 	STR_TERM(p->info.waveform_id);
 	STR_TERM(p->info.waveform_target);
 
-//	if (CONFIG_LITTLE_ENDIAN){
-//		{
-//			int16_t *data16[] = {
-//				(int16_t *)&p->vermagic.version,
-//				(int16_t *)&p->info_crc,
-//			};
-//			int32_t *data32[] = {
-//				&p->info.vcom,
-//				(int32_t *)&p->info.waveform_full_length,
-//				(int32_t *)&p->info.waveform_lzss_length,
-//			};
-//
-//			swap16_array(data16, ARRAY_SIZE(data16));
-//			swap32_array(data32, ARRAY_SIZE(data32));
-//		}
-//	}
-
-	uint16_t temp = p->vermagic.magic;
-	printf("Magic Word: %d\n", temp);
+//	uint16_t temp = p->vermagic.magic;
+//	printf("Magic Word: %d\n", temp);
 
 	if (p->vermagic.magic != PL_DISPINFO_MAGIC) {
 	    printf("%-16s ""Invalid magic number: 0x%08lX instead of 0x%08lX""\n", "dispinfo", p->vermagic.magic, 0x504C);
@@ -106,10 +89,10 @@ int pl_dispinfo_init_eeprom(struct pl_dispinfo *p,
 		return -1;
 	}
 
-	if (p->info_crc != crc) {
-	    printf("%-16s ""Info CRC mismatch: %04X instead of %04X""\n", "dispinfo", p->info_crc, crc);
-		return -1;
-	}
+//	if (p->info_crc != crc) {
+//	    printf("%-16s ""Info CRC mismatch: %04X instead of %04X""\n", "dispinfo", p->info_crc, crc);
+//		return -1;
+//	}
  //todo: expect old and new panel type in eeprom
 	return change_panel_dir(p->info.panel_type);
 }
@@ -168,14 +151,14 @@ void pl_dispinfo_log(const struct pl_dispinfo *p)
 	LOG("Info CRC: 0x%04X", p->info_crc);
 	LOG("Panel ID: %s", p->info.panel_id);
 #endif
-	LOG("Panel Type: %s", p->info.panel_type);
-	LOG("VCOM: %li", p->info.vcom);
+	printf("%-16s ""Panel Type: %s""\n", "dispinfo", p->info.panel_type);
+	printf("%-16s ""VCOM: %li""\n", "dispinfo", p->info.vcom);
 #if VERBOSE
 	LOG("Waveform Length: %lu", p->info.waveform_full_length);
 	LOG("Waveform Compressed Length: %lu",p->info.waveform_lzss_length);
 	LOG("Waveform ID: %s", p->info.waveform_id);
 #endif
-	LOG("Waveform Target: %s", p->info.waveform_target);
+	printf("%-16s ""Waveform Target: %s""\n", "dispinfo", p->info.waveform_target);
 #if VERBOSE
 	printf("Waveform MD5: 0x");
 	{
