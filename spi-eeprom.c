@@ -126,7 +126,7 @@ int nvm_MX25_spi_read(unsigned int addr, struct pl_dispinfo *dispInfo,
         dispInfo->info.panel_id[z] = dispID[z];
     }
 
-//    printf("%-16s " "Panel-ID: %s" "\n", "spi-eeprom", dispInfo->info.panel_id);
+    printf("%-16s " "Panel-ID: %s" "\n", "spi-eeprom", dispInfo->info.panel_id);
 
     uint8_t prodID[NVM_PRODID_LEN];
 

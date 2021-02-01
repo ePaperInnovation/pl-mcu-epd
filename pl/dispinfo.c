@@ -1,21 +1,21 @@
 /*
-  Plastic Logic EPD project on MSP430
+ Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2013. 2014 Plastic Logic Limited
+ Copyright (C) 2013. 2014 Plastic Logic Limited
 
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 /*
  * pl/dispinfo.c -- Plastic Logic display information
  *
@@ -51,93 +51,101 @@
 static int change_panel_dir(const char *panel_type);
 
 int pl_dispinfo_init_eeprom(struct pl_dispinfo *p,
-			    const struct i2c_eeprom *eeprom)
+                            const struct i2c_eeprom *eeprom)
 {
     uint16_t dispInfoMagicWord = 0x504c;
-	uint16_t crc;
+    uint16_t crc;
 
-	assert(p != NULL);
-	assert(eeprom != NULL);
+    assert(p != NULL);
+    assert(eeprom != NULL);
 
 //	if (eeprom_read(eeprom, 0, sizeof *p, (uint8_t *)p)) {
 //		LOG("Failed to read EEPROM");
 //		return -1;
 //	}
 
-	if(nvm_MX25_spi_read(0, (uint8_t*) p, MX25U4033E_SIZE)){
-	    LOG("Failed to read EEPROM");
-	    return -1;
-	}
+    if (nvm_MX25_spi_read(0, (uint8_t*) p, MX25U4033E_SIZE))
+    {
+        LOG("Failed to read EEPROM");
+        return -1;
+    }
 
-	//crc = crc16_run(crc16_init, (const uint8_t *)&p->info, sizeof p->info);
+    //crc = crc16_run(crc16_init, (const uint8_t *)&p->info, sizeof p->info);
 
-	STR_TERM(p->info.panel_id);
-	STR_TERM(p->info.panel_type);
-	STR_TERM(p->info.waveform_id);
-	STR_TERM(p->info.waveform_target);
+    STR_TERM(p->info.panel_id);
+    STR_TERM(p->info.panel_type);
+    STR_TERM(p->info.waveform_id);
+    STR_TERM(p->info.waveform_target);
 
 //	uint16_t temp = p->vermagic.magic;
 //	printf("Magic Word: %d\n", temp);
 
-	if (p->vermagic.magic != PL_DISPINFO_MAGIC) {
-	    printf("%-16s ""Invalid magic number: 0x%08lX instead of 0x%08lX""\n", "dispinfo", p->vermagic.magic, 0x504C);
-		return -1;
-	}
+    if (p->vermagic.magic != PL_DISPINFO_MAGIC)
+    {
+        printf("%-16s " "Invalid magic number: 0x%08lX instead of 0x%08lX" "\n",
+               "dispinfo", p->vermagic.magic, 0x504C);
+        return -1;
+    }
 
-	if (p->vermagic.version != PL_DISPINFO_VERSION) {
-	    printf("%-16s ""Unsupported format version: %d, required: %d""\n", "dispinfo", p->vermagic.version, 2);
-		return -1;
-	}
+    if (p->vermagic.version != PL_DISPINFO_VERSION)
+    {
+        printf("%-16s " "Unsupported format version: %d, required: %d" "\n",
+               "dispinfo", p->vermagic.version, 2);
+        return -1;
+    }
 
 //	if (p->info_crc != crc) {
 //	    printf("%-16s ""Info CRC mismatch: %04X instead of %04X""\n", "dispinfo", p->info_crc, crc);
 //		return -1;
 //	}
- //todo: expect old and new panel type in eeprom
-	return change_panel_dir(p->info.panel_type);
+    //todo: expect old and new panel type in eeprom
+    //return change_panel_dir(p->info.panel_type);
+    return change_panel_dir(global_config.config_display_type);
 }
 
 int pl_dispinfo_init_fatfs(struct pl_dispinfo *p)
 {
-	FIL vcom_file;
-	int stat;
+    FIL vcom_file;
+    int stat;
 
-	assert(p != NULL);
+    assert(p != NULL);
 
-	LOG("Loading display data from FatFS");
+    LOG("Loading display data from FatFS");
 
-	if (change_panel_dir(global_config.config_display_type))
-		return -1;
+    if (change_panel_dir(global_config.config_display_type))
+        return -1;
 
-	p->vermagic.magic = PL_DISPINFO_MAGIC;
-	p->vermagic.version = PL_DISPINFO_VERSION;
-	p->info.panel_id[0] = '\0';
+    p->vermagic.magic = PL_DISPINFO_MAGIC;
+    p->vermagic.version = PL_DISPINFO_VERSION;
+    p->info.panel_id[0] = '\0';
 
-	/* ToDo: read panel type from display/type */
-	strncpy(p->info.panel_type, global_config.config_display_type,
-		sizeof p->info.panel_type);
+    /* ToDo: read panel type from display/type */
+    strncpy(p->info.panel_type, global_config.config_display_type,
+            sizeof p->info.panel_type);
 
-	if (f_open(&vcom_file, "display/vcom", FA_READ) != FR_OK) {
-		LOG("VCOM file not found");
-		return -1;
-	}
+    if (f_open(&vcom_file, "display/vcom", FA_READ) != FR_OK)
+    {
+        LOG("VCOM file not found");
+        return -1;
+    }
 
-	stat = pnm_read_int32(&vcom_file, &p->info.vcom);
-	f_close(&vcom_file);
+    stat = pnm_read_int32(&vcom_file, &p->info.vcom);
+    f_close(&vcom_file);
 
-	if (stat) {
-		LOG("Failed to read VCOM");
-		return -1;
-	}
+    if (stat)
+    {
+        LOG("Failed to read VCOM");
+        return -1;
+    }
 
-	memset(p->info.waveform_md5, 0xFF, sizeof p->info.waveform_md5);
-	p->info.waveform_full_length = 0;
-	p->info.waveform_lzss_length = 0;
-	p->info.waveform_id[0] = '\0';
-	p->info.waveform_target[0] = '\0';
-	p->info_crc = 0xFFFF;
+    memset(p->info.waveform_md5, 0xFF, sizeof p->info.waveform_md5);
+    p->info.waveform_full_length = 0;
+    p->info.waveform_lzss_length = 0;
+    p->info.waveform_id[0] = '\0';
+    p->info.waveform_target[0] = '\0';
+    p->info_crc = 0xFFFF;
 
-	return 0;
+    return 0;
 }
 
 void pl_dispinfo_log(const struct pl_dispinfo *p)
@@ -151,14 +159,15 @@ void pl_dispinfo_log(const struct pl_dispinfo *p)
 	LOG("Info CRC: 0x%04X", p->info_crc);
 	LOG("Panel ID: %s", p->info.panel_id);
 #endif
-	printf("%-16s ""Panel Type: %s""\n", "dispinfo", p->info.panel_type);
-	printf("%-16s ""VCOM: %li""\n", "dispinfo", p->info.vcom);
+    printf("%-16s " "Panel Type: %s" "\n", "dispinfo", p->info.panel_type);
+    printf("%-16s " "VCOM: %li" "\n", "dispinfo", p->info.vcom);
 #if VERBOSE
 	LOG("Waveform Length: %lu", p->info.waveform_full_length);
 	LOG("Waveform Compressed Length: %lu",p->info.waveform_lzss_length);
 	LOG("Waveform ID: %s", p->info.waveform_id);
 #endif
-	printf("%-16s ""Waveform Target: %s""\n", "dispinfo", p->info.waveform_target);
+    printf("%-16s " "Waveform Target: %s" "\n", "dispinfo",
+           p->info.waveform_target);
 #if VERBOSE
 	printf("Waveform MD5: 0x");
 	{
@@ -177,11 +186,11 @@ void pl_dispinfo_log(const struct pl_dispinfo *p)
 
 static int change_panel_dir(const char *panel_type)
 {
-	char panel_path[MAX_PATH_LEN];
+    char panel_path[MAX_PATH_LEN];
 
-	if (join_path(panel_path, MAX_PATH_LEN, ROOT_SD_PATH, panel_type) ||
-	    (f_chdir(panel_path) != FR_OK))
-		return -1;
+    if (join_path(panel_path, MAX_PATH_LEN, ROOT_SD_PATH, panel_type)
+            || (f_chdir(panel_path) != FR_OK))
+        return -1;
 
-	return 0;
+    return 0;
 }

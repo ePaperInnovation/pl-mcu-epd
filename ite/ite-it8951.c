@@ -43,7 +43,7 @@
 
 #include <app/parser.h>
 
-#define DATA_BUFFER_LENGTH              2312 // must be above maximum xres value for any supported display
+#define DATA_BUFFER_LENGTH      5520         // must be above maximum xres value for any supported display
 
 static void set_cs(struct it8951 *p, int state);
 static void send_cmd(struct it8951 *p, uint16_t cmd);
@@ -88,7 +88,7 @@ void it8951_load_init_code(struct it8951 *p)
     reInitSPI(p, 20);
 
     pBuf = (I80IT8951DevInfo*) gpio_i80_16b_data_in(
-            p, (sizeof(I80IT8951DevInfo) / 2), (uint16_t*)pBuf);
+            p, (sizeof(I80IT8951DevInfo) / 2), (uint16_t*) pBuf);
 
     p->xres = pBuf->usPanelW;
     p->yres = pBuf->usPanelH;
@@ -384,10 +384,11 @@ extern int it8951_set_epd_power(struct it8951 *p, int on)
         // uint16_t data2 = malloc(sizeof(uint16_t));
         waitForHRDY(p);
         data2[0] = it8951_read_reg(p, 0x1e16, data2);
-
-        send_cmd(p, USDEF_I80_CMD_POWER_CTR);
-        gpio_i80_16_data_out(p, 0x01, 1);
         waitForHRDY(p);
+
+        //  send_cmd(p, USDEF_I80_CMD_POWER_CTR);
+        //  gpio_i80_16_data_out(p, 0x01, 1);
+        //   waitForHRDY(p);
         send_cmd(p, USDEF_I80_CMD_POWER_CTR);
         gpio_i80_16_data_out(p, 0x00, 1);
         //FLIP Bit 12 which corresponds to GPIO12/Pin 66 on ITE
@@ -545,9 +546,9 @@ void do_fill(struct it8951 *p, const struct pl_area *area, unsigned bpp,
     /* Only 16-bit transfers for now... */
     assert(!(area->width % 2));
 
-    uint16_t data_[2048];
+    uint16_t data_[DATA_BUFFER_LENGTH];
 
-    memset(data_, g, sizeof(data_));
+    memset(data_, g, area->width);
 
     int b = 0;
     for (b = 0; b < area->height; b++)
@@ -561,6 +562,7 @@ void do_fill(struct it8951 *p, const struct pl_area *area, unsigned bpp,
 
     gpio_i80_16_cmd_out(p, IT8951_TCON_LD_IMG_END);
 
+    free(data_);
 }
 
 void reInitSPI(struct it8951 *p, uint8_t divisor)
@@ -710,9 +712,12 @@ static int transfer_file_scrambled(struct it8951 *p, FIL *file, int xres)
 static void memory_padding(uint8_t *source, uint8_t *target, int s_gl, int s_sl,
                            int t_gl, int t_sl, int o_gl, int o_sl)
 {
-    int sl, gl;
-    int _gl_offset = 0;
-    int _sl_offset = 0;
+    uint16_t sl, gl;
+    uint16_t divider;
+    uint16_t _gl_offset = 0;
+    uint16_t _sl_offset_f = 0;
+    uint16_t _sl_offset_b = 0;
+    divider = 2;
 
     if (o_gl > 0)
         _gl_offset = o_gl;
@@ -720,15 +725,28 @@ static void memory_padding(uint8_t *source, uint8_t *target, int s_gl, int s_sl,
         _gl_offset = t_gl - s_gl;
 
     if (o_sl > 0)
-        _sl_offset = o_sl;
+    {
+        _sl_offset_f = o_sl;
+        _sl_offset_b = (t_sl / divider) - (s_sl / 2) - _sl_offset_f;
+    }
     else
-        _sl_offset = t_sl - s_sl;
+    {
+        _sl_offset_f = t_sl - s_sl;
+    }
 
     for (gl = 0; gl < s_gl; gl++)
         for (sl = 0; sl < s_sl; sl++)
         {
-            target[(gl + _gl_offset) * t_sl + (sl + _sl_offset)] = source[gl
-                    * s_sl + sl];
-            source[gl * s_sl + sl] = 0xFF;
+            if (sl == 0)
+            {
+                _sl_offset_f = o_sl;
+            }
+            else if (sl == s_sl / divider - 1)
+            {
+                _sl_offset_f = _sl_offset_f + _sl_offset_b + _sl_offset_f;
+            }
+
+            target[(gl + _gl_offset) * t_sl + (sl + _sl_offset_f)] = source[gl * s_sl + sl];
+            //source[gl * s_sl + sl] = 0xFF;
         }
 }
