@@ -145,7 +145,7 @@ int probe_dispinfo(struct pl_dispinfo *dispinfo, struct pl_wflib *wflib,
 static struct max17135_info *g_max17135;
 
 int probe_hvpmic(struct pl_platform *plat, struct vcom_cal *vcom_cal,
-		 struct pl_epdpsu_gpio *epdpsu_gpio, struct pl_epdpsu_i2c *epdpsu_i2c,
+		 struct pl_epdpsu_gpio *epdpsu_gpio,
 		 struct tps65185_info *pmic_info)
 {
 	static const char px_psu[] = "EPD PSU: ";
@@ -158,9 +158,6 @@ int probe_hvpmic(struct pl_platform *plat, struct vcom_cal *vcom_cal,
 		/* Warning: This must not call the epdc functions yet... */
 		LOG("%sEPDC", px_psu);
 		stat = pl_epdpsu_epdc_init(&plat->psu, &plat->epdc);
-	} else if (!strcmp(hwinfo->board.board_type, "HB_i2c")) {
-		LOG("%sI2C", px_psu);
-		stat = pl_epdpsu_i2c_init(&plat->psu, epdpsu_i2c);
 	} else {
 		LOG("%sGPIO", px_psu);
 		stat = pl_epdpsu_gpio_init(&plat->psu, epdpsu_gpio);
@@ -192,7 +189,7 @@ int probe_hvpmic(struct pl_platform *plat, struct vcom_cal *vcom_cal,
 		break;
 	case HV_PMIC_TPS65185:
 		LOG("%sTPS65185", px_pmic);
-		stat = tps65185_init(&plat->psu, pmic_info, plat->i2c,
+		stat = tps65185_init(pmic_info, plat->i2c,
 				     I2C_PMIC_ADDR_TPS65185, vcom_cal);
 		if (!stat) /* ToDo: generalise set_vcom with HV-PMIC API */
 			stat = tps65185_set_vcom_voltage(

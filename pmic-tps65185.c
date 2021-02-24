@@ -26,9 +26,7 @@
  */
 
 #include <pl/i2c.h>
-#include <pl/epdpsu.h>
 #include <stdlib.h>
-#include <pl/gpio.h>
 #include "assert.h"
 #include "vcom.h"
 #include "pmic-tps65185.h"
@@ -115,7 +113,7 @@ static void reg_dump(struct tps65185_info *p)
 }
 #endif
 
-int tps65185_init(struct pl_epdpsu *psu, struct tps65185_info *p, struct pl_i2c *i2c,
+int tps65185_init(struct tps65185_info *p, struct pl_i2c *i2c,
 		  uint8_t i2c_addr, const struct vcom_cal *cal)
 {
 	union tps65185_version ver;
@@ -141,11 +139,7 @@ int tps65185_init(struct pl_epdpsu *psu, struct tps65185_info *p, struct pl_i2c 
 				       init_data[i].data))
 			return -1;
 	}
-	// find out on which setting we are: only i2c has nulled functions
-	if(!psu->on && !psu->off){
-		psu->on = tps65185_enable;
-		psu->off = tps65185_disable;
-	}
+
 	return 0;
 }
 
@@ -190,83 +184,49 @@ int tps65185_set_vcom_voltage(struct tps65185_info *p, int mv)
 	return pl_i2c_reg_write_8(p->i2c, p->i2c_addr, HVPMIC_REG_VCOM2, v2);
 }
 
-#if 1 /* ToDo: use or remove */
+#if 0 /* ToDo: use or remove */
 /* use i2c to determine when power up has completed */
-int tps65185_wait_pok(struct pl_epdpsu *psu)
+int tps65185_wait_pok(struct tps65185_info *p)
 {
-	struct pl_epdpsu_i2c* p = psu->data;
 	uint8_t pgstat;
 	uint8_t int1, int2;
 
 	assert(p != NULL);
 
-	if (pl_i2c_reg_read_8(p->i2c, 0x68, HVPMIC_REG_PG_STAT,
+	if (pl_i2c_reg_read_8(p->i2c, p->i2c_addr, HVPMIC_REG_PG_STAT,
 			   &pgstat))
 		return -1;
 
-	if (pl_i2c_reg_read_8(p->i2c, 0x68, HVPMIC_REG_INT1, &int1) ||
-	    pl_i2c_reg_read_8(p->i2c, 0x68, HVPMIC_REG_INT2, &int2))
+	if (pl_i2c_reg_read_8(p->i2c, p->i2c_addr, HVPMIC_REG_INT1, &int1) ||
+	    pl_i2c_reg_read_8(p->i2c, p->i2c_addr, HVPMIC_REG_INT2, &int2))
 		return -1;
 
 #if VERVBOSE
-	if (int1 || int2){
+	if (int1 || int2)
 		LOG("PGSTAT: 0x%02X, INT1: 0x%02X, INT2: 0x%02X",
 		       pgstat, int1, int2);
-		return 0;
-	}
 #endif
 
 #if DO_REG_DUMP
 	reg_dump(pmic);
 #endif
 
-	if((pgstat & 0xFA) == 0xFA)
-		return 1;
-	else
-		return 0;
+	abort_msg("TPS65185 POK feature not tested", ABORT_UNDEFINED);
+
+	return 0;
 }
 #endif
 
 /* use the i2c interface to power up the PMIC */
-int tps65185_enable(struct pl_epdpsu *psu){
-	struct pl_epdpsu_i2c* p = psu->data;
-
-	int timeout, stat = pl_i2c_reg_write_8(p->i2c, 0x68 ,HVPMIC_REG_ENABLE, 0x80);
-
-	for (timeout = p->timeout_ms; timeout; timeout--) {
-		if (tps65185_wait_pok(psu))
-			break;
-		mdelay(1);
-	}
-
-	if (!timeout) {
-		LOG("POK timeout");
-		return -1;
-	}
-
-	pl_gpio_set(p->gpio, p->com_close, 1);
-	msleep(p->on_delay_ms);
-	psu->state = 1;
-
-	return stat;
+int tps65185_enable(struct tps65185_info *p)
+{
+	return -1;
 }
 
 /* use the i2c interface to power down the PMIC */
-int tps65185_disable(struct pl_epdpsu *psu)
+int tps65185_disable(struct tps65185_info *p)
 {
-	struct pl_epdpsu_i2c* p = psu->data;
-	int stat;
-
-#if LOG_VERBOSE
-	LOG("off");
-#endif
-
-	stat = pl_i2c_reg_write_8(p->i2c, 0x68 ,HVPMIC_REG_ENABLE, 0x40);
-
-	pl_gpio_set(p->gpio, p->com_close, 0);
-	msleep(p->off_delay_ms);
-	psu->state = 0;
-	return stat;
+	return -1;
 }
 
 int tps65185_temperature_measure(struct tps65185_info *p, int16_t *measured)

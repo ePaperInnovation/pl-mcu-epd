@@ -364,7 +364,7 @@ int s1d135xx_load_image(struct s1d135xx *p, const char *path, uint16_t mode,
 	if (area == NULL || p->source_offset){
 		stat = transfer_file_scrambled(p, &img_file, hdr.width);
 	}else{
-		stat = transfer_image(p, &img_file, area, left, top, hdr.width, p->xres, p->scrambling, p->source_offset);
+		stat = transfer_image(p, &img_file, area, left, top, hdr.width, hdr.width, p->scrambling, p->source_offset);
 	}
 	if(area){
 		free(area);
@@ -574,7 +574,7 @@ uint16_t s1d135xx_read_reg(struct s1d135xx *p, uint16_t reg)
 	p->interface->read((uint8_t *)&val, sizeof(uint16_t));
 	set_cs(p, 1);
 
-	return be16toh(val);  // swap bytes after read
+	return be16toh(val);
 }
 
 void s1d135xx_write_reg(struct s1d135xx *p, uint16_t reg, uint16_t val)
@@ -830,7 +830,7 @@ static int transfer_image(struct s1d135xx *p, FIL *f, const struct pl_area *area
 	uint16_t buffer_length = max(line_length, xres);
 
 	/* Simple bounds check */
-	if (xres < area->width || xres < (left + area->width)) {
+	if (width < area->width || width < (left + area->width)) {
 		LOG("Invalid combination of width/left/area");
 		return -1;
 	}
@@ -909,7 +909,7 @@ static void send_cmd_cs(struct s1d135xx *p, uint16_t cmd)
 
 static void send_cmd(struct s1d135xx *p, uint16_t cmd)
 {
-	cmd = htobe16(cmd); // swap bytes before writing
+	cmd = htobe16(cmd);
 
 	set_hdc(p, 0);
 	p->interface->write((uint8_t *)&cmd, sizeof(uint16_t));
@@ -926,7 +926,7 @@ static void send_params(struct s1d135xx *p, const uint16_t *params, size_t n)
 
 static void send_param(struct s1d135xx *p, uint16_t param)
 {
-	param = htobe16(param); // swap bytes before writing
+	param = htobe16(param);
 	p->interface->write((uint8_t *)&param, sizeof(uint16_t));
 }
 

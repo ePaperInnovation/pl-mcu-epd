@@ -70,16 +70,6 @@ struct pl_epdpsu_gpio {
 	unsigned off_delay_ms;/**< Delay after turning the power off */
 };
 
-/** Generic I2C-based implementation */
-struct pl_epdpsu_i2c {
-	struct pl_gpio *gpio; /**< pl_gpio instance to control the GPIOs */
-	struct pl_i2c *i2c;
-	unsigned com_close;   /**< GPIO number to close the COM switch */
-	unsigned timeout_ms;  /**< Maximum time in ms to wait for POK */
-	unsigned on_delay_ms; /**< Delay after turning the power on */
-	unsigned off_delay_ms;/**< Delay after turning the power off */
-};
-
 /**
    Initialise a pl_epdpsu instance with generic GPIO-based implamentation.
 
@@ -101,8 +91,6 @@ extern int pl_epdpsu_gpio_init(struct pl_epdpsu *psu,
    @return -1 if an error occured, 0 otherwise
  */
 extern int pl_epdpsu_epdc_init(struct pl_epdpsu *psu, struct pl_epdc *epdc);
-
-int pl_epdpsu_i2c_init(struct pl_epdpsu *psu, struct pl_epdpsu_i2c *psu_i2c);
 
 #if PL_EPDPSU_STUB
 /** Initialise an pl_epdpsu instance with stub implementation.

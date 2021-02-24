@@ -139,11 +139,6 @@ static struct pl_epdpsu_gpio g_epdpsu_gpio = {
 	&g_plat.gpio, PMIC_EN, HVSW_CTRL, PMIC_POK, PMIC_FLT, 300, 5, 100
 };
 
-static struct pl_epdpsu_i2c g_epdpsu_i2c = {
-	&g_plat.gpio, NULL, LED4,  30, 10, 100
-};
-
-
 /* --- Epson GPIOs --- */
 
 /* Optional pins used in Epson SPI interface */
@@ -222,10 +217,10 @@ static struct pl_hwinfo init_hw_info_default(void){
 	int BOARD_MAJ = 0;
 	int BOARD_MIN = 0;
 	if(CONFIG_HWINFO_DEFAULT){
-		if (global_config.board == CONFIG_PLAT_Z6_I2C || global_config.board == CONFIG_PLAT_Z6){
+		if (global_config.board == CONFIG_PLAT_Z6){
 			BOARD_MAJ =6;
 			BOARD_MAJ =3;
-		}else if(global_config.board == CONFIG_PLAT_Z7 || global_config.board == CONFIG_PLAT_Z7_I2C){
+		}else if(global_config.board == CONFIG_PLAT_Z7){
 			BOARD_MAJ =7;
 			BOARD_MIN =2;
 		}
@@ -236,12 +231,6 @@ static struct pl_hwinfo init_hw_info_default(void){
 		struct pl_hw_vcom_info vcom = { 127, 4172, 381, 12490, 25080, -32300, 56886 };
 		g_hwinfo_default.vcom = vcom;
 		struct pl_hw_board_info board = { "HB", BOARD_MAJ, BOARD_MIN, 0, HV_PMIC_TPS65185, 0, 0, 0,
-								global_config.i2c_mode, TEMP_SENSOR_NONE, 0, EPDC_S1D13541, 1, 1 };
-		g_hwinfo_default.board = board;
-	}else if (global_config.board == CONFIG_PLAT_Z6_I2C || global_config.board == CONFIG_PLAT_Z7_I2C){
-		struct pl_hw_vcom_info vcom = { 127, 4172, 381, 12490, 25080, -32300, 56886 };
-		g_hwinfo_default.vcom = vcom;
-		struct pl_hw_board_info board = { "HB_i2c", BOARD_MAJ, BOARD_MIN, 0, HV_PMIC_TPS65185, 0, 0, 0,
 								global_config.i2c_mode, TEMP_SENSOR_NONE, 0, EPDC_S1D13541, 1, 1 };
 		g_hwinfo_default.board = board;
 	}else if(global_config.board == CONFIG_PLAT_RAVEN){
@@ -397,8 +386,7 @@ int main_init(void)
 	pl_dispinfo_log(&dispinfo);
 
 	/* initialise EPD HV-PSU and HV-PMIC */
-	g_epdpsu_i2c.i2c = g_plat.i2c;
-	if (probe_hvpmic(&g_plat, &vcom_cal, &g_epdpsu_gpio, &g_epdpsu_i2c, &pmic_info))
+	if (probe_hvpmic(&g_plat, &vcom_cal, &g_epdpsu_gpio, &pmic_info))
 		abort_msg("HV-PMIC and EPD PSU init failed", ABORT_HVPSU_INIT);
 
 	/* initialise EPDC */

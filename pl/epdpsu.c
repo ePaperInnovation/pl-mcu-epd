@@ -145,17 +145,6 @@ int pl_epdpsu_epdc_init(struct pl_epdpsu *psu, struct pl_epdc *epdc)
 	return 0;
 }
 
-/* --- I2C --- */
-int pl_epdpsu_i2c_init(struct pl_epdpsu *psu, struct pl_epdpsu_i2c *psu_i2c)
-{
-	psu->on = NULL; // to be set by implementation
-	psu->off = NULL; // to be set by implementation
-	psu->state = 0;
-	psu->data = psu_i2c;
-
-	return 0;
-}
-
 #if PL_EPDPSU_STUB
 
 /* --- Stub --- */

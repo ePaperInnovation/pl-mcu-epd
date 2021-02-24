@@ -61,9 +61,7 @@ enum config_platform_board {
 	CONFIG_PLAT_FALCON,
 	CONFIG_PLAT_RAVEN, /**< Raven board */
 	CONFIG_PLAT_Z6, /**< Hummingbird Z6.x board */
-	CONFIG_PLAT_Z7, /**< Hummingbird Z7.x board */
-	CONFIG_PLAT_Z6_I2C, /**< Hummingbird Z6.x board */
-	CONFIG_PLAT_Z7_I2C  /**< Hummingbird Z7.x board */
+	CONFIG_PLAT_Z7  /**< Hummingbird Z7.x board */
 };
 
 /** Each display has a type and some associated data such as a VCOM voltage and

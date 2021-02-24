@@ -57,10 +57,6 @@ enum config_platform_board get_board(char* str){
 		return CONFIG_PLAT_Z6;
 	else if(strcmp(str, "CONFIG_PLAT_Z7") == 0)
 		return CONFIG_PLAT_Z7;
-	else if(strcmp(str, "CONFIG_PLAT_Z6_I2C") == 0)
-		return CONFIG_PLAT_Z6_I2C;
-	else if(strcmp(str, "CONFIG_PLAT_Z7_I2C") == 0)
-		return CONFIG_PLAT_Z7_I2C;
 	else
 		return CONFIG_PLAT_RAVEN;
 };
@@ -101,8 +97,8 @@ int read_config(char* configfile, struct config *config){
 	}
 	char line[81];
 	int len = 0;
-	int lno = 0;
-	char config_name[32];
+	int lno;
+	char config_name[16];
 	while(!stat){
 		++lno;
 
@@ -133,7 +129,7 @@ int read_config(char* configfile, struct config *config){
 		}
 
 		if(strcmp(config_name, "display_type")==0){
-			char display_type[32] = {0,};
+			char display_type[16] = {0,};
 			len = parser_read_str(&line[len], SEP, display_type, sizeof(display_type));
 			// evaluate string
 			strncpy(config->config_display_type , display_type, sizeof(display_type));
@@ -184,25 +180,24 @@ int read_config(char* configfile, struct config *config){
 				config->scrambling = 96;
 			}
 		}else if(config->i2c_mode == NULL && strcmp(config_name, "i2c_mode")==0){
-			char i2c_mode[32] = {0,};
+			char i2c_mode[16] = {0,};
 			len = parser_read_str(&line[len], SEP, i2c_mode, sizeof(i2c_mode));
 			// evaluate string
 			config->i2c_mode = get_i2c_mode(i2c_mode);
 		}else if(strcmp(config_name, "data_source")==0){
-			char data_source[32] = {0,};
+			char data_source[16] = {0,};
 			len = parser_read_str(&line[len], SEP, data_source, sizeof(data_source));
 			// evaluate string
 			config->data_source = get_data_source(data_source);
 
 		}else if(strcmp(config_name, "board")==0){
-			char board[32] = {0,};
+			char board[16] = {0,};
 			len = parser_read_str(&line[len], SEP, board, sizeof(board));
 			// evaluate string
-			LOG("Board: %s", board);
 			config->board = get_board(board);
 
 		}else if(strcmp(config_name, "endianess")==0){
-			char endianess[32];
+			char endianess[16];
 			len = parser_read_str(&line[len], SEP, endianess, sizeof(endianess));
 			// evaluate string
 			config->endianess = get_endianess(endianess);
@@ -213,7 +208,7 @@ int read_config(char* configfile, struct config *config){
 		}else if(strcmp(config_name, "source_offset")==0){
 			len = parser_read_int(&line[len], SEP, &config->source_offset);
 		}else if(strcmp(config_name, "interface_type")==0){
-			char interface_type[32];
+			char interface_type[16];
 			len = parser_read_str(&line[len], SEP,interface_type, sizeof(interface_type));
 			config->interface_type = get_interface_type(interface_type);
 		}else /**/if(strcmp(config_name, "pmic_timings")==0){

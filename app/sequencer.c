@@ -37,7 +37,7 @@
 #include "utils.h"
 
 /* Set to 1 to enable verbose log messages */
-#define VERBOSE 1
+#define VERBOSE 0
 
 /** Sequencer item with regions, waveform and timing information */
 struct sequencer_item {
@@ -65,7 +65,7 @@ static int cmd_update(struct pl_platform *plat, const char *line);
 int app_sequencer(struct pl_platform *plat, const char *path)
 {
 	FIL slides;
-	int stat, i;
+	int stat;
 	unsigned long lno;
 
 	LOG("Running sequence from %s", path);
@@ -97,17 +97,13 @@ int app_sequencer(struct pl_platform *plat, const char *path)
 		int len;
 
 		++lno;
-		stat = parser_read_file_line(&slides, line, 81);
+		stat = parser_read_file_line(&slides, line, sizeof(line));
 
 		if (stat < 0) {
 			LOG("Failed to read line");
 			break;
 		}
-		for(i=0;i<81;i++){
-			if(line[i] < 0x19) break;
-			LOG("%c", line[i]);
-		}
-		LOG("-----------------------");
+
 		if (!stat) {
 			f_lseek(&slides, 0);
 			lno = 0;

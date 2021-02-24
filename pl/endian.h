@@ -29,6 +29,7 @@
 
 #include <stdint.h>
 #include "config.h"
+#include "intrinsics.h"
 
 /** Swap the 4 bytes of a uint32_t in place, unaligned */
 extern void swap32(void *x);
