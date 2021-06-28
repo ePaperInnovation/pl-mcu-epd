@@ -59,14 +59,14 @@
 #define	SW1         MSP430_GPIO(2,0)
 #define	SW2         MSP430_GPIO(2,1)
 #define	SW3         MSP430_GPIO(2,2)
-#define	SW4         MSP430_GPIO(2,3)
-#define	SW5         MSP430_GPIO(2,4)
+#define	SW4GPIO1         MSP430_GPIO(2,3)
+#define	SW5GPIO2         MSP430_GPIO(2,4)
 
 /* User LEDs */
 #define	LED1        MSP430_GPIO(8,0)
 #define	LED2        MSP430_GPIO(8,1)
 #define	LED3        MSP430_GPIO(8,2)
-#define	LED4        MSP430_GPIO(8,3)
+#define	LED4WAKE_UP       MSP430_GPIO(8,3)
 
 /* System LEDs */
 #define	ASSERT_LED  MSP430_GPIO(7,7)
@@ -74,7 +74,7 @@
 /* User selection switches */
 #define	SEL1        MSP430_GPIO(8,4)
 #define	SEL2        MSP430_GPIO(8,5)
-#define	SEL3        MSP430_GPIO(8,6)
+#define	SEL3PWR_COM        MSP430_GPIO(8,6)
 #define	SEL4        MSP430_GPIO(8,7)
 
 /* Ruddock shutdown (power control) */
@@ -93,8 +93,8 @@ static const struct pl_gpio_config g_gpios[] = {
 { SEL1, PL_GPIO_INPUT | PL_GPIO_PU },
                                                  { SEL2, PL_GPIO_INPUT
                                                            | PL_GPIO_PU },
-                                                 { SEL3, PL_GPIO_INPUT
-                                                           | PL_GPIO_PU },
+                                                 { SEL3PWR_COM, PL_GPIO_INPUT
+                                                           | PL_GPIO_PD },
                                                  { SEL4, PL_GPIO_INPUT
                                                            | PL_GPIO_PU },
 
@@ -108,22 +108,20 @@ static const struct pl_gpio_config g_gpios[] = {
                                                  { SW3, PL_GPIO_INPUT
                                                            | PL_GPIO_INTERRUPT
                                                            | PL_GPIO_INT_FALL },
-                                                 { SW4, PL_GPIO_INPUT
-                                                           | PL_GPIO_INTERRUPT
-                                                           | PL_GPIO_INT_FALL },
-                                                 { SW5, PL_GPIO_INPUT
-                                                           | PL_GPIO_INTERRUPT
-                                                           | PL_GPIO_INT_FALL },
+                                                 { SW4GPIO1, PL_GPIO_OUTPUT
+                                                           | PL_GPIO_INIT_L },
+                                                 { SW5GPIO2, PL_GPIO_INPUT
+                                                           | PL_GPIO_PU },
 
                                                  /* User LEDs */
                                                  { LED1, PL_GPIO_OUTPUT
                                                            | PL_GPIO_INIT_L },
                                                  { LED2, PL_GPIO_OUTPUT
                                                            | PL_GPIO_INIT_L },
-                                                 { LED3, PL_GPIO_OUTPUT
-                                                           | PL_GPIO_INIT_L },
-                                                 { LED4, PL_GPIO_OUTPUT
-                                                           | PL_GPIO_INIT_L },
+                                                 { LED3, PL_GPIO_INPUT
+                                                           | PL_GPIO_PU },
+                                                 { LED4WAKE_UP, PL_GPIO_OUTPUT
+                                                           | PL_GPIO_INIT_H },
 
                                                  /* System LEDs */
                                                  { ASSERT_LED, PL_GPIO_OUTPUT
@@ -134,9 +132,9 @@ static const struct pl_gpio_config g_gpios[] = {
                                                    PL_GPIO_OUTPUT
                                                            | PL_GPIO_INIT_H }, };
 
-static const struct pl_system_gpio g_sys_gpio = { { SEL1, SEL2, SEL3, SEL4 }, {
-        SW1, SW2, SW3, SW4, SW5 },
-                                                  { LED1, LED2, LED3, LED4 },
+static const struct pl_system_gpio g_sys_gpio = { { SEL1, SEL2, SEL3PWR_COM, SEL4 }, {
+        SW1, SW2, SW3, SW4GPIO1, SW5GPIO2 },
+                                                  { LED1, LED2, LED3, LED4WAKE_UP },
                                                   ASSERT_LED,
                                                   RUDDOCK_SHUTDOWN, };
 
@@ -146,18 +144,6 @@ static const struct pl_system_gpio g_sys_gpio = { { SEL1, SEL2, SEL3, SEL4 }, {
 #define PMIC_EN           MSP430_GPIO(1,1) /* HV-PMIC enable */
 #define PMIC_POK          MSP430_GPIO(1,0) /* HV-PMIC power OK */
 #define PMIC_FLT          MSP430_GPIO(2,5) /* HV-PMIC fault condition */
-
-static const struct pl_gpio_config g_hvpmic_gpios[] = {
-        { HVSW_CTRL, PL_GPIO_OUTPUT | PL_GPIO_INIT_L }, {
-                PMIC_EN, PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
-        { PMIC_POK, PL_GPIO_INPUT }, { PMIC_FLT, PL_GPIO_INPUT }, };
-
-static struct pl_epdpsu_gpio g_epdpsu_gpio = { &g_plat.gpio, PMIC_EN, HVSW_CTRL,
-PMIC_POK,
-                                               PMIC_FLT, 300, 5, 100 };
-
-static struct pl_epdpsu_i2c g_epdpsu_i2c = { &g_plat.gpio, NULL, LED4, 30, 10,
-                                             100 };
 
 /* --- Epson GPIOs --- */
 
@@ -172,7 +158,7 @@ static struct pl_epdpsu_i2c g_epdpsu_i2c = { &g_plat.gpio, NULL, LED4, 30, 10,
 #define EPSON_CLK_EN      MSP430_GPIO(1,6)
 
 /* Interface control signals */
-#define	EPSON_HIRQ        MSP430_GPIO(2,6)
+#define	EPSON_HIRQPWR_UP        MSP430_GPIO(2,6)
 #define	EPSON_HDC         MSP430_GPIO(1,3)
 #define	EPSON_HRDY        MSP430_GPIO(2,7)
 #define EPSON_RESET       MSP430_GPIO(5,0)
@@ -204,16 +190,15 @@ static struct pl_epdpsu_i2c g_epdpsu_i2c = { &g_plat.gpio, NULL, LED4, 30, 10,
 #define	EPSON_TFT_CLK     MSP430_GPIO(7,5)
 
 static const struct pl_gpio_config g_epson_gpios[] = {
-        { EPSON_VCC_EN, PL_GPIO_OUTPUT | PL_GPIO_INIT_H }, {
-                EPSON_CLK_EN, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
-        { EPSON_HIRQ, PL_GPIO_INPUT | PL_GPIO_PU },
-        { EPSON_HRDY, PL_GPIO_INPUT }, { EPSON_HDC, PL_GPIO_OUTPUT
-                                                 | PL_GPIO_INIT_H },
-        { EPSON_RESET, PL_GPIO_OUTPUT | PL_GPIO_INIT_H }, {
-                EPSON_CS_0, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
-        {
-        DISP_CS,
-          PL_GPIO_OUTPUT | PL_GPIO_INIT_H }, };
+        { EPSON_VCC_EN, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+        { EPSON_CLK_EN, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+        { EPSON_HIRQPWR_UP, PL_GPIO_INPUT | PL_GPIO_PU},
+        { EPSON_HRDY, PL_GPIO_INPUT | PL_GPIO_PU },
+        { EPSON_HDC, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+        { EPSON_RESET, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+        { EPSON_CS_0, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+        { DISP_CS, PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
+};
 
 static const uint16_t g_epson_parallel[] = {
 EPSON_HDB0,
@@ -236,7 +221,7 @@ static struct s1d135xx_data init_g_s1d135xx_data(void)
 {
     struct s1d135xx_data g_s1d135xx_data = {
     EPSON_RESET,
-                                             EPSON_CS_0, EPSON_HIRQ,
+                                             EPSON_CS_0, EPSON_HIRQPWR_UP,
                                              PL_GPIO_NONE,
                                              PL_GPIO_NONE,
                                              EPSON_CLK_EN,
@@ -379,7 +364,6 @@ int main_init(void)
     struct pl_dispinfo dispinfo;
     struct vcom_cal vcom_cal;
     struct tps65185_info pmic_info;
-    //struct s1d135xx s1d135xx = { &g_s1d135xx_data, &g_plat.gpio };
     struct it8951 it8951 = { &g_it8951_data, &g_plat.gpio };
     FATFS sdcard;
     unsigned i;
@@ -425,12 +409,14 @@ int main_init(void)
     P2OUT &= ~BIT7;
     P2REN |= BIT7;
 
+    //ITE Reset
     P5OUT &= ~BIT0;
-    mdelay(50);
+    mdelay(500);
     P5OUT |= BIT0;
     mdelay(500);
 
     mdelay(10);
+
     /* initialise SD-card */
     SDCard_plat = &g_plat;
     f_chdrive(0);
@@ -463,11 +449,7 @@ int main_init(void)
     if (probe_epdc(&g_plat, &it8951, &vcom_cal))
         abort_msg("EPDC init failed", ABORT_EPDC_INIT);
 
-    // debug -> read and print PROM content (MaterialID, WF-ID, VCOM)
-    uint8_t blob[16];
-    //TODO: Read out Display NVM !
-    //s1d13541_read_prom(&s1d135xx, blob);
-    //s1d13541_extract_prom_blob(blob);
+     uint8_t blob[16];
 
     /* run the application */
     if (app_demo(&g_plat))

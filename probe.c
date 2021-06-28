@@ -234,7 +234,8 @@ int probe_epdc(struct pl_platform *plat, struct it8951 *it8951, struct vcom_cal 
     struct pl_epdc *epdc = &plat->epdc;
     int stat;
 
-    vcom_init(vcom_cal, &hwinfo->vcom);
+    //Set manual VCom here if needed
+    vcom_init(vcom_cal, &hwinfo->vcom);//
 
     stat = ite_epdc_init(epdc, plat->dispinfo, it8951, vcom_cal);
 

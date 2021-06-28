@@ -133,7 +133,7 @@ int ite_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo,
 
     const struct pl_dispinfo_info *info = &(epdc->dispinfo->info);
 
-    it8951_setVcom(it8951, vcom_calculate(vcom_cal, info->vcom));
+    it8951_setVcom(it8951, vcom_calculate(vcom_cal, info->vcom)); //info->vcom
 
     //Turn off pmic manual, cause set VCom turns HVs on
     it8951_set_epd_power(it8951, 0);

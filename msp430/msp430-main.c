@@ -78,7 +78,7 @@ static void board_init(void)
 
 int main(void)
 {
-     board_init();
+    board_init();
     __bis_SR_register(GIE);
 
     return main_init();

@@ -164,7 +164,7 @@ int read_config(char *configfile, struct config *config)
                 // D107 and D107C
                 config->i2c_mode = I2C_MODE_HOST;
                 config->board = CONFIG_PLAT_FALCON;
-                config->data_source = CONFIG_DISP_DATA_SD_ONLY;
+                config->data_source = CONFIG_DISP_DATA_EEPROM_SD;
                 config->endianess = CONFIG_LITTLE_ENDIAN;
                 config->interface_type = SPI;
             }

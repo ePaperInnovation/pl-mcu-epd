@@ -96,7 +96,7 @@ void it8951_load_init_code(struct it8951 *p)
     devInfo = *pBuf;
 
     //Show Device information of IT8951
-    LOG("Panel(W,H) = (%d,%d)\r\n", pBuf->usPanelW, pBuf->usPanelH);
+    LOG("Panel(W,H) = (%d,%d)\r\n", p->xres, p->yres);
     uint32_t imageAdress = 0xffffffff;
 
     reInitSPI(p, 2);
@@ -248,7 +248,7 @@ static uint16_t* gpio_i80_16b_data_in(struct it8951 *p, int size,
 
     //Read Dummy (under IT8951 SPI to I80 spec)
     waitForHRDY(p);
-    //set_cs(p, 0);
+
     p->interface->read((uint8_t*) &wDummy, 2);
 
     //Read Data
@@ -322,7 +322,6 @@ extern int it8951_update(struct it8951 *p, int wfid, enum pl_update_mode mode,
 
     it8951_waitForDisplayReady(p);
 
-    //uint8_t *reg7 = malloc(sizeof(uint8_t));
     send_cmd(p, IT8951_TCON_BYPASS_I2C);
     gpio_i80_16_data_out(p, 0x00, 1);
     gpio_i80_16_data_out(p, 0x68, 1);
@@ -332,7 +331,6 @@ extern int it8951_update(struct it8951 *p, int wfid, enum pl_update_mode mode,
 
     LOG("PMIC Register 7 after update: 0x%x\r\n", reg7[0]);
 
-    //uint8_t *reg8 = malloc(sizeof(uint8_t));
     send_cmd(p, IT8951_TCON_BYPASS_I2C);
     gpio_i80_16_data_out(p, 0x00, 1);
     gpio_i80_16_data_out(p, 0x68, 1);
@@ -341,9 +339,6 @@ extern int it8951_update(struct it8951 *p, int wfid, enum pl_update_mode mode,
     reg8[0] = gpio_i80_16b_data_in(p, 1, (uint16_t*) reg8[0]);
 
     LOG("PMIC Register 8 after update: 0x%x\r\n", reg8[0]);
-
-    //    free(reg7);
-//    free(reg8);
 
     reg7[0] = 0;
     reg8[0] = 0;
@@ -368,8 +363,6 @@ extern int it8951_set_epd_power(struct it8951 *p, int on)
 
     if (on == 1)
     {
-//        send_cmd(p, USDEF_I80_CMD_POWER_CTR);
-//        gpio_i80_16_data_out(p, 0x01, 1);
         waitForHRDY(p);
         data[0] = it8951_read_reg(p, 0x1e16, data);
 
@@ -386,16 +379,13 @@ extern int it8951_set_epd_power(struct it8951 *p, int on)
         data2[0] = it8951_read_reg(p, 0x1e16, data2);
         waitForHRDY(p);
 
-        //  send_cmd(p, USDEF_I80_CMD_POWER_CTR);
-        //  gpio_i80_16_data_out(p, 0x01, 1);
-        //   waitForHRDY(p);
         send_cmd(p, USDEF_I80_CMD_POWER_CTR);
         gpio_i80_16_data_out(p, 0x00, 1);
         //FLIP Bit 12 which corresponds to GPIO12/Pin 66 on ITE
         data2[0] &= ~(1 << 12);
         //FLIP Bit 11 which corresponds to GPIO11/Pin 65 on ITE to enable VCom_Switch
         data2[0] &= ~(1 << 11);
-        waitForHRDY(p);
+
         it8951_write_reg(p, 0x1e16, *data2, 1);
 
     }
@@ -424,7 +414,7 @@ extern int it8951_load_image(struct it8951 *p, const char *path, uint16_t mode,
     set_image_buffer_base_adress(p, p->imgBufBaseAdrr);
 
     uint16_t usArg;
-    //            //Setting Argument for Load image start
+    //Setting Argument for Load image start
     usArg = (IT8951_LDIMG_L_ENDIAN << 8) | (IT8951_8BPP << 4)
             | (IT8951_ROTATE_0);
     gpio_i80_16_cmd_out(p, IT8951_TCON_LD_IMG);
@@ -569,7 +559,6 @@ void reInitSPI(struct it8951 *p, uint8_t divisor)
 {
     if (spi_init(p->gpio, 0, divisor, p->interface))
         abort_msg("SPI init failed", ABORT_MSP430_COMMS_INIT);
-    //p->interface = &epson_spi;
     mdelay(50);
 }
 
@@ -704,20 +693,15 @@ static int transfer_file_scrambled(struct it8951 *p, FIL *file, int xres)
     return 0;
 }
 
-/**
- * This function pads the target (memory) with offset source and gate lines if needed.
- * If no offset is defined (o_gl=-1, o_sl=-1) the source content will be placed in the right lower corner,
- * while the left upper space is containing the offset lines.
- */
 static void memory_padding(uint8_t *source, uint8_t *target, int s_gl, int s_sl,
                            int t_gl, int t_sl, int o_gl, int o_sl)
 {
-    uint16_t sl, gl;
-    uint16_t divider;
-    uint16_t _gl_offset = 0;
-    uint16_t _sl_offset_f = 0;
-    uint16_t _sl_offset_b = 0;
-    divider = 2;
+    if (o_sl <= 0)
+        return;
+
+    int sl, gl;
+    int _gl_offset = 0;
+    int _sl_offset = 0;
 
     if (o_gl > 0)
         _gl_offset = o_gl;
@@ -725,28 +709,15 @@ static void memory_padding(uint8_t *source, uint8_t *target, int s_gl, int s_sl,
         _gl_offset = t_gl - s_gl;
 
     if (o_sl > 0)
-    {
-        _sl_offset_f = o_sl;
-        _sl_offset_b = (t_sl / divider) - (s_sl / 2) - _sl_offset_f;
-    }
+        _sl_offset = o_sl;
     else
-    {
-        _sl_offset_f = t_sl - s_sl;
-    }
+        _sl_offset = t_sl - s_sl;
 
     for (gl = 0; gl < s_gl; gl++)
         for (sl = 0; sl < s_sl; sl++)
         {
-            if (sl == 0)
-            {
-                _sl_offset_f = o_sl;
-            }
-            else if (sl == s_sl / divider - 1)
-            {
-                _sl_offset_f = _sl_offset_f + _sl_offset_b + _sl_offset_f;
-            }
-
-            target[(gl + _gl_offset) * t_sl + (sl + _sl_offset_f)] = source[gl * s_sl + sl];
-            //source[gl * s_sl + sl] = 0xFF;
+            target[(gl + _gl_offset) * t_sl + (sl + _sl_offset)] = source[gl
+                    * s_sl + sl];
+            source[gl * s_sl + sl] = 0xFF;
         }
 }
