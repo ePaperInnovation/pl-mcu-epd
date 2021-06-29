@@ -420,7 +420,7 @@ int main_init(void)
     /* initialise SD-card */
     SDCard_plat = &g_plat;
     f_chdrive(0);
-    if (f_mount(0, &sdcard) != FR_OK)
+    if (f_mount(&sdcard, 1, 1) != FR_OK)
         abort_msg("SD card init failed", ABORT_MSP430_COMMS_INIT);
 
     /* read configuration */

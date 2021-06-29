@@ -45,6 +45,8 @@ extern "C"
 #define __data16
 #endif
 
+#include "ff.h"
+
 /*----------------------------------------------------------------------------+
  | Include files                                                               |
  +----------------------------------------------------------------------------*/
@@ -69,7 +71,7 @@ typedef int BOOL;
 typedef double DOUBLE;
 typedef unsigned char BYTE;
 typedef unsigned char*  PBYTE;
-typedef unsigned int WORD;
+//typedef unsigned int WORD;
 typedef unsigned long DWORD;
 typedef unsigned long*  PDWORD;
 
