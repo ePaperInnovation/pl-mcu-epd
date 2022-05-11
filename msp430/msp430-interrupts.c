@@ -74,6 +74,19 @@ __interrupt void Port_2(void)
     __bis_SR_register(gie);					// Restore original GIE state
 }
 
+//#pragma vector=DMA_VECTOR
+//__interrupt void dma_isr (void) {
+//    if (DMAIV & DMAIV_DMA0IFG) {
+//        return;
+//    }
+//    if (DMAIV & DMAIV_DMA1IFG) {
+//        return;
+//    }
+//    if (DMAIV & DMAIV_DMA2IFG) {
+//        return;
+//    }
+//}
+
 /* These vectors are used in the code so cannot be declared here */
 #if 0
 #pragma vector=PORT2_VECTOR
@@ -87,8 +100,8 @@ __interrupt void Port_2(void)
 #pragma vector=USCI_A1_VECTOR
 #pragma vector=PORT1_VECTOR
 #pragma vector=TIMER1_A1_VECTOR
-#pragma vector=TIMER1_A0_VECTOR
 #pragma vector=DMA_VECTOR
+#pragma vector=TIMER1_A0_VECTOR
 #pragma vector=USCI_B2_VECTOR
 #pragma vector=USCI_A2_VECTOR
 #pragma vector=TIMER0_A0_VECTOR
