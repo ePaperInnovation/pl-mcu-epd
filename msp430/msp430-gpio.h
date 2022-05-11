@@ -34,4 +34,23 @@ struct pl_gpio;
 
 extern int msp430_gpio_init(struct pl_gpio *gpio);
 
+void Setup_Flash_Write(void);
+void Setup_Flash_Read(void);
+void bitbang(unsigned char instr);
+void bitbangL(unsigned char instr);
+void Read_Status_Registers(void);
+void Read_Jedec(void);
+void Bump_cs(void);
+void ChipErase(void);
+void Read(unsigned char addr);
+unsigned char CheckBusy();
+unsigned char ReadStatusRegister1();
+unsigned char CpuIn(void);
+unsigned int SectorErase(unsigned int addr);
+unsigned char CheckBusy(void);
+unsigned char ReadStatusRegister1(void);
+unsigned char d;
+
+
+#define    so     MSP430_GPIO(5,7)
 #endif /* MSP430_GPIO_H */
