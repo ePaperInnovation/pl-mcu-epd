@@ -51,6 +51,7 @@ static void board_init(void)
 	UCSCTL4 = SELM_4 | SELS_4 | SELA_1;		// MCLK = SMCLK = DCOCLKDIV = 20MHz /  ACLK = VLO = 10Khz
 	UCSCTL3 |= SELREF_2;					// Set DCO FLL reference = REFO
 
+	UCA2IE |= UCRXIE; // RCL
 	__bis_SR_register(SCG0);				// Disable the FLL control loop
 	UCSCTL0 = 0x0000;						// Set lowest possible DCOx, MODx
 	UCSCTL1 = DCORSEL_6;					// Select DCO range 30MHz operation
