@@ -44,8 +44,8 @@
 
 #endif
 
-int msp430_spi_read_bytes(uint8_t *buff, uint8_t size);
-int msp430_spi_write_bytes(uint8_t *buff, uint8_t size);
+int msp430_spi_read_bytes(uint8_t *buff, uint16_t size);
+int msp430_spi_write_bytes(uint8_t *buff, uint16_t size);
 /* We only support a single SPI bus and that bus is defined at compile
  * time.
  */
@@ -86,7 +86,7 @@ void msp430_spi_close(void)
 	UCxnCTL1 |= UCSWRST;                      // Put state machine in reset
 }
 
-int msp430_spi_read_bytes(uint8_t *buff, uint8_t size)
+int msp430_spi_read_bytes(uint8_t *buff, uint16_t size)
 {
 	unsigned int gie = __get_SR_register() & GIE;	// Store current GIE state
 
@@ -106,7 +106,7 @@ int msp430_spi_read_bytes(uint8_t *buff, uint8_t size)
     return 0;
 }
 
-int msp430_spi_write_bytes(uint8_t *buff, uint8_t size)
+int msp430_spi_write_bytes(uint8_t *buff, uint16_t size) //  RCL actual write to SPI epson
 {
 	unsigned int gie = __get_SR_register() & GIE;   // Store current GIE state
 
@@ -118,6 +118,7 @@ int msp430_spi_write_bytes(uint8_t *buff, uint8_t size)
     // resulting overrun condition.
     while (size--) {
         while (!(UCxnIFG & UCTXIFG)) ;              // Wait for transmit buffer empty
+
         UCxnTXBUF = *buff++;                        // Write byte
     }
     while (UCxnSTAT & UCBUSY) ;                     // Wait for all TX/RX to finish
