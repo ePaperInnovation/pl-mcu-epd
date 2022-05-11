@@ -36,10 +36,11 @@
 #include "config.h"
 
 #define USCI_UNIT	A
-#define	USCI_CHAN	1
+#define	USCI_CHAN	2
 // Pin definitions for this unit.
-#define	UART_TX                 MSP430_GPIO(5,6)
-#define	UART_RX                 MSP430_GPIO(5,7)
+#define	UART_TX                 MSP430_GPIO(9,4)
+#define	UART_RX                 MSP430_GPIO(9,5)
+static uint8_t init_done = 0;
 
 #if CONFIG_UART_PRINTF
 // protect from calls before intialisation is complete.
@@ -112,12 +113,25 @@ int msp430_uart_register_files()
 }
 #endif
 
+
+int msp430_uart_putc(int c)
+{
+    if (init_done)
+    {
+        while(!(UCxnIFG & UCTXIFG));
+        UCxnTXBUF = (unsigned char)c;
+    }
+
+    return (unsigned char)c;
+}
+
+
 int msp430_uart_init(struct pl_gpio *gpio, int baud_rate_id, char parity,
 		     int data_bits, int stop_bits)
 {
 	static const struct pl_gpio_config gpios[] = {
 		{ UART_TX, PL_GPIO_SPECIAL | PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
-		{ UART_RX, PL_GPIO_SPECIAL | PL_GPIO_INPUT                   },
+		{ UART_RX, PL_GPIO_SPECIAL | PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
 	};
 
 	if (pl_gpio_config_list(gpio, gpios, ARRAY_SIZE(gpios)))
@@ -125,6 +139,9 @@ int msp430_uart_init(struct pl_gpio *gpio, int baud_rate_id, char parity,
 
 	// hold unit in reset while configuring
 	UCxnCTL1 |= UCSWRST;
+
+
+
 
 	UCxnCTL0 = UCMODE_0;			// Uart Mode (No parity, LSB first, 8 data bits, 1 stop bit)
 	UCxnCTL1 |= UCSSEL_2;			// SMCLK
@@ -213,6 +230,7 @@ int msp430_uart_init(struct pl_gpio *gpio, int baud_rate_id, char parity,
 
 	// release unit from reset
 	UCxnCTL1 &= ~UCSWRST;
+	UCA2IE |= UCRXIE; // RCL
 
 #if CONFIG_UART_PRINTF
 	init_done = 1;
@@ -221,6 +239,21 @@ int msp430_uart_init(struct pl_gpio *gpio, int baud_rate_id, char parity,
 	return 0;
 #endif
 }
+
+int msp430_uart_write(int dev_fd, const char *buf, unsigned count)
+{
+    unsigned int i;
+
+    if (!init_done)
+        return -1;
+
+    for(i = 0; i < count; i++)
+        msp430_uart_putc(buf[i]);
+
+    return i;
+}
+
+
 
 #if CONFIG_UART_PRINTF
 
