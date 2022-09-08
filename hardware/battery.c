@@ -1,7 +1,7 @@
 /*
   Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2014 Plastic Logic Limited
+  Copyright (C) 2021, 2018 Plastic Logic GmbH
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,25 +17,34 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
- * app/app.h -- Application
+ * ust-battery.c -- Battery Management functions
  *
  * Authors:
- *   Guillaume Tucker <guillaume.tucker@plasticlogic.com>
+ *   Oliver Lenz <oliver.lenz@plasticlogic.com>
  *
  */
+#include <hardware/battery.h>
+#include <math.h>
 
-#ifndef INCLUDE_APP_H
-#define INCLUDE_APP_H 1
+const uint16_t input_start = 0;
+const uint16_t input_end = 1024;
+const uint16_t output_start = 0;
+const uint16_t output_end = 100;
+double slope;
 
-struct pl_platform;
+void initBattery()
+{
+    slope = 1.0 * (output_end - output_start) / (input_end - input_start);
+}
 
-extern int app_stop;
+uint16_t readBattery()
+{   uint16_t input;
+    //ToDo:Read Meas_Bat into Input
+    uint16_t output = output_start + round(slope * (input - input_start));
+    return output;
+}
 
-extern int app_demo(struct pl_platform *plat);
-extern int app_clear(struct pl_platform *plat);
-extern int app_power(struct pl_platform *plat, const char *path);
-extern int app_slideshow(struct pl_platform *plat, const char *path);
-//extern int app_sequencer(struct pl_platform *plat, const char *path);
-extern int app_pattern(struct pl_platform *plat);
-
-#endif /* INCLUDE_APP_H */
+double round(double d)
+{
+    return floor(d + 0.5);
+}

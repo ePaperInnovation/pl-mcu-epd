@@ -59,10 +59,9 @@
 
 #include <stdlib.h>
 #include "assert.h"
-#include "FatFs/ff.h"
 #include "pnm-utils.h"
-
-int pnm_read_int32(FIL *pnm_file, int32_t *value)
+/*
+int pnm_read_int32(uint32_t *value)
 {
 	UINT count;
 	char ch;
@@ -117,9 +116,9 @@ int pnm_read_int32(FIL *pnm_file, int32_t *value)
 	*value = val;
 
 	return 0;
-}
-
-int pnm_read_header(FIL *pnm_file, struct pnm_header *hdr)
+}*/
+/*
+int pnm_read_header( struct pnm_header *hdr)
 {
 	char buffer[2];
 	UINT count;
@@ -160,3 +159,4 @@ format_error:
 read_error:
 	return -1;
 }
+*/

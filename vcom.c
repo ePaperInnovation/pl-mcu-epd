@@ -48,7 +48,8 @@ int vcom_calculate(const struct vcom_cal *v, int input_mv)
 {
 	int32_t scaled_mv;
 	int dac_value;
-
+	/// Added by Mohamed Ahmed to set input_mv=3000////////////
+	input_mv=3000;
 	assert(v != NULL);
 
 	scaled_mv = DIV_ROUND_CLOSEST(input_mv * v->swing, v->swing_ideal);
@@ -58,5 +59,6 @@ int vcom_calculate(const struct vcom_cal *v, int input_mv)
 	LOG("input: %d, scaled: %ld, DAC reg: 0x%02X",
 	    input_mv, scaled_mv, dac_value);
 
-	return dac_value;
+	return scaled_mv;
 }
+

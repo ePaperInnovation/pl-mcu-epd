@@ -20,7 +20,6 @@
 #ifndef INCLUDE_UTIL_H
 #define INCLUDE_UTIL_H 1
 
-#include "FatFs/ff.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -80,7 +79,7 @@ extern uint16_t align8(uint16_t value);
 extern uint16_t align16(uint16_t value);
 
 struct pnm_header;
-extern int open_image(const char *dir, const char *file, FIL *f,
+extern int open_image(const char *dir, const char *file,
 		      struct pnm_header *hrd);
 
 /* -- Debug utilities */
@@ -138,7 +137,7 @@ extern void dump_hex(const void *data, uint16_t len);
  * no scrambling in gate direction
  * Expects data in source array as sourceline fast addressed and starting with gate=0 and source=0.
  */
-uint16_t scramble_array(uint8_t* source, uint8_t* target, uint16_t *glCount, uint16_t *slCount, uint16_t scramblingMode, uint8_t bitMode);
+uint16_t scramble_array(uint8_t* source, uint8_t* target, uint16_t *glCount, uint16_t *slCount, uint16_t scramblingMode);
 
 uint16_t calcScrambledIndex(uint16_t scramblingMode, uint16_t gl, uint16_t sl, uint16_t *glCount, uint16_t *slCount);
 

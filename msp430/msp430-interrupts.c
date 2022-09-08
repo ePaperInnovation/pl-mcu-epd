@@ -29,6 +29,22 @@
 
 uint8_t port2_int_summary = 0;
 
+static unsigned int i, bstat;
+unsigned char TestBuff1[2048];
+unsigned char TestBuff2[2048];
+
+void bsend(unsigned char bufn);
+
+
+
+void bsend(unsigned char bufn)
+   {
+// parse byte - data or instruction
+
+  parser(bufn);
+
+
+    }
 /***************************************************************************//**
  * @brief   Port 2 interrupt service routine
  * @return  None
@@ -74,18 +90,26 @@ __interrupt void Port_2(void)
     __bis_SR_register(gie);					// Restore original GIE state
 }
 
-//#pragma vector=DMA_VECTOR
-//__interrupt void dma_isr (void) {
-//    if (DMAIV & DMAIV_DMA0IFG) {
-//        return;
-//    }
-//    if (DMAIV & DMAIV_DMA1IFG) {
-//        return;
-//    }
-//    if (DMAIV & DMAIV_DMA2IFG) {
-//        return;
-//    }
-//}
+#pragma vector=USCI_A2_VECTOR
+__interrupt void USCI_A2(void)
+{
+    unsigned int gie = __get_SR_register();  //Store current GIE state
+
+    switch(__even_in_range(UCA2IV,4))
+      {
+      case 0:break;                             // Vector 0 - no interrupt
+      case 2:                                   // Vector 2 - RXIFG
+         bsend(UCA2RXBUF);
+        break;
+      case 4:break;                             // Vector 4 - TXIFG
+      default: break;
+      }
+    __bis_SR_register(gie);
+}
+
+
+
+
 
 /* These vectors are used in the code so cannot be declared here */
 #if 0
@@ -94,20 +118,20 @@ __interrupt void Port_2(void)
 #pragma vector=RTC_VECTOR
 #endif
 /* Initialize unused ISR vectors with a trap function */
+
+#pragma vector=PORT1_VECTOR
+#pragma vector=TIMER1_A1_VECTOR
+#pragma vector=TIMER1_A0_VECTOR
+#pragma vector=DMA_VECTOR
 #pragma vector=USCI_B3_VECTOR
 #pragma vector=USCI_A3_VECTOR
 #pragma vector=USCI_B1_VECTOR
 #pragma vector=USCI_A1_VECTOR
-#pragma vector=PORT1_VECTOR
-#pragma vector=TIMER1_A1_VECTOR
-#pragma vector=DMA_VECTOR
-#pragma vector=TIMER1_A0_VECTOR
 #pragma vector=USCI_B2_VECTOR
-#pragma vector=USCI_A2_VECTOR
-#pragma vector=TIMER0_A0_VECTOR
-#pragma vector=ADC12_VECTOR
 #pragma vector=USCI_B0_VECTOR
 #pragma vector=USCI_A0_VECTOR
+#pragma vector=TIMER0_A0_VECTOR
+#pragma vector=ADC12_VECTOR
 #pragma vector=WDT_VECTOR
 #pragma vector=TIMER0_B1_VECTOR
 #pragma vector=TIMER0_B0_VECTOR

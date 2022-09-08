@@ -1,6 +1,6 @@
-.project
-.cproject
-.ccsproject
+#.project
+#.cproject
+#.ccsproject
 .settings
 .launches
 lnk_*.cmd

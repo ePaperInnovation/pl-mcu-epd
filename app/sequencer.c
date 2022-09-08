@@ -61,10 +61,10 @@ static int cmd_power(struct pl_platform *plat, const char *line);
 static int cmd_update(struct pl_platform *plat, const char *line);
 
 /* -- public entry point -- */
-
+/*
 int app_sequencer(struct pl_platform *plat, const char *path)
 {
-	FIL slides;
+	//FIL slides;
 	int stat, i;
 	unsigned long lno;
 
@@ -97,7 +97,7 @@ int app_sequencer(struct pl_platform *plat, const char *path)
 		int len;
 
 		++lno;
-		stat = parser_read_file_line(&slides, line, 81);
+		stat = parser_read_file_line( line, 81);
 
 		if (stat < 0) {
 			LOG("Failed to read line");
@@ -108,10 +108,10 @@ int app_sequencer(struct pl_platform *plat, const char *path)
 			LOG("%c", line[i]);
 		}
 		LOG("-----------------------");
-		if (!stat) {
-			f_lseek(&slides, 0);
-			lno = 0;
-			continue;
+//		if (!stat) {
+	//		f_lseek(&slides, 0);
+		//	lno = 0;
+			//continue;
 		}
 
 		stat = 0;
@@ -141,15 +141,15 @@ int app_sequencer(struct pl_platform *plat, const char *path)
 		}
 	}
 
-	f_close(&slides);
+//	f_close(&slides);
 
 	return stat;
 }
-
+*/
 /* ----------------------------------------------------------------------------
  * private functions
  */
-
+/*
 static int load_image(struct pl_epdc *epdc, const struct sequencer_item *item,
 		      const char *dir)
 {
@@ -208,8 +208,8 @@ exit_now:
 		LOG("Not enough arguments");
 
 	return -1;
-}
-
+}*/
+/*
 static int cmd_update(struct pl_platform *plat, const char *line)
 {
 	// update structure: update, wfid, update_mode, area->left, area->top, area->width, area->height,delay_ms
@@ -232,7 +232,7 @@ static int cmd_update(struct pl_platform *plat, const char *line)
 
 	opt += len;
 	//len = parser_read_str(opt, SEP, update_mode, sizeof(update_mode));
-	len = parser_read_int(opt, SEP, &update_mode);
+	len = parser_read_int(opt, SEP, (int*) &update_mode);
 
 	if (len <= 0)
 		return -1;
@@ -354,3 +354,4 @@ static int cmd_sleep(struct pl_platform *plat, const char *line)
 
 	return 0;
 }
+*/

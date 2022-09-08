@@ -39,33 +39,11 @@ int app_power(struct pl_platform *plat, const char *path)
 	struct pl_epdpsu *psu = &plat->psu;
 	int wfid;
 	char full_path[MAX_PATH_LEN];
-	DIR dir;
-	FILINFO f;
 
 	wfid = pl_epdc_get_wfid(epdc, 2);
 
 	if (wfid < 0)
 		return -1;
-
-	if (f_opendir(&dir, path) != FR_OK) {
-		LOG("Failed to open directory [%s]", path);
-		return -1;
-	}
-
-	do {
-		if (f_readdir(&dir, &f) != FR_OK) {
-			LOG("Failed to read directory entry");
-			return -1;
-		} else if (f.fname[0] == '\0') {
-			LOG("No image file found");
-			return -1;
-		}
-	} while ((f.fname[0] == '.') || !strstr(f.fname, ".PGM"));
-
-	if (join_path(full_path, sizeof(full_path), path, f.fname))
-		return -1;
-
-	LOG("Running power sequence demo using image: %s", full_path);
 
 	while (!app_stop) {
 		/* --- RUN mode --- */

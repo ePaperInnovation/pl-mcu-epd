@@ -1,5 +1,5 @@
 /*
-  Plastic Logic EPD project on MSP430
+ *  Plastic Logic EPD project on MSP430
 
   Copyright (C) 2014 Plastic Logic Limited
 
@@ -15,27 +15,31 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-/*
- * app/app.h -- Application
  *
- * Authors:
- *   Guillaume Tucker <guillaume.tucker@plasticlogic.com>
+ * ite-epdc.h
  *
+ *  Created on: 04.01.2021
+ *      Author: oliver.lenz
  */
 
-#ifndef INCLUDE_APP_H
-#define INCLUDE_APP_H 1
+#ifndef ITE_ITE_EPDC_H_
+#define ITE_ITE_EPDC_H_
 
-struct pl_platform;
+#include <pl/dispinfo.h>
+#include <pl/types.h>
+#include <pl/epdc.h>
+#include <pl/gpio.h>
+#include <stdlib.h>
+#include "assert.h"
+#include <vcom.h>
+#include "ite/ite-it8951.h"
 
-extern int app_stop;
+struct pl_epdc;
+struct pl_dispinfo;
+struct it8951;
 
-extern int app_demo(struct pl_platform *plat);
-extern int app_clear(struct pl_platform *plat);
-extern int app_power(struct pl_platform *plat, const char *path);
-extern int app_slideshow(struct pl_platform *plat, const char *path);
-//extern int app_sequencer(struct pl_platform *plat, const char *path);
-extern int app_pattern(struct pl_platform *plat);
+#define  MY_WORD_SWAP(x) ( ((x & 0xff00)>>8) | ((x & 0x00ff)<<8) )
 
-#endif /* INCLUDE_APP_H */
+extern int ite_epdc_init(struct pl_epdc *epdc, const struct pl_dispinfo *dispinfo, struct it8951 *it8951, struct vcom_cal *vcom_cal);
+
+#endif /* ITE_ITE_EPDC_H_ */

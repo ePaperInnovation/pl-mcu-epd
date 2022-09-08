@@ -117,11 +117,10 @@ int parser_read_area(const char *str, const char *sep, struct pl_area *a)
 
 	return parser_read_int_list(str, sep, coords);
 }
-
-int parser_read_file_line(FIL *f, char *buffer, int max_length)
+/*
+int parser_read_file_line(char *buffer, int max_length)
 {
 	size_t count;
-	size_t len = 0;
 	char *out;
 	int i;
 
@@ -129,16 +128,11 @@ int parser_read_file_line(FIL *f, char *buffer, int max_length)
 		if (f_read(f, out, 1, &count) != FR_OK)
 			return -1;
 
-		len += count;
-
 		if ((*out == '\n') || !count)
 			break;
 
 		if (*out == '\r')
-		{
 			--out;
-			--len;
-		}
 	}
 
 	if (i == max_length)
@@ -146,5 +140,5 @@ int parser_read_file_line(FIL *f, char *buffer, int max_length)
 
 	*out = '\0';
 
-	return len;
-}
+	return !!count;
+}*/

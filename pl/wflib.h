@@ -27,7 +27,6 @@
 #ifndef INCLUDE_PL_WFLIB_H
 #define INCLUDE_PL_WFLIB_H 1
 
-#include <FatFs/ff.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -45,9 +44,8 @@ struct pl_wflib {
 	void *priv;
 };
 
-/** Initialise a wflib interface for a FatFS file */
-extern int pl_wflib_init_fatfs(struct pl_wflib *wflib, FIL *f,
-			       const char *path);
+
+extern int pl_wflib_init_UST(struct pl_wflib *wflib);
 
 /** Structure to use to load LZSS-compressed waveform library from EEPROM */
 struct pl_wflib_eeprom_ctx {

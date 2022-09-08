@@ -77,7 +77,8 @@ enum config_data_source {
 	CONFIG_DISP_DATA_EEPROM_ONLY,  /**< Only use display EEPROM */
 	CONFIG_DISP_DATA_SD_ONLY,       /**< Only use SD card */
 	CONFIG_DISP_DATA_EEPROM_SD,    /**< Try EEPROM first, then SD card */
-	CONFIG_DISP_DATA_SD_EEPROM    /**< Try SD card first, then EEPROM */
+	CONFIG_DISP_DATA_SD_EEPROM,/**< Try SD card first, then EEPROM */
+	CONFIG_DISP_DATA_UST       //set from UST function
 };
 
 enum config_interface_type {
@@ -111,5 +112,7 @@ struct config {
 extern struct config global_config;
 
 int read_config(char* configfile, struct config* config);
+int set_config_UST(struct config* config);
+
 
 #endif /* INCLUDE_CONFIG_H */

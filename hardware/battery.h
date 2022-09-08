@@ -1,7 +1,7 @@
 /*
   Plastic Logic EPD project on MSP430
 
-  Copyright (C) 2013 Plastic Logic Limited
+  Copyright (C) 2021, 2018 Plastic Logic GmbH
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,26 +17,21 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
- * msp430-sdcard.h -- MSP430 SD card SPI interface driver
+ * ust-battery.h -- Battery Management functions
  *
- * Authors: Nick Terry <nick.terry@plasticlogic.com>
+ * Authors:
+ *   Oliver Lenz <oliver.lenz@plasticlogic.com>
  *
  */
 
-#ifndef MSP430_SDCARD_H
-#define MSP430_SDCARD_H
+#ifndef INCLUDE_BATTERY_H
+#define INCLUDE_BATTERY_H 1
 
 #include <stdint.h>
+#include <stdlib.h>
 
-struct pl_platform;
-extern struct pl_platform *SDCard_plat;
+void initBattery();
+uint16_t readBattery();
 
-extern void SDCard_init(void);
-extern void SDCard_fastMode(void);
-extern void SDCard_readFrame(uint8_t *pBuffer, uint16_t size);
-extern void SDCard_sendFrame(uint8_t *pBuffer, uint16_t size);
-extern void SDCard_setCSHigh(void);
-extern void SDCard_setCSLow(void);
-extern void SDCard_uDelay(uint16_t usecs);
+#endif /* BATTERY_H */
 
-#endif  /* MSP430_SDCARD_H */

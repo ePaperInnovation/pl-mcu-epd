@@ -41,11 +41,11 @@ struct pl_hwinfo;
 /* Common platform data */
 
 struct pl_system_gpio {
-	unsigned sel[4];
-	unsigned sw[5];
-	unsigned led[4];
+	unsigned sw[2];
+	unsigned bst[3];
+	unsigned ctrl;
 	unsigned assert_led;
-	unsigned ruddock_shutdown;
+	unsigned batteryctrl;
 };
 
 struct pl_platform {
