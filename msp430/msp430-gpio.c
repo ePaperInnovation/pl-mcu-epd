@@ -276,6 +276,74 @@ int msp430_gpio_init(struct pl_gpio *gpio)
     return 0;
 }
 
+
+/*
+// added by Mohamed// to intialize the ZB pins on the MSP430 gpio//
+
+
+int msp430_gpio_init(struct pl_gpio *gpio)
+{
+    gpio->config = msp430_gpio_config;
+    gpio->get = msp430_gpio_get;
+    gpio->set = msp430_gpio_set;
+
+    // RCL GPIO Connections for SPI flash - all set as in or out, no special functions
+    // winbond drivers use bitbang, not uart functions
+    //P8DIR |= BIT0;  //Set cs Chip select as output
+    //P8DIR |= BIT1;  //Set wp Write Protect as output
+    //P8DIR |= BIT2;  //Set hold as Output
+    //P5DIR |= BIT6;  //Set si Slave In as output (this chip is master) RCL NC
+    P3DIR |= BIT3;  //Set clk Clock as output - RCL
+    P3DIR &= ~BIT2; // data out from spi flash - RCL SPI MISO
+    P3DIR |= BIT1;  // RCL - SPI MOSI
+    P5DIR |= BIT5;  // RCL - SPI CS
+
+
+
+    P3OUT &= ~BIT3; //Set clk low
+    //P8OUT |= BIT1;  //wp high
+    P5OUT |= BIT5;  //Set cs high
+
+    //P8OUT |= BIT2;  // set hold high
+
+///////////// added by Mohamed///////////////// set the ZB
+     // GPIO Connections for ZB
+    P10DIR |= BIT0;  //ZB SPI -clk-   Clock
+    P10DIR &= ~BIT5; // data out from ZB MISO
+    P10DIR |= BIT4;  // ZB MOSI
+    P10DIR |= BIT3;  // ZB SPI CS
+
+
+    P9DIR |= BIT1; //ZB SW RESET
+    P9DIR |= BIT2; //ZB RTS
+    P9DIR |= BIT3; //ZB SLEEP STATUS
+
+    P9DIR |= BIT4; //ZB UART RX
+    P9DIR |= BIT5; //ZB UART TX
+
+    P9DIR |= BIT6; //ZB CTS
+    P9DIR |= BIT7; //ZB SLEEP
+
+//#define    cs     MSP430_GPIO(8,0)-
+//#define    sio1   GPIOA_Pin_2
+//#define    so     MSP430_GPIO(5,7)
+//#define    sio2   GPIOA_Pin_3
+//#define    wp     MSP430_GPIO(8,1)-
+//#define    sio0   GPIOA_Pin_5
+//#define    si     MSP430_GPIO(5,6)-
+//#define    clk    MSP430_GPIO(3,6)-
+//#define    sio3   GPIOA_Pin_7
+//#define    hold   MSP430_GPIO(8,2)-
+
+    return 0;
+}
+
+//////////////////////////////////////////////////////////////////
+
+*/
+
+
+
 // WRITE to device on rising edge of clk
 // READ from device on falling edge of clk
 // For Mode 0, the CLK signal is normally low on the falling and
