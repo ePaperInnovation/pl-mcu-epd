@@ -43,6 +43,16 @@
 #define	SPI_SOMI                MSP430_GPIO(3,5)
 #define	SPI_CLK                 MSP430_GPIO(3,0)
 
+
+// added by Mohamed SD Card SPI spin are used here until the new board design and SPI Flash connection///
+
+// Pin definitions for this unit
+#define SPI_SIMO                MSP430_GPIO(3,1)
+#define SPI_SOMI                MSP430_GPIO(3,2)
+#define SPI_CLK                 MSP430_GPIO(3,3)
+////////////////////////////////////////////////////////////
+
+
 #endif
 
 static const struct pl_gpio_config gpios[] =
