@@ -30,8 +30,56 @@
 uint8_t port2_int_summary = 0;
 
 static unsigned int i, bstat;
+unsigned char data[2048];
 unsigned char TestBuff1[2048];
 unsigned char TestBuff2[2048];
+unsigned int inc_counter = 0;
+
+void bsend(unsigned char bufn/*, int state*/);
+
+
+
+void bsend(unsigned char bufn/*, int state*/)
+   {
+// parse byte - data or instruction
+    unsigned char a = 0x61;
+    if(bufn==a){
+        inc_counter = 0;
+    }
+    data[inc_counter]=bufn;
+    inc_counter++;
+    }
+    /*
+void bsend(unsigned char *bufn[5]);
+
+
+
+
+void bsend(unsigned char *bufn[5])
+
+
+   {
+
+// parse byte - data or instruction
+
+
+
+int k=0;
+
+for(k=0;k<5;k++)
+
+{
+    //   printf("\n %s",bufn[k]);
+
+  parser(bufn[k]);
+  dataincome[k]=bufn[k];
+  //printf("\n %s",dataincome[k]);
+
+
+}
+
+}
+*/
 
 void bsend(unsigned char bufn);
 
@@ -99,7 +147,11 @@ __interrupt void USCI_A2(void)
       {
       case 0:break;                             // Vector 0 - no interrupt
       case 2:                                   // Vector 2 - RXIFG
-         bsend(UCA2RXBUF);
+         bsend(UCA2RXBUF/*,1*/);
+
+
+
+       //  bsend(*UCA2RXBUF[j]);
         break;
       case 4:break;                             // Vector 4 - TXIFG
       default: break;
